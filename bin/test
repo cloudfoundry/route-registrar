@@ -1,0 +1,15 @@
+#!/bin/sh
+# vim: set ft=sh
+
+set -e
+
+if ! which go 2>/dev/null; then
+  echo "Go is not installed."
+  exit 1
+fi
+
+go get github.com/tools/godep
+go get github.com/apcera/gnatsd
+godep restore
+
+go test -v ./registrar
