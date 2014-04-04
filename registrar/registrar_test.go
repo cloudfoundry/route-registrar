@@ -16,6 +16,18 @@ import (
 var config Config
 var client *yagnats.Client
 
+type FakeHealthChecker struct {
+	status bool
+}
+func (handler *FakeHealthChecker) Check() (bool, bool) {
+	return handler.status, !handler.status
+}
+func NewFakeHealthChecker() *FakeHealthChecker{
+	return &FakeHealthChecker{
+		status: false,
+	}
+}
+
 var _ = Describe("Src/Main/RouteRegister", func() {
 	messageBusServer := MessageBusServer{
 		"127.0.0.1:4222",
@@ -84,7 +96,45 @@ var _ = Describe("Src/Main/RouteRegister", func() {
 	It("Emits a router.unregister message when SIGTERM is sent to the registrar's signal channel", func () {
 		verifySignalTriggersUnregister(syscall.SIGTERM)
 	})
+
+	Context("When the registrar has a healthchecker", func() {
+		It("Emits a router.unregister message when registrar's health check fails, and emits a router.register message when registrar's health check back to normal", func(){
+			healthy := NewFakeHealthChecker()
+			healthy.status = false
+
+			unregistered := make(chan string)
+			registered := make(chan string)
+			var registrar *Registrar
+
+			// Listen for a router.unregister event, then set health status to true, then listen for a router.register event
+			subscribeToUnregisterEvents(func(msg *yagnats.Message) {
+				fmt.Println("GOT UNREGISTER MESSAGE: ", string(msg.Payload))
+				unregistered <- string(msg.Payload)
+
+				healthy.status = true
+				subscribeToRegisterEvents(func(msg *yagnats.Message) {
+					fmt.Println("GOT REGISTER MESSAGE: ", string(msg.Payload))
+					registered <- string(msg.Payload)
+				})
+			})
+
+			go func () {
+				registrar = NewRegistrar(config)
+				registrar.AddHealthCheckHandler(healthy)
+				registrar.RegisterRoutes()
+			}()
+
+			var receivedMessage string
+
+			Eventually(unregistered, 5).Should(Receive(&receivedMessage))
+			Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+
+			Eventually(registered, 5).Should(Receive(&receivedMessage))
+			Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+		})
+	})
 })
+
 
 func verifySignalTriggersUnregister(signal os.Signal){
 	unregistered := make(chan string)
@@ -125,7 +175,7 @@ func verifySignalTriggersUnregister(signal os.Signal){
 func subscribeToRegisterEvents(callback func(msg *yagnats.Message)) (registerChannel chan string) {
 	registerChannel = make(chan string)
 
-	fmt.Println("Subscribing to register...")
+	fmt.Println("Subscribing to register event...")
 	go client.Subscribe("router.register", callback)
 
 	return
@@ -134,7 +184,7 @@ func subscribeToRegisterEvents(callback func(msg *yagnats.Message)) (registerCha
 func subscribeToUnregisterEvents(callback func(msg *yagnats.Message)) (unregisterChannel chan bool) {
 	unregisterChannel = make(chan bool)
 
-	fmt.Println("Subscribing to unregister...")
+	fmt.Println("Subscribing to unregister event...")
 	go client.Subscribe("router.unregister", callback)
 
 	return
