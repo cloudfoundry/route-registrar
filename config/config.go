@@ -11,11 +11,16 @@ type MessageBusServer struct {
 	Password    string
 }
 
+type HealthCheckerConf struct {
+	Name		string		"name"
+}
+
 type Config struct {
 	MessageBusServer	MessageBusServer	"message_bus_server"
 	ExternalHost		string		"external_host"
 	ExternalIp			string		"external_ip"
 	Port				int
+	HealthChecker		*HealthCheckerConf "health_checker"
 }
 
 func Initialize(configYAML []byte, c *Config) error {

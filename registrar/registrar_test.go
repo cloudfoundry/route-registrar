@@ -19,8 +19,8 @@ var client *yagnats.Client
 type FakeHealthChecker struct {
 	status bool
 }
-func (handler *FakeHealthChecker) Check() (bool, bool) {
-	return handler.status, !handler.status
+func (handler *FakeHealthChecker) Check() bool {
+	return handler.status
 }
 func NewFakeHealthChecker() *FakeHealthChecker{
 	return &FakeHealthChecker{
@@ -40,6 +40,7 @@ var _ = Describe("Src/Main/RouteRegister", func() {
 		"riakcs.vcap.me",
 		"127.0.0.1",
 		8080,
+		nil,
 	}
 
 	BeforeEach(func(){
@@ -100,21 +101,22 @@ var _ = Describe("Src/Main/RouteRegister", func() {
 	Context("When the registrar has a healthchecker", func() {
 		It("Emits a router.unregister message when registrar's health check fails, and emits a router.register message when registrar's health check back to normal", func(){
 			healthy := NewFakeHealthChecker()
-			healthy.status = false
+			healthy.status = true
 
 			unregistered := make(chan string)
 			registered := make(chan string)
 			var registrar *Registrar
 
 			// Listen for a router.unregister event, then set health status to true, then listen for a router.register event
-			subscribeToUnregisterEvents(func(msg *yagnats.Message) {
-				fmt.Println("GOT UNREGISTER MESSAGE: ", string(msg.Payload))
-				unregistered <- string(msg.Payload)
+			subscribeToRegisterEvents(func(msg *yagnats.Message) {
+				fmt.Println("GOT REGISTER MESSAGE: ", string(msg.Payload))
+				registered <- string(msg.Payload)
 
-				healthy.status = true
-				subscribeToRegisterEvents(func(msg *yagnats.Message) {
-					fmt.Println("GOT REGISTER MESSAGE: ", string(msg.Payload))
-					registered <- string(msg.Payload)
+				healthy.status = false
+
+				subscribeToUnregisterEvents(func(msg *yagnats.Message) {
+					fmt.Println("GOT UNREGISTER MESSAGE: ", string(msg.Payload))
+					unregistered <- string(msg.Payload)
 				})
 			})
 
@@ -126,15 +128,16 @@ var _ = Describe("Src/Main/RouteRegister", func() {
 
 			var receivedMessage string
 
-			Eventually(unregistered, 5).Should(Receive(&receivedMessage))
-			Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+
 
 			Eventually(registered, 5).Should(Receive(&receivedMessage))
+			Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+
+			Eventually(unregistered, 5).Should(Receive(&receivedMessage))
 			Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
 		})
 	})
 })
-
 
 func verifySignalTriggersUnregister(signal os.Signal){
 	unregistered := make(chan string)

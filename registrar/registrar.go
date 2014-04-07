@@ -11,19 +11,16 @@ import (
 	"github.com/cloudfoundry/yagnats"
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
+	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 )
-type HealthCheckerHandler struct {
 
-}
 
-type HealthChecker interface {
-	Check() (bool, bool)
-}
 
 type Registrar struct {
 	Config config.Config
 	SignalChannel chan os.Signal
 	HealthChecker HealthChecker
+	previousHealthStatus bool
 }
 
 
@@ -32,6 +29,7 @@ func NewRegistrar(clientConfig config.Config) *Registrar {
 	registrar := new(Registrar)
 	registrar.Config = clientConfig
 	registrar.SignalChannel = make(chan os.Signal, 1)
+	registrar.previousHealthStatus = false
 	return registrar
 }
 
@@ -78,8 +76,6 @@ func(registrar *Registrar) RegisterRoutes() {
 			return
 		}
 	}
-
-
 }
 
 func callbackPeriodically(duration time.Duration, callback callbackFunction, done chan bool) {
@@ -95,14 +91,15 @@ func callbackPeriodically(duration time.Duration, callback callbackFunction, don
 }
 
 func (registrar *Registrar) updateRegistrationBasedOnHealthCheck(client *gibson.CFRouterClient) {
-	current, previous := registrar.HealthChecker.Check()
-	if( (!current) && previous ){
+	current := registrar.HealthChecker.Check()
+	if( (!current) && registrar.previousHealthStatus ){
 		fmt.Println("Health check status changed to unavailabile; unregistering the route")
 		client.Unregister(registrar.Config.Port, registrar.Config.ExternalHost)
-	} else if( current && (!previous) ) {
+	} else if( current && (!registrar.previousHealthStatus) ) {
 		fmt.Println("Health check status changed to availabile; registering the route")
 		client.Register(registrar.Config.Port, registrar.Config.ExternalHost)
 	}
+	registrar.previousHealthStatus = current
 }
 
 func(registrar *Registrar) registerSignalHandler(done chan bool, client *gibson.CFRouterClient) {

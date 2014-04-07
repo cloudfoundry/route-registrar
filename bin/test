@@ -13,3 +13,4 @@ go get github.com/apcera/gnatsd
 godep restore
 
 go test -v ./registrar
+go test -v ./healthchecker
