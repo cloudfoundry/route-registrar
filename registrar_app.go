@@ -13,7 +13,9 @@ func main() {
 	registrar := NewRegistrar(config)
 	//add health check handler
 	checker := InitHealthChecker(config)
-	registrar.AddHealthCheckHandler(checker)
+	if (checker !=nil) {
+		registrar.AddHealthCheckHandler(checker)
+	}
 	registrar.RegisterRoutes()
 	os.Exit(1)
 }

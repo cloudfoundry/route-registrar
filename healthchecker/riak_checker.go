@@ -34,7 +34,6 @@ func (checker *RiakHealthChecker) Check() bool {
 func checkPIDExist(pidFileName string) bool {
 	_, err := os.Stat(pidFileName)
 	if err == nil {
-		fmt.Printf("file exists; processing...")
 		return true
 	} else {
 		fmt.Println("Not Found PID file", err)
@@ -62,12 +61,22 @@ func (checker *RiakHealthChecker)nodeExistsAndIsValid(nodeIp string) (result boo
 	nodeValidityCheckerProgram := "./check_node_validity.sh"
 
 	cmd := exec.Command(nodeValidityCheckerProgram, checker.riakAdminProgram, nodeIp)
-	out, err := cmd.Output()
-
+	cmd.Env = os.Environ()
+//	for _, v := range cmd.Env {
+//		println("Env Variable:", v)
+//	}
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		// MAYBE PANIC HERE??
-		fmt.Println("err", err)
+		fmt.Println(fmt.Sprint(err) + ": " + string(out))
+		return false
 	}
+
+//	out, err := cmd.Output()
+//
+//	if err != nil {
+//		// MAYBE PANIC HERE??
+//		fmt.Println("err", err)
+//	}
 
 	matchesOne := regexp.MustCompile(`1`)
 	return matchesOne.MatchString(string(out[:]))
