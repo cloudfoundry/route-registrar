@@ -15,16 +15,19 @@ type RiakHealthChecker struct {
 
 func (checker *RiakHealthChecker) Check() bool {
 	pidFileExists := checkPIDExist(checker.pidFileName)
-	nodeExistsAndIsValid := checker.nodeExistsAndIsValid(checker.nodeIpAddress)
+	checker.status = pidFileExists
 
-	if(!pidFileExists) {
+	if(pidFileExists) {
+		nodeExistsAndIsValid := checker.nodeExistsAndIsValid(checker.nodeIpAddress)
+		checker.status = checker.status && nodeExistsAndIsValid
+
+		if(!nodeExistsAndIsValid) {
+			LogWithTimestamp("RiakHealthChecker: Node is not a valid member of the cluster\n")
+		}
+	} else {
 		LogWithTimestamp("RiakHealthChecker: pidFile does not exist: %s\n", checker.pidFileName)
 	}
-	if(!nodeExistsAndIsValid) {
-		LogWithTimestamp("RiakHealthChecker: Node is not a valid member of the cluster\n")
-	}
 
-	checker.status = pidFileExists && nodeExistsAndIsValid
 	return checker.status
 }
 
