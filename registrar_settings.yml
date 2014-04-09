@@ -7,4 +7,4 @@ external_host: riakcs.vcap.me
 external_ip: 127.0.0.1
 port: 8080
 health_checker:
-  name: riak-cs
+  name: riak-cs-cluster
