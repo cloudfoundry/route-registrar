@@ -1,9 +1,9 @@
 package healthchecker
 
 import (
-	"fmt"
 	"regexp"
 	"os/exec"
+	. "github.com/cloudfoundry-incubator/route-registrar/logger"
 )
 
 type RiakHealthChecker struct {
@@ -14,7 +14,17 @@ type RiakHealthChecker struct {
 }
 
 func (checker *RiakHealthChecker) Check() bool {
-	checker.status = checkPIDExist(checker.pidFileName) && checker.nodeExistsAndIsValid(checker.nodeIpAddress)
+	pidFileExists := checkPIDExist(checker.pidFileName)
+	nodeExistsAndIsValid := checker.nodeExistsAndIsValid(checker.nodeIpAddress)
+
+	if(!pidFileExists) {
+		LogWithTimestamp("RiakHealthChecker: pidFile does not exist: %s\n", checker.pidFileName)
+	}
+	if(!nodeExistsAndIsValid) {
+		LogWithTimestamp("RiakHealthChecker: Node is not a valid member of the cluster\n")
+	}
+
+	checker.status = pidFileExists && nodeExistsAndIsValid
 	return checker.status
 }
 
@@ -34,7 +44,7 @@ func (checker *RiakHealthChecker)nodeExistsAndIsValid(nodeIp string) (result boo
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("Error executing ", nodeValidityCheckerProgram, " : ", err)
+		LogWithTimestamp("RiakHealthChecker: Error executing %s : %s\n", nodeValidityCheckerProgram, err)
 		return false
 	}
 

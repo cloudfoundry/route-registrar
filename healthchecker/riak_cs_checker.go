@@ -1,6 +1,7 @@
 package healthchecker
 
 import (
+	. "github.com/cloudfoundry-incubator/route-registrar/logger"
 )
 
 type RiakCSHealthChecker struct {
@@ -9,7 +10,13 @@ type RiakCSHealthChecker struct {
 }
 
 func (checker *RiakCSHealthChecker) Check() bool {
-	checker.status = checkPIDExist(checker.pidFileName)
+	pidFileExists := checkPIDExist(checker.pidFileName)
+
+	if(!pidFileExists) {
+		LogWithTimestamp("RiakCSHealthChecker: pidFile does not exist: %s\n", checker.pidFileName)
+	}
+
+	checker.status = pidFileExists
 	return checker.status
 }
 
