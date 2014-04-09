@@ -1,7 +1,6 @@
 package healthchecker
 
 import (
-
 )
 
 type RiakCSHealthChecker struct {

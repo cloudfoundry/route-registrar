@@ -2,7 +2,6 @@ package healthchecker
 
 import (
 	"os"
-	"fmt"
 	. "github.com/cloudfoundry-incubator/route-registrar/config"
 )
 
@@ -31,11 +30,5 @@ func InitHealthChecker(clientConfig Config) *CompositeChecker{
 
 func checkPIDExist(pidFileName string) bool {
 	_, err := os.Stat(pidFileName)
-	if err == nil {
-		return true
-	} else {
-		fmt.Println("PID file not found : ", pidFileName)
-		fmt.Println("Error : ", err)
-		return false
-	}
+	return nil == err
 }

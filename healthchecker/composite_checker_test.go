@@ -6,19 +6,22 @@ import (
 
 	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 )
+
 type FakeHealthChecker struct {
 	status bool
 }
+
 func (handler *FakeHealthChecker) Check() bool {
 	return handler.status
 }
+
 func NewFakeHealthChecker() *FakeHealthChecker{
 	return &FakeHealthChecker{
 		status: false,
 	}
 }
-var _ = Describe("Check", func() {
 
+var _ = Describe("Check", func() {
 	It ("returns true when all checks return true", func (){
 		checker1 := NewFakeHealthChecker()
 		checker1.status = true
@@ -39,5 +42,4 @@ var _ = Describe("Check", func() {
 		compositeChecker := NewCompositeChecker(checkerArray)
 		Expect(compositeChecker.Check()).To(Equal(false))
 	})
-
 })

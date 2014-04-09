@@ -14,16 +14,12 @@ import (
 	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 )
 
-
-
 type Registrar struct {
 	Config config.Config
 	SignalChannel chan os.Signal
 	HealthChecker HealthChecker
 	previousHealthStatus bool
 }
-
-
 
 func NewRegistrar(clientConfig config.Config) *Registrar {
 	registrar := new(Registrar)
@@ -39,8 +35,16 @@ func(registrar *Registrar) AddHealthCheckHandler(handler HealthChecker){
 
 type callbackFunction func()
 
-func(registrar *Registrar) RegisterRoutes() {
+func logWithTimestamp(format string, args ...interface{}) {
+	fmt.Printf("[%s] - ", time.Now().Local())
+	if (nil == args) {
+		fmt.Printf(format)
+	} else {
+		fmt.Printf(format, args...)
+	}
+}
 
+func(registrar *Registrar) RegisterRoutes() {
 	messageBus := yagnats.NewClient()
 	connectionInfo := yagnats.ConnectionInfo{
 		registrar.Config.MessageBusServer.Host,
@@ -51,10 +55,11 @@ func(registrar *Registrar) RegisterRoutes() {
 	err := messageBus.Connect(&connectionInfo)
 
 	if err != nil {
-		fmt.Println("Error connecting: ", err)
+		logWithTimestamp("Error connecting to NATS: %v\n", err)
 		panic("Failed to connect to NATS bus.")
 	}
-	fmt.Printf("Connected to NATS at %+v\n", registrar.Config.MessageBusServer)
+
+	logWithTimestamp("Connected to NATS server %s, as user %s\n", registrar.Config.MessageBusServer.Host, registrar.Config.MessageBusServer.User)
 
 	client := gibson.NewCFRouterClient(registrar.Config.ExternalIp, messageBus)
 
@@ -93,10 +98,10 @@ func callbackPeriodically(duration time.Duration, callback callbackFunction, don
 func (registrar *Registrar) updateRegistrationBasedOnHealthCheck(client *gibson.CFRouterClient) {
 	current := registrar.HealthChecker.Check()
 	if( (!current) && registrar.previousHealthStatus ){
-		fmt.Println("Health check status changed to unavailabile; unregistering the route")
+		logWithTimestamp("Health check status changed to unavailabile; unregistering the route\n")
 		client.Unregister(registrar.Config.Port, registrar.Config.ExternalHost)
 	} else if( current && (!registrar.previousHealthStatus) ) {
-		fmt.Println("Health check status changed to availabile; registering the route")
+		logWithTimestamp("Health check status changed to availabile; registering the route\n")
 		client.Register(registrar.Config.Port, registrar.Config.ExternalHost)
 	}
 	registrar.previousHealthStatus = current
@@ -106,7 +111,7 @@ func(registrar *Registrar) registerSignalHandler(done chan bool, client *gibson.
 	go func() {
 		select {
 		case <-registrar.SignalChannel:
-			fmt.Println("recieved signal")
+			logWithTimestamp("Received SIGTERM or SIGINT; unregistering the route\n")
 			client.Unregister(registrar.Config.Port, registrar.Config.ExternalHost)
 			done <- true
 		}

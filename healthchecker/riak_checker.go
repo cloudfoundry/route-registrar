@@ -18,8 +18,6 @@ func (checker *RiakHealthChecker) Check() bool {
 	return checker.status
 }
 
-
-
 func NewRiakHealthChecker(pidFileName string, riakAdminProgram string, nodeIpAddress string) *RiakHealthChecker{
 	return &RiakHealthChecker{
 		status: false,
