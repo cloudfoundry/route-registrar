@@ -13,7 +13,7 @@ import (
 )
 
 var config Config
-var client *yagnats.Client
+var testSpyClient *yagnats.Client
 
 type FakeHealthChecker struct {
 	status bool
@@ -28,14 +28,14 @@ func NewFakeHealthChecker() *FakeHealthChecker{
 }
 
 var _ = Describe("Registrar.RegisterRoutes", func() {
-	messageBusServer := MessageBusServer{
+	messageBusServer := MessageBusServer {
 		"127.0.0.1:4222",
 		"nats",
 		"nats",
 	}
 
 	config = Config{
-		messageBusServer,
+		[]MessageBusServer{messageBusServer, messageBusServer}, // doesn't matter if these are the same, just want to send a slice
 		"riakcs.vcap.me",
 		"127.0.0.1",
 		8080,
@@ -43,19 +43,19 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	}
 
 	BeforeEach(func(){
-		client = yagnats.NewClient()
+		testSpyClient = yagnats.NewClient()
 		connectionInfo := yagnats.ConnectionInfo{
-			config.MessageBusServer.Host,
-			config.MessageBusServer.User,
-			config.MessageBusServer.Password,
+			messageBusServer.Host,
+			messageBusServer.User,
+			messageBusServer.Password,
 		}
 
-		err := client.Connect(&connectionInfo)
+		err := testSpyClient.Connect(&connectionInfo)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func(){
-		client.Disconnect()
+		testSpyClient.Disconnect()
 	})
 
 	It("Sends a router.register message and does not send a router.unregister message", func() {
@@ -165,14 +165,14 @@ func verifySignalTriggersUnregister(signal os.Signal){
 
 func subscribeToRegisterEvents(callback func(msg *yagnats.Message)) (registerChannel chan string) {
 	registerChannel = make(chan string)
-	go client.Subscribe("router.register", callback)
+	go testSpyClient.Subscribe("router.register", callback)
 
 	return
 }
 
 func subscribeToUnregisterEvents(callback func(msg *yagnats.Message)) (unregisterChannel chan bool) {
 	unregisterChannel = make(chan bool)
-	go client.Subscribe("router.unregister", callback)
+	go testSpyClient.Subscribe("router.unregister", callback)
 
 	return
 }

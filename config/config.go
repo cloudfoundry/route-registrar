@@ -16,7 +16,7 @@ type HealthCheckerConf struct {
 }
 
 type Config struct {
-	MessageBusServer	MessageBusServer	"message_bus_server"
+	MessageBusServers	[]MessageBusServer	"message_bus_servers"
 	ExternalHost		string		"external_host"
 	ExternalIp			string		"external_ip"
 	Port				int

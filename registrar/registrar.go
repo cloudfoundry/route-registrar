@@ -36,22 +36,7 @@ func(registrar *Registrar) AddHealthCheckHandler(handler HealthChecker){
 type callbackFunction func()
 
 func(registrar *Registrar) RegisterRoutes() {
-	messageBus := yagnats.NewClient()
-	connectionInfo := yagnats.ConnectionInfo{
-		registrar.Config.MessageBusServer.Host,
-		registrar.Config.MessageBusServer.User,
-		registrar.Config.MessageBusServer.Password,
-	}
-
-	err := messageBus.Connect(&connectionInfo)
-
-	if err != nil {
-		LogWithTimestamp("Error connecting to NATS: %v\n", err)
-		panic("Failed to connect to NATS bus.")
-	}
-
-	LogWithTimestamp("Connected to NATS server %s, as user %s\n", registrar.Config.MessageBusServer.Host, registrar.Config.MessageBusServer.User)
-
+	messageBus := buildMessageBus(registrar)
 	client := gibson.NewCFRouterClient(registrar.Config.ExternalIp, messageBus)
 
 	// set up periodic registration
@@ -72,6 +57,34 @@ func(registrar *Registrar) RegisterRoutes() {
 			return
 		}
 	}
+}
+
+func buildMessageBus(registrar *Registrar) (messageBus yagnats.NATSClient) {
+
+	messageBus = yagnats.NewClient()
+	natsServers := []yagnats.ConnectionProvider{}
+
+	for _, server := range registrar.Config.MessageBusServers {
+		LogWithTimestamp("Adding NATS server %s, for user %s.", server.Host, server.User)
+		natsServers = append(natsServers, &yagnats.ConnectionInfo{
+				server.Host,
+				server.User,
+				server.Password,
+			})
+	}
+
+	natsInfo := &yagnats.ConnectionCluster{natsServers}
+
+	err := messageBus.Connect(natsInfo)
+
+	if err != nil {
+		LogWithTimestamp("Error connecting to NATS: %v\n", err)
+		panic("Failed to connect to NATS bus.")
+	}
+
+	LogWithTimestamp("Successfully connected to NATS.")
+
+	return
 }
 
 func callbackPeriodically(duration time.Duration, callback callbackFunction, done chan bool) {
