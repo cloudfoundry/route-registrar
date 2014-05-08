@@ -16,7 +16,7 @@ func TestRoute_register(t *testing.T) {
 	fmt.Println("starting gnatsd...")
 	natsCmd := StartNats(4222)
 
-	RunSpecs(t, "Route_register Suite")
+	RunSpecs(t, "Registrar Suite")
 
 	StopCmd(natsCmd)
 }

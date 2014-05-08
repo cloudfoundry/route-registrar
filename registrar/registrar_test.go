@@ -34,12 +34,17 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		"nats",
 	}
 
+	healthCheckerConfig := HealthCheckerConf {
+		"a_useful_health_checker",
+		1,
+	}
+
 	config = Config{
 		[]MessageBusServer{messageBusServer, messageBusServer}, // doesn't matter if these are the same, just want to send a slice
 		"riakcs.vcap.me",
 		"127.0.0.1",
 		8080,
-		nil,
+		&healthCheckerConfig,
 	}
 
 	BeforeEach(func(){
@@ -120,11 +125,12 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			}()
 
 			var receivedMessage string
+			testTimeout := config.HealthChecker.Interval * 3
 
-			Eventually(registered, 5).Should(Receive(&receivedMessage))
+			Eventually(registered, testTimeout).Should(Receive(&receivedMessage))
 			Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
 
-			Eventually(unregistered, 5).Should(Receive(&receivedMessage))
+			Eventually(unregistered, testTimeout).Should(Receive(&receivedMessage))
 			Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
 		})
 	})

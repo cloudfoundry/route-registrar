@@ -46,7 +46,8 @@ func(registrar *Registrar) RegisterRoutes() {
 	registrar.registerSignalHandler(done, client)
 
 	if(registrar.HealthChecker != nil) {
-		callbackPeriodically(1 * time.Second,
+		callbackInterval := time.Duration(registrar.Config.HealthChecker.Interval) * time.Second
+		callbackPeriodically(callbackInterval,
 			func() { registrar.updateRegistrationBasedOnHealthCheck(client) },
 			done)
 	} else {

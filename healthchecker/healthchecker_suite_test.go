@@ -1,12 +1,10 @@
 package healthchecker_test
 
 import (
-	"testing"
+"testing"
 
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
+. "github.com/onsi/ginkgo"
+. "github.com/onsi/gomega"
 )
 
 func TestRoute_register(t *testing.T) {
