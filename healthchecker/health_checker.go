@@ -1,17 +1,17 @@
 package healthchecker
 
 import (
-	"os"
 	. "github.com/cloudfoundry-incubator/route-registrar/config"
+	"os"
 )
 
 type HealthChecker interface {
 	Check() bool
 }
 
-func InitHealthChecker(clientConfig Config) *CompositeChecker{
-	if(clientConfig.HealthChecker != nil){
-		if(clientConfig.HealthChecker.Name == "riak-cs-cluster") {
+func InitHealthChecker(clientConfig Config) *CompositeChecker {
+	if clientConfig.HealthChecker != nil {
+		if clientConfig.HealthChecker.Name == "riak-cs-cluster" {
 			//TODO: these should be passed in via registrar_settings.yml
 			riak_pidfile := "/var/vcap/sys/run/riak/riak.pid"
 			riak_admin_program := "/var/vcap/packages/riak/rel/bin/riak-admin"

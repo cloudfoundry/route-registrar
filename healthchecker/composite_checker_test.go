@@ -15,14 +15,14 @@ func (handler *FakeHealthChecker) Check() bool {
 	return handler.status
 }
 
-func NewFakeHealthChecker() *FakeHealthChecker{
+func NewFakeHealthChecker() *FakeHealthChecker {
 	return &FakeHealthChecker{
 		status: false,
 	}
 }
 
 var _ = Describe("Check", func() {
-	It ("returns true when all checks return true", func (){
+	It("returns true when all checks return true", func() {
 		checker1 := NewFakeHealthChecker()
 		checker1.status = true
 		checker2 := NewFakeHealthChecker()
@@ -33,7 +33,7 @@ var _ = Describe("Check", func() {
 		Expect(compositeChecker.Check()).To(Equal(true))
 	})
 
-	It ("returns false if any checks return false", func (){
+	It("returns false if any checks return false", func() {
 		checker1 := NewFakeHealthChecker()
 		checker1.status = true
 		checker2 := NewFakeHealthChecker()

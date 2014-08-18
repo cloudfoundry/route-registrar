@@ -1,8 +1,8 @@
 package registrar_test
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

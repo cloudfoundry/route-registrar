@@ -10,7 +10,7 @@ import (
 	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 )
 
-var _ = 	Describe("RiakHealthChecker", func() {
+var _ = Describe("RiakHealthChecker", func() {
 	Describe("Check", func() {
 		var pidFilename string
 		var riakAdminProgram string
@@ -21,7 +21,7 @@ var _ = 	Describe("RiakHealthChecker", func() {
 			riakAdminProgram = strings.Join([]string{path, "/../test_helpers/riak-admin"}, "")
 		})
 
-		It("returns true when the PID file exists and the node is a member of the cluster", func () {
+		It("returns true when the PID file exists and the node is a member of the cluster", func() {
 			riakHealthChecker := NewRiakHealthChecker(pidFilename, riakAdminProgram, "1.2.3.4")
 
 			Expect(riakHealthChecker.Check()).To(BeTrue())

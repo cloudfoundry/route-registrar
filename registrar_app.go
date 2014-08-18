@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	. "github.com/cloudfoundry-incubator/route-registrar/registrar"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
+	. "github.com/cloudfoundry-incubator/route-registrar/registrar"
 )
 
 func main() {
@@ -13,7 +13,7 @@ func main() {
 	registrar := NewRegistrar(config)
 	//add health check handler
 	checker := InitHealthChecker(config)
-	if (checker !=nil) {
+	if checker != nil {
 		registrar.AddHealthCheckHandler(checker)
 	}
 	registrar.RegisterRoutes()

@@ -1,27 +1,27 @@
 package config
 
 import (
-	"io/ioutil"
 	"gopkg.in/v1/yaml"
+	"io/ioutil"
 )
 
 type MessageBusServer struct {
-	Host		string
-	User		string
-	Password    string
+	Host     string
+	User     string
+	Password string
 }
 
 type HealthCheckerConf struct {
-	Name		string		"name"
-	Interval		uint		"interval_in_seconds"
+	Name     string "name"
+	Interval uint   "interval_in_seconds"
 }
 
 type Config struct {
-	MessageBusServers	[]MessageBusServer	"message_bus_servers"
-	ExternalHost		string		"external_host"
-	ExternalIp			string		"external_ip"
-	Port				int
-	HealthChecker		*HealthCheckerConf "health_checker"
+	MessageBusServers []MessageBusServer "message_bus_servers"
+	ExternalHost      string             "external_host"
+	ExternalIp        string             "external_ip"
+	Port              int
+	HealthChecker     *HealthCheckerConf "health_checker"
 }
 
 func Initialize(configYAML []byte, c *Config) error {

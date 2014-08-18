@@ -15,9 +15,9 @@ import (
 )
 
 type Registrar struct {
-	Config config.Config
-	SignalChannel chan os.Signal
-	HealthChecker HealthChecker
+	Config               config.Config
+	SignalChannel        chan os.Signal
+	HealthChecker        HealthChecker
 	previousHealthStatus bool
 }
 
@@ -29,13 +29,13 @@ func NewRegistrar(clientConfig config.Config) *Registrar {
 	return registrar
 }
 
-func(registrar *Registrar) AddHealthCheckHandler(handler HealthChecker){
+func (registrar *Registrar) AddHealthCheckHandler(handler HealthChecker) {
 	registrar.HealthChecker = handler
 }
 
 type callbackFunction func()
 
-func(registrar *Registrar) RegisterRoutes() {
+func (registrar *Registrar) RegisterRoutes() {
 	messageBus := buildMessageBus(registrar)
 	client := gibson.NewCFRouterClient(registrar.Config.ExternalIp, messageBus)
 
@@ -45,7 +45,7 @@ func(registrar *Registrar) RegisterRoutes() {
 	done := make(chan bool)
 	registrar.registerSignalHandler(done, client)
 
-	if(registrar.HealthChecker != nil) {
+	if registrar.HealthChecker != nil {
 		callbackInterval := time.Duration(registrar.Config.HealthChecker.Interval) * time.Second
 		callbackPeriodically(callbackInterval,
 			func() { registrar.updateRegistrationBasedOnHealthCheck(client) },
@@ -54,7 +54,7 @@ func(registrar *Registrar) RegisterRoutes() {
 		client.Register(registrar.Config.Port, registrar.Config.ExternalHost)
 
 		select {
-		case <- done:
+		case <-done:
 			return
 		}
 	}
@@ -68,10 +68,10 @@ func buildMessageBus(registrar *Registrar) (messageBus yagnats.NATSClient) {
 	for _, server := range registrar.Config.MessageBusServers {
 		LogWithTimestamp("Adding NATS server %s, for user %s.", server.Host, server.User)
 		natsServers = append(natsServers, &yagnats.ConnectionInfo{
-				server.Host,
-				server.User,
-				server.Password,
-			})
+			server.Host,
+			server.User,
+			server.Password,
+		})
 	}
 
 	natsInfo := &yagnats.ConnectionCluster{natsServers}
@@ -89,12 +89,12 @@ func buildMessageBus(registrar *Registrar) (messageBus yagnats.NATSClient) {
 }
 
 func callbackPeriodically(duration time.Duration, callback callbackFunction, done chan bool) {
-	interval:= time.NewTicker(duration)
+	interval := time.NewTicker(duration)
 	for stop := false; !stop; {
 		select {
-		case <- interval.C:
+		case <-interval.C:
 			callback()
-		case stop = <- done:
+		case stop = <-done:
 			return
 		}
 	}
@@ -102,17 +102,17 @@ func callbackPeriodically(duration time.Duration, callback callbackFunction, don
 
 func (registrar *Registrar) updateRegistrationBasedOnHealthCheck(client *gibson.CFRouterClient) {
 	current := registrar.HealthChecker.Check()
-	if( (!current) && registrar.previousHealthStatus ){
+	if (!current) && registrar.previousHealthStatus {
 		LogWithTimestamp("Health check status changed to unavailabile; unregistering the route\n")
 		client.Unregister(registrar.Config.Port, registrar.Config.ExternalHost)
-	} else if( current && (!registrar.previousHealthStatus) ) {
+	} else if current && (!registrar.previousHealthStatus) {
 		LogWithTimestamp("Health check status changed to availabile; registering the route\n")
 		client.Register(registrar.Config.Port, registrar.Config.ExternalHost)
 	}
 	registrar.previousHealthStatus = current
 }
 
-func(registrar *Registrar) registerSignalHandler(done chan bool, client *gibson.CFRouterClient) {
+func (registrar *Registrar) registerSignalHandler(done chan bool, client *gibson.CFRouterClient) {
 	go func() {
 		select {
 		case <-registrar.SignalChannel:

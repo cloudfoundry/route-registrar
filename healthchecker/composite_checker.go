@@ -1,13 +1,12 @@
 package healthchecker
 
-import (
-)
+import ()
 
 type CompositeChecker struct {
 	healthCheckers []HealthChecker
 }
 
-func NewCompositeChecker(checkers []HealthChecker) *CompositeChecker{
+func NewCompositeChecker(checkers []HealthChecker) *CompositeChecker {
 	return &CompositeChecker{
 		healthCheckers: checkers,
 	}

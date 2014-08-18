@@ -1,12 +1,12 @@
 package test_helpers
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"os/exec"
 	"strconv"
 	"time"
-	"net"
-	"errors"
 )
 
 func StartNats(port int) *exec.Cmd {

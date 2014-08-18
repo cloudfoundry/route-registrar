@@ -5,14 +5,14 @@ import (
 )
 
 type RiakCSHealthChecker struct {
-	status bool
+	status      bool
 	pidFileName string
 }
 
 func (checker *RiakCSHealthChecker) Check() bool {
 	pidFileExists := checkPIDExist(checker.pidFileName)
 
-	if(!pidFileExists) {
+	if !pidFileExists {
 		LogWithTimestamp("RiakCSHealthChecker: pidFile does not exist: %s\n", checker.pidFileName)
 	}
 
@@ -20,9 +20,9 @@ func (checker *RiakCSHealthChecker) Check() bool {
 	return checker.status
 }
 
-func NewRiakCSHealthChecker(pidFileName string) *RiakCSHealthChecker{
+func NewRiakCSHealthChecker(pidFileName string) *RiakCSHealthChecker {
 	return &RiakCSHealthChecker{
-		status: false,
+		status:      false,
 		pidFileName: pidFileName,
 	}
 }

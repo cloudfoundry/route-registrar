@@ -4,9 +4,9 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/cloudfoundry/yagnats"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/cloudfoundry/yagnats"
 
 	. "github.com/cloudfoundry-incubator/route-registrar/config"
 	. "github.com/cloudfoundry-incubator/route-registrar/registrar"
@@ -18,23 +18,24 @@ var testSpyClient *yagnats.Client
 type FakeHealthChecker struct {
 	status bool
 }
+
 func (handler *FakeHealthChecker) Check() bool {
 	return handler.status
 }
-func NewFakeHealthChecker() *FakeHealthChecker{
+func NewFakeHealthChecker() *FakeHealthChecker {
 	return &FakeHealthChecker{
 		status: false,
 	}
 }
 
 var _ = Describe("Registrar.RegisterRoutes", func() {
-	messageBusServer := MessageBusServer {
+	messageBusServer := MessageBusServer{
 		"127.0.0.1:4222",
 		"nats",
 		"nats",
 	}
 
-	healthCheckerConfig := HealthCheckerConf {
+	healthCheckerConfig := HealthCheckerConf{
 		"a_useful_health_checker",
 		1,
 	}
@@ -47,7 +48,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		&healthCheckerConfig,
 	}
 
-	BeforeEach(func(){
+	BeforeEach(func() {
 		testSpyClient = yagnats.NewClient()
 		connectionInfo := yagnats.ConnectionInfo{
 			messageBusServer.Host,
@@ -59,24 +60,24 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	AfterEach(func(){
+	AfterEach(func() {
 		testSpyClient.Disconnect()
 	})
 
 	It("Sends a router.register message and does not send a router.unregister message", func() {
 		// Detect when a router.register message gets sent
-		var registered chan(string)
+		var registered chan (string)
 		registered = subscribeToRegisterEvents(func(msg *yagnats.Message) {
 			registered <- string(msg.Payload)
 		})
 
 		// Detect when an unregister message gets sent
-		var unregistered chan(bool)
+		var unregistered chan (bool)
 		unregistered = subscribeToUnregisterEvents(func(msg *yagnats.Message) {
 			unregistered <- true
 		})
 
-		go func () {
+		go func() {
 			registrar := NewRegistrar(config)
 			registrar.RegisterRoutes()
 		}()
@@ -90,16 +91,16 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		Consistently(unregistered, 2).ShouldNot(Receive())
 	})
 
-	It("Emits a router.unregister message when SIGINT is sent to the registrar's signal channel", func () {
+	It("Emits a router.unregister message when SIGINT is sent to the registrar's signal channel", func() {
 		verifySignalTriggersUnregister(syscall.SIGINT)
 	})
 
-	It("Emits a router.unregister message when SIGTERM is sent to the registrar's signal channel", func () {
+	It("Emits a router.unregister message when SIGTERM is sent to the registrar's signal channel", func() {
 		verifySignalTriggersUnregister(syscall.SIGTERM)
 	})
 
 	Context("When the registrar has a healthchecker", func() {
-		It("Emits a router.unregister message when registrar's health check fails, and emits a router.register message when registrar's health check back to normal", func(){
+		It("Emits a router.unregister message when registrar's health check fails, and emits a router.register message when registrar's health check back to normal", func() {
 			healthy := NewFakeHealthChecker()
 			healthy.status = true
 
@@ -118,7 +119,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				})
 			})
 
-			go func () {
+			go func() {
 				registrar = NewRegistrar(config)
 				registrar.AddHealthCheckHandler(healthy)
 				registrar.RegisterRoutes()
@@ -136,7 +137,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	})
 })
 
-func verifySignalTriggersUnregister(signal os.Signal){
+func verifySignalTriggersUnregister(signal os.Signal) {
 	unregistered := make(chan string)
 	returned := make(chan bool)
 
@@ -152,7 +153,7 @@ func verifySignalTriggersUnregister(signal os.Signal){
 		unregistered <- string(msg.Payload)
 	})
 
-	go func () {
+	go func() {
 		registrar = NewRegistrar(config)
 		registrar.RegisterRoutes()
 

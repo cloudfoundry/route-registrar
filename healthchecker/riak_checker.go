@@ -1,27 +1,27 @@
 package healthchecker
 
 import (
-	"regexp"
-	"os/exec"
 	. "github.com/cloudfoundry-incubator/route-registrar/logger"
+	"os/exec"
+	"regexp"
 )
 
 type RiakHealthChecker struct {
-	status bool
-	pidFileName string
+	status           bool
+	pidFileName      string
 	riakAdminProgram string
-	nodeIpAddress string
+	nodeIpAddress    string
 }
 
 func (checker *RiakHealthChecker) Check() bool {
 	pidFileExists := checkPIDExist(checker.pidFileName)
 	checker.status = pidFileExists
 
-	if(pidFileExists) {
+	if pidFileExists {
 		nodeExistsAndIsValid := checker.nodeExistsAndIsValid(checker.nodeIpAddress)
 		checker.status = checker.status && nodeExistsAndIsValid
 
-		if(!nodeExistsAndIsValid) {
+		if !nodeExistsAndIsValid {
 			LogWithTimestamp("RiakHealthChecker: Node is not a valid member of the cluster\n")
 		}
 	} else {
@@ -31,16 +31,16 @@ func (checker *RiakHealthChecker) Check() bool {
 	return checker.status
 }
 
-func NewRiakHealthChecker(pidFileName string, riakAdminProgram string, nodeIpAddress string) *RiakHealthChecker{
+func NewRiakHealthChecker(pidFileName string, riakAdminProgram string, nodeIpAddress string) *RiakHealthChecker {
 	return &RiakHealthChecker{
-		status: false,
-		pidFileName: pidFileName,
+		status:           false,
+		pidFileName:      pidFileName,
 		riakAdminProgram: riakAdminProgram,
-		nodeIpAddress: nodeIpAddress,
+		nodeIpAddress:    nodeIpAddress,
 	}
 }
 
-func (checker *RiakHealthChecker)nodeExistsAndIsValid(nodeIp string) (result bool) {
+func (checker *RiakHealthChecker) nodeExistsAndIsValid(nodeIp string) (result bool) {
 	nodeValidityCheckerProgram := "./check_node_validity.sh"
 
 	cmd := exec.Command(nodeValidityCheckerProgram, checker.riakAdminProgram, nodeIp)
