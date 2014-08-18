@@ -71,6 +71,7 @@ func buildMessageBus(registrar *Registrar) (messageBus yagnats.NATSClient) {
 			server.Host,
 			server.User,
 			server.Password,
+			nil,
 		})
 	}
 
