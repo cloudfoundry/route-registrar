@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/cloudfoundry-incubator/route-registrar",
-	"GoVersion": "go1.2.1",
+	"GoVersion": "go1.3.1",
 	"Deps": [
 		{
 			"ImportPath": "github.com/cloudfoundry/gibson",
