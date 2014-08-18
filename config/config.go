@@ -12,8 +12,8 @@ type MessageBusServer struct {
 }
 
 type HealthCheckerConf struct {
-	Name     string "name"
-	Interval uint   "interval_in_seconds"
+	Name     string  "name"
+	Interval float64 "interval_in_seconds"
 }
 
 type Config struct {

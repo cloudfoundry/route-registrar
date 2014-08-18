@@ -30,6 +30,6 @@ var _ = Describe("Config", func() {
 		Expect(cfg.MessageBusServers[0].Password).To(Equal("nats"))
 
 		Expect(cfg.HealthChecker.Name).To(Equal("riak-cs-cluster"))
-		Expect(cfg.HealthChecker.Interval).To(Equal(uint(10)))
+		Expect(cfg.HealthChecker.Interval).To(Equal(float64(10)))
 	})
 })
