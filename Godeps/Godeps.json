@@ -8,7 +8,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/yagnats",
-			"Rev": "16b7601cb56622541d929a0fc3d3042700438f50"
+			"Rev": "07171a8863c377fb14a44dee402dff9e1282bc49"
 		},
 		{
 			"ImportPath": "github.com/nu7hatch/gouuid",

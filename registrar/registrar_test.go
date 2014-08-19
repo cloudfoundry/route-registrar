@@ -54,6 +54,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			messageBusServer.Host,
 			messageBusServer.User,
 			messageBusServer.Password,
+			nil,
 		}
 
 		err := testSpyClient.Connect(&connectionInfo)
