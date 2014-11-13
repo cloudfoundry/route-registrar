@@ -9,7 +9,7 @@ type HealthChecker interface {
 	Check() bool
 }
 
-func InitHealthChecker(clientConfig Config) *CompositeChecker {
+func InitHealthChecker(clientConfig Config) HealthChecker {
 	if clientConfig.HealthChecker != nil {
 		if clientConfig.HealthChecker.Name == "riak-cs-cluster" {
 			//TODO: these should be passed in via registrar_settings.yml
@@ -23,6 +23,10 @@ func InitHealthChecker(clientConfig Config) *CompositeChecker {
 
 			checker := NewCompositeChecker(checkers)
 			return checker
+		}
+
+		if clientConfig.HealthChecker.Name == "script" {
+			return NewScriptHealthChecker(clientConfig.HealthChecker.HealthcheckScript)
 		}
 	}
 	return nil

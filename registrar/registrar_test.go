@@ -36,8 +36,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	}
 
 	healthCheckerConfig := HealthCheckerConf{
-		"a_useful_health_checker",
-		1,
+		Name:     "a_useful_health_checker",
+		Interval: 1,
 	}
 
 	config = Config{
