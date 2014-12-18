@@ -25,10 +25,10 @@ type Config struct {
 	HealthChecker     *HealthCheckerConf `yaml:"health_checker"`
 }
 
-func InitConfigFromFile(path string) Config {
+func InitConfigFromFile(path string) (Config, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		panic(err.Error())
+		return Config{}, err
 	}
 
 	config := Config{}
@@ -36,8 +36,8 @@ func InitConfigFromFile(path string) Config {
 	err = decoder.Decode(&config)
 
 	if err != nil {
-		panic(err.Error())
+		return Config{}, err
 	}
 
-	return config
+	return config, nil
 }

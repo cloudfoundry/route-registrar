@@ -18,13 +18,17 @@ var (
 func main() {
 	flag.Parse()
 	if *pidfile != "" {
-		err := ioutil.WriteFile(*pidfile, []byte(strconv.Itoa(os.Getpid())), 0644)
+		pid := strconv.Itoa(os.Getpid())
+		err := ioutil.WriteFile(*pidfile, []byte(pid), 0644)
 		if err != nil {
-			panic(err)
+			log.Fatal("error writing pid %s to file: %s\n", pid, err)
 		}
 	}
 
-	config := config.InitConfigFromFile("registrar_settings.yml")
+	config, err := config.InitConfigFromFile("registrar_settings.yml")
+	if err != nil {
+		log.Fatal("error parsing file: %s\n", err)
+	}
 	registrar := NewRegistrar(config)
 	//add health check handler
 	checker := InitHealthChecker(config)
