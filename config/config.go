@@ -1,8 +1,8 @@
 package config
 
 import (
-	"gopkg.in/v1/yaml"
-	"io/ioutil"
+	"github.com/fraenkel/candiedyaml"
+	"os"
 )
 
 type MessageBusServer struct {
@@ -12,36 +12,32 @@ type MessageBusServer struct {
 }
 
 type HealthCheckerConf struct {
-	Name              string  "name"
-	Interval          float64 "interval_in_seconds"
-	HealthcheckScript string  "healthcheck_script_path"
+	Name              string
+	Interval          float64 `yaml:"interval_in_seconds"`
+	HealthcheckScript string  `yaml:"healthcheck_script_path"`
 }
 
 type Config struct {
-	MessageBusServers []MessageBusServer "message_bus_servers"
-	ExternalHost      string             "external_host"
-	ExternalIp        string             "external_ip"
+	MessageBusServers []MessageBusServer `yaml:"message_bus_servers"`
+	ExternalHost      string             `yaml:"external_host"`
+	ExternalIp        string             `yaml:"external_ip"`
 	Port              int
-	HealthChecker     *HealthCheckerConf "health_checker"
-}
-
-func Initialize(configYAML []byte, c *Config) error {
-	return yaml.Unmarshal(configYAML, c)
+	HealthChecker     *HealthCheckerConf `yaml:"health_checker"`
 }
 
 func InitConfigFromFile(path string) Config {
-	c := new(Config)
-	var e error
-
-	b, e := ioutil.ReadFile(path)
-	if e != nil {
-		panic(e.Error())
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err.Error())
 	}
 
-	e = Initialize(b, c)
-	if e != nil {
-		panic(e.Error())
+	config := Config{}
+	decoder := candiedyaml.NewDecoder(file)
+	err = decoder.Decode(&config)
+
+	if err != nil {
+		panic(err.Error())
 	}
 
-	return *c
+	return config
 }
