@@ -12,6 +12,6 @@ go get github.com/tools/godep
 go get github.com/apcera/gnatsd
 godep restore
 
-go test -v ./registrar
-go test -v ./healthchecker
-go test -v ./config
+go test -race -v ./registrar
+go test -race -v ./healthchecker
+go test -race -v ./config
