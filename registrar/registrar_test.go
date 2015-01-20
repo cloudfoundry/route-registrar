@@ -9,24 +9,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/cloudfoundry-incubator/route-registrar/config"
+	"github.com/cloudfoundry-incubator/route-registrar/healthchecker/fakes"
 	. "github.com/cloudfoundry-incubator/route-registrar/registrar"
 )
 
 var config Config
 var testSpyClient *yagnats.Client
-
-type FakeHealthChecker struct {
-	status bool
-}
-
-func (handler *FakeHealthChecker) Check() bool {
-	return handler.status
-}
-func NewFakeHealthChecker() *FakeHealthChecker {
-	return &FakeHealthChecker{
-		status: false,
-	}
-}
 
 var _ = Describe("Registrar.RegisterRoutes", func() {
 	messageBusServer := MessageBusServer{
@@ -102,8 +90,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 	Context("When the registrar has a healthchecker", func() {
 		It("Emits a router.unregister message when registrar's health check fails, and emits a router.register message when registrar's health check back to normal", func() {
-			healthy := NewFakeHealthChecker()
-			healthy.status = true
+			healthy := fakes.NewFakeHealthChecker()
+			healthy.CheckReturns(true)
 
 			unregistered := make(chan string)
 			registered := make(chan string)
@@ -113,7 +101,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			subscribeToRegisterEvents(func(msg *yagnats.Message) {
 				registered <- string(msg.Payload)
 
-				healthy.status = false
+				healthy.CheckReturns(false)
 
 				subscribeToUnregisterEvents(func(msg *yagnats.Message) {
 					unregistered <- string(msg.Payload)
