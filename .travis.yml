@@ -6,7 +6,10 @@ install:
   - go get -v github.com/onsi/ginkgo/ginkgo
   - PATH=$PATH:$HOME/gopath/bin
   - go get -v -t ./...
-script:  bin/test
+  - go get github.com/tools/godep
+  - go get github.com/apcera/gnatsd
+  - godep restore
+script: ginkgo -r -race -failOnPending -randomizeAllSpecs
 branches:
   only:
   - master
