@@ -9,7 +9,9 @@ install:
   - go get github.com/tools/godep
   - go get github.com/apcera/gnatsd
   - godep restore
-script: ginkgo -r -race -failOnPending -randomizeAllSpecs
+script:
+  - go tool vet -composites=false $(ls -d */ | grep -v Godeps)
+  - ginkgo -r -race -failOnPending -randomizeAllSpecs
 branches:
   only:
   - master
