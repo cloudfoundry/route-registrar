@@ -9,6 +9,10 @@ This uses [yagnats](https://github.com/cloudfoundry/yagnats) for connecting to t
 
 ## Usage
 
+### BOSH release
+
+You can colocate `route-registrar` into any BOSH deployment using https://github.com/cloudfoundry-community/route-registrar-boshrelease BOSH release.
+
 ### Executing tests
 
 To run tests, run `bin/test` from the root of this repository.
