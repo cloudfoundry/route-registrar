@@ -8,11 +8,18 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
+	"github.com/pivotal-golang/lager"
+	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("ScriptHealthChecker", func() {
+	var logger lager.Logger
 	var scriptPath = "/tmp/healthcheck_script.sh"
 	var scriptText string
+
+	BeforeEach(func(){
+		logger = lagertest.NewTestLogger("RiakCSHealthChecker test")
+	})
 
 	AfterEach(func() {
 		os.Remove(scriptPath)
@@ -25,7 +32,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 		})
 
 		It("returns true", func() {
-			scriptHealthChecker := NewScriptHealthChecker(scriptPath)
+			scriptHealthChecker := NewScriptHealthChecker(scriptPath, logger)
 			Expect(scriptHealthChecker.Check()).To(BeTrue())
 		})
 	})
@@ -37,7 +44,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 		})
 
 		It("returns false", func() {
-			scriptHealthChecker := NewScriptHealthChecker(scriptPath)
+			scriptHealthChecker := NewScriptHealthChecker(scriptPath, logger)
 			Expect(scriptHealthChecker.Check()).To(BeFalse())
 		})
 	})

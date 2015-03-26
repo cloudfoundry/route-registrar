@@ -1,12 +1,15 @@
 package healthchecker
 
 import (
-	. "github.com/cloudfoundry-incubator/route-registrar/logger"
+	"fmt"
 	"os/exec"
 	"regexp"
+
+	"github.com/pivotal-golang/lager"
 )
 
 type RiakHealthChecker struct {
+	logger lager.Logger
 	status           bool
 	pidFileName      string
 	riakAdminProgram string
@@ -22,21 +25,22 @@ func (checker *RiakHealthChecker) Check() bool {
 		checker.status = checker.status && nodeExistsAndIsValid
 
 		if !nodeExistsAndIsValid {
-			LogWithTimestamp("RiakHealthChecker: Node is not a valid member of the cluster\n")
+			checker.logger.Info("RiakHealthChecker: Node is not a valid member of the cluster\n")
 		}
 	} else {
-		LogWithTimestamp("RiakHealthChecker: pidFile does not exist: %s\n", checker.pidFileName)
+		checker.logger.Info(fmt.Sprintf("RiakHealthChecker: pidFile does not exist: %s\n", checker.pidFileName))
 	}
 
 	return checker.status
 }
 
-func NewRiakHealthChecker(pidFileName string, riakAdminProgram string, nodeIpAddress string) *RiakHealthChecker {
+func NewRiakHealthChecker(pidFileName string, riakAdminProgram string, nodeIpAddress string, logger lager.Logger) *RiakHealthChecker {
 	return &RiakHealthChecker{
 		status:           false,
 		pidFileName:      pidFileName,
 		riakAdminProgram: riakAdminProgram,
 		nodeIpAddress:    nodeIpAddress,
+		logger: logger,
 	}
 }
 
@@ -47,7 +51,7 @@ func (checker *RiakHealthChecker) nodeExistsAndIsValid(nodeIp string) (result bo
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		LogWithTimestamp("RiakHealthChecker: Error executing %s : %s\n", nodeValidityCheckerProgram, err)
+		checker.logger.Info(fmt.Sprintf("RiakHealthChecker: Error executing %s : %s\n", nodeValidityCheckerProgram, err))
 		return false
 	}
 

@@ -11,12 +11,15 @@ import (
 	. "github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/cloudfoundry-incubator/route-registrar/healthchecker/fakes"
 	. "github.com/cloudfoundry-incubator/route-registrar/registrar"
+	"github.com/pivotal-golang/lager"
+	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var config Config
 var testSpyClient *yagnats.Client
 
 var _ = Describe("Registrar.RegisterRoutes", func() {
+		var logger lager.Logger
 	messageBusServer := MessageBusServer{
 		"127.0.0.1:4222",
 		"nats",
@@ -37,6 +40,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	}
 
 	BeforeEach(func() {
+		logger = lagertest.NewTestLogger("Registrar test")
 		testSpyClient = yagnats.NewClient()
 		connectionInfo := yagnats.ConnectionInfo{
 			messageBusServer.Host,
@@ -67,7 +71,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		})
 
 		go func() {
-			registrar := NewRegistrar(config)
+			registrar := NewRegistrar(config, logger)
 			registrar.RegisterRoutes()
 		}()
 
@@ -81,11 +85,11 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	})
 
 	It("Emits a router.unregister message when SIGINT is sent to the registrar's signal channel", func() {
-		verifySignalTriggersUnregister(syscall.SIGINT)
+		verifySignalTriggersUnregister(syscall.SIGINT, logger)
 	})
 
 	It("Emits a router.unregister message when SIGTERM is sent to the registrar's signal channel", func() {
-		verifySignalTriggersUnregister(syscall.SIGTERM)
+		verifySignalTriggersUnregister(syscall.SIGTERM, logger)
 	})
 
 	Context("When the registrar has a healthchecker", func() {
@@ -109,7 +113,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			})
 
 			go func() {
-				registrar = NewRegistrar(config)
+				registrar = NewRegistrar(config, logger)
 				registrar.AddHealthCheckHandler(healthy)
 				registrar.RegisterRoutes()
 			}()
@@ -126,7 +130,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	})
 })
 
-func verifySignalTriggersUnregister(signal os.Signal) {
+func verifySignalTriggersUnregister(signal os.Signal, logger lager.Logger) {
 	unregistered := make(chan string)
 	returned := make(chan bool)
 
@@ -143,7 +147,7 @@ func verifySignalTriggersUnregister(signal os.Signal) {
 	})
 
 	go func() {
-		registrar = NewRegistrar(config)
+		registrar = NewRegistrar(config, logger)
 		registrar.RegisterRoutes()
 
 		// Set up a channel to wait for RegisterRoutes to return

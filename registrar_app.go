@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 	. "github.com/cloudfoundry-incubator/route-registrar/registrar"
@@ -17,6 +18,13 @@ var (
 )
 
 func main() {
+	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	cf_lager.AddFlags(flags)
+	flags.Parse(os.Args[1:])
+	logger, _ := cf_lager.New("Route Registrar")
+
+	logger.Info("Route Registrar started")
+
 	flag.Parse()
 	if *pidfile != "" {
 		pid := strconv.Itoa(os.Getpid())
@@ -30,9 +38,9 @@ func main() {
 	if err != nil {
 		log.Fatal("error parsing file: %s\n", err)
 	}
-	registrar := NewRegistrar(config)
+	registrar := NewRegistrar(config, logger)
 	//add health check handler
-	checker := InitHealthChecker(config)
+	checker := InitHealthChecker(config, logger)
 	if checker != nil {
 		registrar.AddHealthCheckHandler(checker)
 	}

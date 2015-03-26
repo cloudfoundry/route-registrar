@@ -1,28 +1,31 @@
 package healthchecker
 
 import (
-	"github.com/cloudfoundry-incubator/route-registrar/logger"
 	"os/exec"
 	"regexp"
+	"github.com/pivotal-golang/lager"
+	"fmt"
 )
 
 type ScriptHealthChecker struct {
+	logger lager.Logger
 	scriptPath string
 }
 
-func NewScriptHealthChecker(scriptPath string) *ScriptHealthChecker {
+func NewScriptHealthChecker(scriptPath string, logger lager.Logger) *ScriptHealthChecker {
 	return &ScriptHealthChecker{
 		scriptPath: scriptPath,
+		logger: logger,
 	}
 }
 
 func (checker *ScriptHealthChecker) Check() bool {
 	cmd := exec.Command(checker.scriptPath)
-	logger.LogWithTimestamp("Script Path: %s\n", checker.scriptPath)
+	checker.logger.Info(fmt.Sprintf("Script Path: %s\n", checker.scriptPath))
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		logger.LogWithTimestamp("Error executing %s : %s\n", checker.scriptPath, err)
+		checker.logger.Info(fmt.Sprintf("Error executing %s : %s\n", checker.scriptPath, err))
 		return false
 	}
 
