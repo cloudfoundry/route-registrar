@@ -25,12 +25,12 @@ type Registrar struct {
 }
 
 func NewRegistrar(clientConfig config.Config, logger lager.Logger) *Registrar {
-	registrar := new(Registrar)
-	registrar.Config = clientConfig
-	registrar.SignalChannel = make(chan os.Signal, 1)
-	registrar.previousHealthStatus = false
-	registrar.logger = logger
-	return registrar
+	return &Registrar{
+		Config: clientConfig,
+		logger: logger,
+		SignalChannel: make(chan os.Signal, 1),
+		previousHealthStatus: false,
+	}
 }
 
 func (registrar *Registrar) AddHealthCheckHandler(handler HealthChecker) {
