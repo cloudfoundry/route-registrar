@@ -1,7 +1,6 @@
 package healthchecker
 
 import (
-	"fmt"
 	"os/exec"
 	"regexp"
 
@@ -25,10 +24,16 @@ func (checker *RiakHealthChecker) Check() bool {
 		checker.status = checker.status && nodeExistsAndIsValid
 
 		if !nodeExistsAndIsValid {
-			checker.logger.Info("RiakHealthChecker: Node is not a valid member of the cluster\n")
+			checker.logger.Info(
+				"Riak node is not a valid member of the cluster",
+				lager.Data{"nodeIpAddress": checker.nodeIpAddress},
+			)
 		}
 	} else {
-		checker.logger.Info(fmt.Sprintf("RiakHealthChecker: pidFile does not exist: %s\n", checker.pidFileName))
+		checker.logger.Info(
+			"Riak pidFile does not exist",
+			lager.Data{"pidFile": checker.pidFileName},
+		)
 	}
 
 	return checker.status
@@ -51,7 +56,13 @@ func (checker *RiakHealthChecker) nodeExistsAndIsValid(nodeIp string) (result bo
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		checker.logger.Info(fmt.Sprintf("RiakHealthChecker: Error executing %s : %s\n", nodeValidityCheckerProgram, err))
+		checker.logger.Info(
+			"Error checking node validity",
+			lager.Data{
+				"nodeValidityCheckerProgram": nodeValidityCheckerProgram,
+				"err": err,
+			},
+		)
 		return false
 	}
 

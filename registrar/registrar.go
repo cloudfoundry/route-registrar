@@ -1,7 +1,6 @@
 package registrar
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -70,7 +69,10 @@ func buildMessageBus(registrar *Registrar) (messageBus yagnats.NATSClient) {
 	natsServers := []yagnats.ConnectionProvider{}
 
 	for _, server := range registrar.Config.MessageBusServers {
-		registrar.logger.Info(fmt.Sprintf("Adding NATS server %s, for user %s.", server.Host, server.User))
+		registrar.logger.Info(
+			"Adding NATS server",
+			lager.Data{"server": server},
+		)
 		natsServers = append(natsServers, &yagnats.ConnectionInfo{
 			server.Host,
 			server.User,
@@ -84,7 +86,10 @@ func buildMessageBus(registrar *Registrar) (messageBus yagnats.NATSClient) {
 	err := messageBus.Connect(natsInfo)
 
 	if err != nil {
-		registrar.logger.Info(fmt.Sprintf("Error connecting to NATS: %v\n", err))
+		registrar.logger.Info(
+			"Error connecting to NATS",
+			lager.Data{"error": err.Error()},
+		)
 		panic("Failed to connect to NATS bus.")
 	}
 
@@ -108,10 +113,10 @@ func callbackPeriodically(duration time.Duration, callback callbackFunction, don
 func (registrar *Registrar) updateRegistrationBasedOnHealthCheck(client *gibson.CFRouterClient) {
 	current := registrar.HealthChecker.Check()
 	if (!current) && registrar.previousHealthStatus {
-		registrar.logger.Info("Health check status changed to unavailabile; unregistering the route\n")
+		registrar.logger.Info("Health check status changed to unavailabile; unregistering the route")
 		client.Unregister(registrar.Config.Port, registrar.Config.ExternalHost)
 	} else if current && (!registrar.previousHealthStatus) {
-		registrar.logger.Info("Health check status changed to availabile; registering the route\n")
+		registrar.logger.Info("Health check status changed to availabile; registering the route")
 		client.Register(registrar.Config.Port, registrar.Config.ExternalHost)
 	}
 	registrar.previousHealthStatus = current
@@ -121,7 +126,7 @@ func (registrar *Registrar) registerSignalHandler(done chan bool, client *gibson
 	go func() {
 		select {
 		case <-registrar.SignalChannel:
-			registrar.logger.Info("Received SIGTERM or SIGINT; unregistering the route\n")
+			registrar.logger.Info("Received SIGTERM or SIGINT; unregistering the route")
 			client.Unregister(registrar.Config.Port, registrar.Config.ExternalHost)
 			done <- true
 		}

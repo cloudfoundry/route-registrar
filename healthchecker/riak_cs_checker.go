@@ -1,9 +1,6 @@
 package healthchecker
 
-import (
-	"fmt"
-	"github.com/pivotal-golang/lager"
-)
+import "github.com/pivotal-golang/lager"
 
 type RiakCSHealthChecker struct {
 	status      bool
@@ -15,7 +12,10 @@ func (checker *RiakCSHealthChecker) Check() bool {
 	pidFileExists := checkPIDExist(checker.pidFileName)
 
 	if !pidFileExists {
-		checker.logger.Info(fmt.Sprintf("RiakCSHealthChecker: pidFile does not exist: %s\n", checker.pidFileName))
+		checker.logger.Info(
+			"RiakCS pidFile does not exist",
+			lager.Data{"pidFile": checker.pidFileName},
+		)
 	}
 
 	checker.status = pidFileExists
