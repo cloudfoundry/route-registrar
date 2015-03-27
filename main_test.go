@@ -20,7 +20,7 @@ var _ = Describe("Main", func() {
 
 		Eventually(session.Out).Should(gbytes.Say("Route Registrar"))
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 
 		session.Terminate().Wait()
 		Eventually(session).Should(gexec.Exit(1))
