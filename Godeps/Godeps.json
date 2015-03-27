@@ -17,6 +17,13 @@
 		{
 			"ImportPath": "github.com/nu7hatch/gouuid",
 			"Rev": "179d4d0c4d8d407a32af483c2354df1d2c91e6c3"
+		},
+		{
+			"ImportPath": "github.com/pivotal-golang/lager",
+			"Rev": "09a71f6eb2dcc1c2335e37ceb78a91c6f618d561"
+		},
+		  "ImportPath": "github.com/cloudfoundry-incubator/cf-lager",
+			"Rev": "7178833173e7124dab16158273f7708ed73b81ff"
 		}
 	]
 }
