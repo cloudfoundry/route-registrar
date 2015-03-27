@@ -13,6 +13,7 @@ type RiakHealthChecker struct {
 	pidFileName      string
 	riakAdminProgram string
 	nodeIpAddress    string
+	scriptPath       string
 }
 
 func (checker *RiakHealthChecker) Check() bool {
@@ -39,27 +40,26 @@ func (checker *RiakHealthChecker) Check() bool {
 	return checker.status
 }
 
-func NewRiakHealthChecker(pidFileName string, riakAdminProgram string, nodeIpAddress string, logger lager.Logger) *RiakHealthChecker {
+func NewRiakHealthChecker(pidFileName string, riakAdminProgram string, nodeIpAddress string, logger lager.Logger, scriptPath string) *RiakHealthChecker {
 	return &RiakHealthChecker{
 		status:           false,
 		pidFileName:      pidFileName,
 		riakAdminProgram: riakAdminProgram,
 		nodeIpAddress:    nodeIpAddress,
 		logger:           logger,
+		scriptPath:       scriptPath,
 	}
 }
 
 func (checker *RiakHealthChecker) nodeExistsAndIsValid(nodeIp string) (result bool) {
-	nodeValidityCheckerProgram := "./check_node_validity.sh"
-
-	cmd := exec.Command(nodeValidityCheckerProgram, checker.riakAdminProgram, nodeIp)
+	cmd := exec.Command(checker.scriptPath, checker.riakAdminProgram, nodeIp)
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		checker.logger.Info(
 			"Error checking node validity",
 			lager.Data{
-				"nodeValidityCheckerProgram": nodeValidityCheckerProgram,
+				"nodeValidityCheckerProgram": checker.scriptPath,
 				"err": err,
 			},
 		)

@@ -23,6 +23,7 @@ var (
 	routeRegistrarBinPath string
 	pidFile               string
 	configFile            string
+	scriptPath            string
 	rootConfig            config.Config
 	natsPort              int
 )
@@ -43,6 +44,7 @@ var _ = BeforeSuite(func() {
 	pidFile = filepath.Join(tempDir, "route-registrar.pid")
 
 	configFile = filepath.Join(tempDir, "registrar_settings.yml")
+	scriptPath = filepath.Join(tempDir,"check_node_validity.sh")
 })
 
 var _ = AfterSuite(func() {
