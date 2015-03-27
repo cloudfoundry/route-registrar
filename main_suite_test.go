@@ -1,10 +1,13 @@
 package main_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/cloudfoundry-incubator/route-registrar/config"
+	"github.com/fraenkel/candiedyaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -20,6 +23,8 @@ var (
 	routeRegistrarBinPath string
 	pidFile               string
 	configFile            string
+	rootConfig            config.Config
+	natsPort              int
 )
 
 func TestRouteRegistrar(t *testing.T) {
@@ -43,3 +48,38 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	gexec.CleanupBuildArtifacts()
 })
+
+func initConfig() {
+
+	natsPort = 42222 + GinkgoParallelNode()
+
+	messageBusServers := []config.MessageBusServer{
+		config.MessageBusServer{
+			Host:     fmt.Sprintf("127.0.0.1:%d", natsPort),
+			User:     "nats",
+			Password: "nats",
+		},
+	}
+
+	healthCheckerConfig := &config.HealthCheckerConf{
+		Name:     "riak-cs-cluster",
+		Interval: 10,
+	}
+
+	rootConfig = config.Config{
+		MessageBusServers: messageBusServers,
+		ExternalHost:      "riakcs-vcap.me",
+		ExternalIp:        "127.0.0.1",
+		Port:              8080,
+		HealthChecker:     healthCheckerConfig,
+	}
+}
+
+func writeConfig() {
+	fileToWrite, err := os.Create(configFile)
+	Ω(err).ShouldNot(HaveOccurred())
+
+	encoder := candiedyaml.NewEncoder(fileToWrite)
+	err = encoder.Encode(rootConfig)
+	Ω(err).ShouldNot(HaveOccurred())
+}

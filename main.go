@@ -17,6 +17,7 @@ func main() {
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 	pidfile := flags.String("pidfile", "", "Path to pid file")
+	configFile := flags.String("configFile", "", "Path to config file")
 	cf_lager.AddFlags(flags)
 	flags.Parse(os.Args[1:])
 
@@ -38,7 +39,11 @@ func main() {
 		}
 	}
 
-	config, err := config.InitConfigFromFile("registrar_settings.yml")
+	if *configFile == "" {
+		*configFile = "registrar_settings.yml"
+	}
+
+	config, err := config.InitConfigFromFile(*configFile)
 	if err != nil {
 		logger.Fatal("error parsing file: %s\n", err)
 	}

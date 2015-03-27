@@ -39,6 +39,6 @@ func InitConfigFromFile(path string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-
+	
 	return config, nil
 }
