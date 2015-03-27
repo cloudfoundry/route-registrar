@@ -17,7 +17,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 	var scriptPath = "/tmp/healthcheck_script.sh"
 	var scriptText string
 
-	BeforeEach(func(){
+	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("RiakCSHealthChecker test")
 	})
 

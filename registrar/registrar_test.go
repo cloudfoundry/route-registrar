@@ -19,7 +19,7 @@ var config Config
 var testSpyClient *yagnats.Client
 
 var _ = Describe("Registrar.RegisterRoutes", func() {
-		var logger lager.Logger
+	var logger lager.Logger
 	messageBusServer := MessageBusServer{
 		"127.0.0.1:4222",
 		"nats",

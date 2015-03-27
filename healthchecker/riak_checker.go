@@ -9,7 +9,7 @@ import (
 )
 
 type RiakHealthChecker struct {
-	logger lager.Logger
+	logger           lager.Logger
 	status           bool
 	pidFileName      string
 	riakAdminProgram string
@@ -40,7 +40,7 @@ func NewRiakHealthChecker(pidFileName string, riakAdminProgram string, nodeIpAdd
 		pidFileName:      pidFileName,
 		riakAdminProgram: riakAdminProgram,
 		nodeIpAddress:    nodeIpAddress,
-		logger: logger,
+		logger:           logger,
 	}
 }
 

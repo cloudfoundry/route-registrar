@@ -55,7 +55,7 @@ var _ = Describe("Config", func() {
 
 			BeforeEach(func() {
 				currentDir, _ := os.Getwd()
-				configFile = path.Join(currentDir, "..","registrar_settings.yml")
+				configFile = path.Join(currentDir, "..", "registrar_settings.yml")
 			})
 
 			It("Initializes a configuration from file without error", func() {

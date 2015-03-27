@@ -2,8 +2,8 @@ package healthchecker
 
 import (
 	. "github.com/cloudfoundry-incubator/route-registrar/config"
-	"os"
 	"github.com/pivotal-golang/lager"
+	"os"
 )
 
 type HealthChecker interface {

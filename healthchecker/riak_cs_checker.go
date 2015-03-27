@@ -8,14 +8,14 @@ import (
 type RiakCSHealthChecker struct {
 	status      bool
 	pidFileName string
-	logger lager.Logger
+	logger      lager.Logger
 }
 
 func (checker *RiakCSHealthChecker) Check() bool {
 	pidFileExists := checkPIDExist(checker.pidFileName)
 
 	if !pidFileExists {
-		checker.logger.Info(fmt.Sprintf("RiakCSHealthChecker: pidFile does not exist: %s\n",checker.pidFileName))
+		checker.logger.Info(fmt.Sprintf("RiakCSHealthChecker: pidFile does not exist: %s\n", checker.pidFileName))
 	}
 
 	checker.status = pidFileExists
@@ -26,6 +26,6 @@ func NewRiakCSHealthChecker(pidFileName string, logger lager.Logger) *RiakCSHeal
 	return &RiakCSHealthChecker{
 		status:      false,
 		pidFileName: pidFileName,
-		logger: logger,
+		logger:      logger,
 	}
 }

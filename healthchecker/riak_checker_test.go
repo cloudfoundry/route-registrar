@@ -14,8 +14,8 @@ import (
 )
 
 var _ = Describe("RiakHealthChecker", func() {
-		var logger lager.Logger
-		Describe("Check", func() {
+	var logger lager.Logger
+	Describe("Check", func() {
 		var pidFilename string
 		var riakAdminProgram string
 

@@ -1,21 +1,21 @@
 package healthchecker
 
 import (
+	"fmt"
+	"github.com/pivotal-golang/lager"
 	"os/exec"
 	"regexp"
-	"github.com/pivotal-golang/lager"
-	"fmt"
 )
 
 type ScriptHealthChecker struct {
-	logger lager.Logger
+	logger     lager.Logger
 	scriptPath string
 }
 
 func NewScriptHealthChecker(scriptPath string, logger lager.Logger) *ScriptHealthChecker {
 	return &ScriptHealthChecker{
 		scriptPath: scriptPath,
-		logger: logger,
+		logger:     logger,
 	}
 }
 

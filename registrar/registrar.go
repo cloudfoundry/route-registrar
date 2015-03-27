@@ -17,7 +17,7 @@ import (
 )
 
 type Registrar struct {
-	logger lager.Logger
+	logger               lager.Logger
 	Config               config.Config
 	SignalChannel        chan os.Signal
 	HealthChecker        HealthChecker
@@ -26,9 +26,9 @@ type Registrar struct {
 
 func NewRegistrar(clientConfig config.Config, logger lager.Logger) *Registrar {
 	return &Registrar{
-		Config: clientConfig,
-		logger: logger,
-		SignalChannel: make(chan os.Signal, 1),
+		Config:               clientConfig,
+		logger:               logger,
+		SignalChannel:        make(chan os.Signal, 1),
 		previousHealthStatus: false,
 	}
 }
