@@ -1,11 +1,5 @@
 package config
 
-import (
-	"os"
-
-	"github.com/fraenkel/candiedyaml"
-)
-
 type MessageBusServer struct {
 	Host     string `yaml:"host"`
 	User     string `yaml:"user"`
@@ -24,21 +18,4 @@ type Config struct {
 	ExternalIp        string             `yaml:"external_ip"`
 	Port              int                `yaml:"port"`
 	HealthChecker     *HealthCheckerConf `yaml:"health_checker"`
-}
-
-func InitConfigFromFile(path string) (Config, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return Config{}, err
-	}
-
-	config := Config{}
-	decoder := candiedyaml.NewDecoder(file)
-	err = decoder.Decode(&config)
-
-	if err != nil {
-		return Config{}, err
-	}
-	
-	return config, nil
 }

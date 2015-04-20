@@ -39,7 +39,7 @@ var _ = Describe("Main", func() {
 		command := exec.Command(
 			routeRegistrarBinPath,
 			fmt.Sprintf("-pidfile=%s", pidFile),
-			fmt.Sprintf("-configFile=%s", configFile),
+			fmt.Sprintf("-configPath=%s", configFile),
 			fmt.Sprintf("-scriptPath=%s", scriptPath),
 		)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
