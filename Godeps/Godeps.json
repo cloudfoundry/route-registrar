@@ -4,15 +4,15 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/cf-lager",
-			"Rev": "7178833173e7124dab16158273f7708ed73b81ff"
+			"Rev": "f28b321dda1184e439717f60b9265103c3cc5537"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gibson",
-			"Rev": "b22bf427d4ffcc52a09b4aab871bc982990c552f"
+			"Rev": "3c87f29d0cc8bb8be6e4b1df4d6e990119a6185f"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/yagnats",
-			"Rev": "07171a8863c377fb14a44dee402dff9e1282bc49"
+			"Rev": "7025c6846809817ab52c641b5353edd7cd8db7db"
 		},
 		{
 			"ImportPath": "github.com/fraenkel/candiedyaml",
@@ -24,7 +24,7 @@
 		},
 		{
 			"ImportPath": "github.com/pivotal-golang/lager",
-			"Rev": "09a71f6eb2dcc1c2335e37ceb78a91c6f618d561"
+			"Rev": "c88fa6d6c4d2f8a21a4599785211e41777750d34"
 		}
 	]
 }
