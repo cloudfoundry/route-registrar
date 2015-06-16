@@ -13,9 +13,8 @@ import (
 func Test(t *testing.T) { TestingT(t) }
 
 type YSuite struct {
-	Client   *Client
-	NatsConn NATSConn
-	NatsCmd  *exec.Cmd
+	Client  *Client
+	NatsCmd *exec.Cmd
 }
 
 var _ = Suite(&YSuite{})
@@ -39,19 +38,11 @@ func (s *YSuite) SetUpTest(c *C) {
 	})
 
 	s.Client = client
-
-	natsConn, err := Connect([]string{"nats://nats:nats@127.0.0.1:4223"})
-	c.Assert(err, Equals, nil)
-
-	s.NatsConn = natsConn
 }
 
 func (s *YSuite) TearDownTest(c *C) {
 	s.Client.Disconnect()
 	s.Client = nil
-
-	s.NatsConn.Close()
-	s.NatsConn = nil
 }
 
 func (s *YSuite) TestDisconnectOnNewClient(c *C) {
