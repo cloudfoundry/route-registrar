@@ -1,0 +1,20 @@
+language: go
+go:
+- 1.4
+install:
+- DST=~/gopath/src/github.com/apcera
+- mkdir -p "$DST"
+- git clone --depth=1 --quiet https://github.com/apcera/nats.git "$DST"/nats
+- go get golang.org/x/tools/cmd/vet
+- go get golang.org/x/tools/cmd/cover
+- go get github.com/mattn/goveralls
+script:
+- go build
+- ./travis/gofmt.sh
+- ./travis/govet.sh
+- go test -i -race ./...
+- GOMAXPROCS=1 go test -v -race ./...
+- ./travis/coveralls-script.sh
+env:
+  global:
+    secure: fi/zxSp5eF6Mt8yrgJakBVinDpCDFy3zPZ4Jy7jsyoKWgF7CdSFmh0WBcN932KOLCRaVm7ZqD2RwO9SifIsBcDtZqML4RKg3Q+T+Uqt4LpskVobMYkPKDcA5i3c3ifhJu/wzl7Y/jnysvjxCwQrH/nGAc4+AwyH6x2TjKF7UFoY=
