@@ -25,10 +25,6 @@
 		{
 			"ImportPath": "github.com/pivotal-golang/lager",
 			"Rev": "c88fa6d6c4d2f8a21a4599785211e41777750d34"
-		},
-	  {
-			"ImportPath": "github.com/apcera/gnatsd",
-			"Rev": "48c5bdf4df4f46e92d4406898c2f2a882e6af9b4"
 		}
 	]
 }
