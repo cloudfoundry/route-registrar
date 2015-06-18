@@ -3,6 +3,8 @@
 Yet Another Go NATS Client
 ==========================
 
+(or: You Ain't Gonna Need Another TIBCO System)
+
 A simple client for NATS written in Go.
 
 Basic usage:
