@@ -50,6 +50,7 @@ var _ = Describe("Main", func() {
 		time.Sleep(500 * time.Millisecond)
 
 		session.Terminate().Wait()
-		Eventually(session).Should(gexec.Exit(1))
+		Eventually(session).Should(gexec.Exit())
+		Expect(session.ExitCode()).ToNot(BeZero())
 	})
 })

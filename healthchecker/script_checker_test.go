@@ -3,6 +3,7 @@ package healthchecker_test
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,15 +15,20 @@ import (
 
 var _ = Describe("ScriptHealthChecker", func() {
 	var logger lager.Logger
-	var scriptPath = "/tmp/healthcheck_script.sh"
+	var tmpDir string
+	var scriptPath string
 	var scriptText string
 
 	BeforeEach(func() {
+		var err error
+		tmpDir, err = ioutil.TempDir(os.TempDir(), "healthchecker-test")
+		Expect(err).ToNot(HaveOccurred())
+		scriptPath = filepath.Join(tmpDir, "healthchecker.sh")
 		logger = lagertest.NewTestLogger("RiakCSHealthChecker test")
 	})
 
 	AfterEach(func() {
-		os.Remove(scriptPath)
+		os.RemoveAll(tmpDir)
 	})
 
 	Context("When the script's stdout says 1", func() {
@@ -33,7 +39,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 
 		It("returns true", func() {
 			scriptHealthChecker := NewScriptHealthChecker(scriptPath, logger)
-			Expect(scriptHealthChecker.Check()).To(BeTrue())
+			Expect(scriptHealthChecker.Check()).To(BeTrue(), "Expected Check to return true when stdout is 1")
 		})
 	})
 
@@ -45,7 +51,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 
 		It("returns false", func() {
 			scriptHealthChecker := NewScriptHealthChecker(scriptPath, logger)
-			Expect(scriptHealthChecker.Check()).To(BeFalse())
+			Expect(scriptHealthChecker.Check()).To(BeFalse(), "Expected Check to return false when stdout is not 1")
 		})
 	})
 })
