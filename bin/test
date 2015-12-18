@@ -3,14 +3,18 @@
 result=0
 
 MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-GOPATH=`godep path`:$GOPATH
+PROJECT_DIR="$( cd "${MY_DIR}"/.. && pwd )"
 
-echo -e "\nFormatting packages..."
-go fmt github.com/cloudfoundry-incubator/route-registrar/...
+pushd "${PROJECT_DIR}"
+  godep restore
 
-echo -e "\nTesting packages..."
-ginkgo -r -failOnPending -randomizeAllSpecs "$@" $MY_DIR/..
-let "result+=$?"
+  echo -e "\nFormatting packages..."
+  go fmt github.com/cloudfoundry-incubator/route-registrar/...
+
+  echo -e "\nTesting packages..."
+  ginkgo -r -failOnPending -randomizeAllSpecs "$@" $MY_DIR/..
+  let "result+=$?"
+popd
 
 echo -e "\nExit Code: $result"
 exit $result
