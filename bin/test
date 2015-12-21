@@ -7,14 +7,17 @@ PROJECT_DIR="$( cd "${MY_DIR}"/.. && pwd )"
 
 pushd "${PROJECT_DIR}"
   godep restore
-
-  echo -e "\nFormatting packages..."
-  go fmt github.com/cloudfoundry-incubator/route-registrar/...
-
-  echo -e "\nTesting packages..."
-  ginkgo -r -failOnPending -randomizeAllSpecs "$@" $MY_DIR/..
-  let "result+=$?"
 popd
+
+go get -v github.com/apcera/gnatsd
+go install -v github.com/apcera/gnatsd
+
+echo -e "\nFormatting packages..."
+go fmt github.com/cloudfoundry-incubator/route-registrar/...
+
+echo -e "\nTesting packages..."
+ginkgo -r -failOnPending -randomizeAllSpecs "$@" $MY_DIR/..
+let "result+=$?"
 
 echo -e "\nExit Code: $result"
 exit $result
