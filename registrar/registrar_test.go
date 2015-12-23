@@ -15,31 +15,22 @@ import (
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
-var config Config
-var testSpyClient *yagnats.Client
-
 var _ = Describe("Registrar.RegisterRoutes", func() {
-	var logger lager.Logger
-	messageBusServer := MessageBusServer{
-		"127.0.0.1:4222",
-		"nats",
-		"nats",
-	}
+	var (
+		config        Config
+		testSpyClient *yagnats.Client
 
-	healthCheckerConfig := HealthCheckerConf{
-		Name:     "a_useful_health_checker",
-		Interval: 1,
-	}
-
-	config = Config{
-		[]MessageBusServer{messageBusServer, messageBusServer}, // doesn't matter if these are the same, just want to send a slice
-		"riakcs.vcap.me",
-		"127.0.0.1",
-		8080,
-		&healthCheckerConfig,
-	}
+		logger           lager.Logger
+		messageBusServer MessageBusServer
+	)
 
 	BeforeEach(func() {
+		messageBusServer = MessageBusServer{
+			"127.0.0.1:4222",
+			"nats",
+			"nats",
+		}
+
 		logger = lagertest.NewTestLogger("Registrar test")
 		testSpyClient = yagnats.NewClient()
 		connectionInfo := yagnats.ConnectionInfo{
@@ -51,98 +42,133 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		err := testSpyClient.Connect(&connectionInfo)
 		Expect(err).NotTo(HaveOccurred())
+
+		config = Config{
+			MessageBusServers: []MessageBusServer{messageBusServer, messageBusServer}, // doesn't matter if these are the same, just want to send a slice
+		}
 	})
 
 	AfterEach(func() {
 		testSpyClient.Disconnect()
 	})
 
-	It("Sends a router.register message and does not send a router.unregister message", func() {
-		// Detect when a router.register message gets sent
-		var registered chan (string)
-		registered = subscribeToRegisterEvents(func(msg *yagnats.Message) {
-			registered <- string(msg.Payload)
+	Context("When single external host is provided", func() {
+		BeforeEach(func() {
+
+			healthCheckerConfig := HealthCheckerConf{
+				Name:     "a_useful_health_checker",
+				Interval: 1,
+			}
+
+			config.ExternalHost = "riakcs.vcap.me"
+			config.ExternalIp = "127.0.0.1"
+			config.Port = 8080
+			config.HealthChecker = &healthCheckerConfig
 		})
 
-		// Detect when an unregister message gets sent
-		var unregistered chan (bool)
-		unregistered = subscribeToUnregisterEvents(func(msg *yagnats.Message) {
-			unregistered <- true
-		})
-
-		go func() {
-			registrar := NewRegistrar(config, logger)
-			registrar.RegisterRoutes()
-		}()
-
-		// Assert that we got the right router.register message
-		var receivedMessage string
-		Eventually(registered, 2).Should(Receive(&receivedMessage))
-		Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
-
-		// Assert that we never got a router.unregister message
-		Consistently(unregistered, 2).ShouldNot(Receive())
-	})
-
-	It("Emits a router.unregister message when SIGINT is sent to the registrar's signal channel", func() {
-		verifySignalTriggersUnregister(syscall.SIGINT, logger)
-	})
-
-	It("Emits a router.unregister message when SIGTERM is sent to the registrar's signal channel", func() {
-		verifySignalTriggersUnregister(syscall.SIGTERM, logger)
-	})
-
-	Context("When the registrar has a healthchecker", func() {
-		It("Emits a router.unregister message when registrar's health check fails, and emits a router.register message when registrar's health check back to normal", func() {
-			healthy := fakes.NewFakeHealthChecker()
-			healthy.CheckReturns(true)
-
-			unregistered := make(chan string)
-			registered := make(chan string)
-			var registrar *Registrar
-
-			// Listen for a router.unregister event, then set health status to true, then listen for a router.register event
-			subscribeToRegisterEvents(func(msg *yagnats.Message) {
+		It("Sends a router.register message and does not send a router.unregister message", func() {
+			// Detect when a router.register message gets sent
+			var registered chan (string)
+			registered = subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
 				registered <- string(msg.Payload)
+			})
 
-				healthy.CheckReturns(false)
-
-				subscribeToUnregisterEvents(func(msg *yagnats.Message) {
-					unregistered <- string(msg.Payload)
-				})
+			// Detect when an unregister message gets sent
+			var unregistered chan (bool)
+			unregistered = subscribeToUnregisterEvents(testSpyClient, func(msg *yagnats.Message) {
+				unregistered <- true
 			})
 
 			go func() {
-				registrar = NewRegistrar(config, logger)
-				registrar.AddHealthCheckHandler(healthy)
+				registrar := NewRegistrar(config, logger)
 				registrar.RegisterRoutes()
 			}()
 
+			// Assert that we got the right router.register message
 			var receivedMessage string
-			testTimeout := config.HealthChecker.Interval * 3
-
-			Eventually(registered, testTimeout).Should(Receive(&receivedMessage))
+			Eventually(registered, 2).Should(Receive(&receivedMessage))
 			Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
 
-			Eventually(unregistered, testTimeout).Should(Receive(&receivedMessage))
-			Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+			// Assert that we never got a router.unregister message
+			Consistently(unregistered, 2).ShouldNot(Receive())
 		})
+
+		It("Emits a router.unregister message when SIGINT is sent to the registrar's signal channel", func() {
+			verifySignalTriggersUnregister(
+				config,
+				syscall.SIGINT,
+				logger,
+				testSpyClient,
+			)
+		})
+
+		It("Emits a router.unregister message when SIGTERM is sent to the registrar's signal channel", func() {
+			verifySignalTriggersUnregister(
+				config,
+				syscall.SIGTERM,
+				logger,
+				testSpyClient,
+			)
+		})
+
+		Context("When the registrar has a healthchecker", func() {
+			It("Emits a router.unregister message when registrar's health check fails, and emits a router.register message when registrar's health check back to normal", func() {
+				healthy := fakes.NewFakeHealthChecker()
+				healthy.CheckReturns(true)
+
+				unregistered := make(chan string)
+				registered := make(chan string)
+				var registrar *Registrar
+
+				// Listen for a router.unregister event, then set health status to true, then listen for a router.register event
+				subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
+					registered <- string(msg.Payload)
+
+					healthy.CheckReturns(false)
+
+					subscribeToUnregisterEvents(testSpyClient, func(msg *yagnats.Message) {
+						unregistered <- string(msg.Payload)
+					})
+				})
+
+				go func() {
+					registrar = NewRegistrar(config, logger)
+					registrar.AddHealthCheckHandler(healthy)
+					registrar.RegisterRoutes()
+				}()
+
+				var receivedMessage string
+				testTimeout := config.HealthChecker.Interval * 3
+
+				Eventually(registered, testTimeout).Should(Receive(&receivedMessage))
+				Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+
+				Eventually(unregistered, testTimeout).Should(Receive(&receivedMessage))
+				Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+			})
+		})
+
 	})
 })
 
-func verifySignalTriggersUnregister(signal os.Signal, logger lager.Logger) {
+func verifySignalTriggersUnregister(
+	config Config,
+	signal os.Signal,
+	logger lager.Logger,
+	testSpyClient *yagnats.Client,
+) {
 	unregistered := make(chan string)
 	returned := make(chan bool)
 
 	var registrar *Registrar
 
 	// Trigger a SIGINT after a successful router.register message
-	subscribeToRegisterEvents(func(msg *yagnats.Message) {
+	subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
 		registrar.SignalChannel <- signal
 	})
 
 	// Detect when a router.unregister message gets sent
-	subscribeToUnregisterEvents(func(msg *yagnats.Message) {
+	subscribeToUnregisterEvents(testSpyClient, func(msg *yagnats.Message) {
 		unregistered <- string(msg.Payload)
 	})
 
@@ -163,14 +189,14 @@ func verifySignalTriggersUnregister(signal os.Signal, logger lager.Logger) {
 	Expect(returned).To(Receive())
 }
 
-func subscribeToRegisterEvents(callback func(msg *yagnats.Message)) (registerChannel chan string) {
+func subscribeToRegisterEvents(testSpyClient *yagnats.Client, callback func(msg *yagnats.Message)) (registerChannel chan string) {
 	registerChannel = make(chan string)
 	go testSpyClient.Subscribe("router.register", callback)
 
 	return
 }
 
-func subscribeToUnregisterEvents(callback func(msg *yagnats.Message)) (unregisterChannel chan bool) {
+func subscribeToUnregisterEvents(testSpyClient *yagnats.Client, callback func(msg *yagnats.Message)) (unregisterChannel chan bool) {
 	unregisterChannel = make(chan bool)
 	go testSpyClient.Subscribe("router.unregister", callback)
 

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-result=0
-
 MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( cd "${MY_DIR}"/.. && pwd )"
 
@@ -14,6 +12,8 @@ go install -v github.com/apcera/gnatsd
 
 echo -e "\nFormatting packages..."
 go fmt github.com/cloudfoundry-incubator/route-registrar/...
+
+result=0
 
 echo -e "\nTesting packages..."
 ginkgo -r -failOnPending -randomizeAllSpecs "$@" $MY_DIR/..
