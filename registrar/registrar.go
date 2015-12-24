@@ -41,12 +41,45 @@ type callbackFunction func()
 
 func (registrar *Registrar) RegisterRoutes() {
 	messageBus := buildMessageBus(registrar)
-	client := gibson.NewCFRouterClient(registrar.Config.ExternalIp, messageBus)
-
-	// set up periodic registration
-	client.Greet()
 
 	done := make(chan bool)
+
+	if len(registrar.Config.Routes) > 0 {
+		registrar.logger.Debug("creating client", lager.Data{"config": registrar.Config})
+
+		client := gibson.NewCFRouterClient(registrar.Config.Host, messageBus)
+		client.Greet()
+		registrar.registerSignalHandler(done, client)
+
+		ticker := time.NewTicker(registrar.Config.RefreshInterval)
+
+		for {
+			select {
+			case <-ticker.C:
+				registrar.logger.Debug(
+					"registering routes",
+					lager.Data{
+						"port": registrar.Config.Routes[0].Port,
+						"uris": registrar.Config.Routes[0].URIs,
+					},
+				)
+				client.RegisterAll(registrar.Config.Routes[0].Port, registrar.Config.Routes[0].URIs)
+			case <-done:
+				registrar.logger.Debug(
+					"deregistering routes",
+					lager.Data{
+						"port": registrar.Config.Routes[0].Port,
+						"uris": registrar.Config.Routes[0].URIs,
+					},
+				)
+				client.UnregisterAll(registrar.Config.Routes[0].Port, registrar.Config.Routes[0].URIs)
+				return
+			}
+		}
+	}
+
+	client := gibson.NewCFRouterClient(registrar.Config.ExternalIp, messageBus)
+	client.Greet()
 	registrar.registerSignalHandler(done, client)
 
 	if registrar.HealthChecker != nil {

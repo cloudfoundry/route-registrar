@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"syscall"
+	"time"
 
 	"github.com/cloudfoundry/gibson"
 	"github.com/cloudfoundry/yagnats"
@@ -35,6 +36,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		logger = lagertest.NewTestLogger("Registrar test")
 		testSpyClient = yagnats.NewClient()
+
 		connectionInfo := yagnats.ConnectionInfo{
 			messageBusServer.Host,
 			messageBusServer.User,
@@ -46,7 +48,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		config = Config{
-			MessageBusServers: []MessageBusServer{messageBusServer, messageBusServer}, // doesn't matter if these are the same, just want to send a slice
+			// doesn't matter if these are the same, just want to send a slice
+			MessageBusServers: []MessageBusServer{messageBusServer, messageBusServer},
 		}
 	})
 
@@ -56,16 +59,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 	Context("When single external host is provided", func() {
 		BeforeEach(func() {
-
-			healthCheckerConfig := HealthCheckerConf{
-				Name:     "a_useful_health_checker",
-				Interval: 1,
-			}
-
 			config.ExternalHost = "riakcs.vcap.me"
 			config.ExternalIp = "127.0.0.1"
 			config.Port = 8080
-			config.HealthChecker = &healthCheckerConfig
 		})
 
 		It("Sends a router.register message and does not send a router.unregister message", func() {
@@ -127,6 +123,15 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		})
 
 		Context("When the registrar has a healthchecker", func() {
+			BeforeEach(func() {
+				healthCheckerConfig := HealthCheckerConf{
+					Name:     "a_useful_health_checker",
+					Interval: 1,
+				}
+
+				config.HealthChecker = &healthCheckerConfig
+			})
+
 			It("Emits a router.unregister message when registrar's health check fails, and emits a router.register message when registrar's health check back to normal", func() {
 				healthy := fakes.NewFakeHealthChecker()
 				healthy.CheckReturns(true)
@@ -181,6 +186,69 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			})
 		})
 
+	})
+
+	Context("When backing legacy route registration", func() {
+		BeforeEach(func() {
+			config.RefreshInterval = 1
+		})
+
+		Context("one route, multiple URIs", func() {
+			BeforeEach(func() {
+				config.Host = "my host"
+				config.RefreshInterval = 500 * time.Millisecond
+				config.Routes = []Route{
+					{
+						Name: "my route",
+						Port: 8080,
+						URIs: []string{
+							"my uri 1",
+							"my uri 2",
+						},
+					},
+				}
+			})
+
+			It("periodically registers all URIs for all URIs associated with the route", func() {
+				// Detect when a router.register message gets sent
+				var registered chan (string)
+				registered = subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
+					registered <- string(msg.Payload)
+				})
+
+				// Detect when an unregister message gets sent
+				var unregistered chan (bool)
+				unregistered = subscribeToUnregisterEvents(testSpyClient, func(msg *yagnats.Message) {
+					unregistered <- true
+				})
+
+				registrar := NewRegistrar(config, logger)
+				go func() {
+					registrar.RegisterRoutes()
+				}()
+
+				// Assert that we got the right router.register message
+				var receivedMessage string
+				Eventually(registered, 2).Should(Receive(&receivedMessage))
+
+				var registryMessage gibson.RegistryMessage
+				err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				expectedRegistryMessage := gibson.RegistryMessage{
+					URIs: config.Routes[0].URIs,
+					Host: config.Host,
+					Port: config.Routes[0].Port,
+				}
+
+				Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
+				Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
+				Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
+
+				// Assert that we never got a router.unregister message
+				Consistently(unregistered, 2).ShouldNot(Receive())
+			})
+		})
 	})
 })
 

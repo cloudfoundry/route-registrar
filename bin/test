@@ -3,9 +3,9 @@
 MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( cd "${MY_DIR}"/.. && pwd )"
 
-pushd "${PROJECT_DIR}"
+pushd "${PROJECT_DIR}" > /dev/null
   godep restore
-popd
+popd > /dev/null
 
 go get -v github.com/apcera/gnatsd
 go install -v github.com/apcera/gnatsd
@@ -16,8 +16,15 @@ go fmt github.com/cloudfoundry-incubator/route-registrar/...
 result=0
 
 echo -e "\nTesting packages..."
-ginkgo -r -failOnPending -randomizeAllSpecs "$@" $MY_DIR/..
-let "result+=$?"
+pushd "${PROJECT_DIR}"
+  ginkgo \
+    -r \
+    -failOnPending \
+    -randomizeAllSpecs \
+    -randomizeSuites \
+    "$@"
+  let "result+=$?"
+popd > /dev/null
 
 echo -e "\nExit Code: $result"
 exit $result
