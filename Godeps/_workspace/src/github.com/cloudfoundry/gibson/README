@@ -1,4 +1,3 @@
-
                           ,dPYb,
                           IP'`Yb
                      gg   I8  8I
@@ -33,6 +32,12 @@ See https://github.com/cloudfoundry/gorouter
 
     client.Register(1234, "myhost.com")
     client.Unregister(1234, "myhost.com")
+
+= Examples
+
+    Route Registrar (https://github.com/cloudfoundry-incubator/route-registrar)
+    uses yagnats (https://github.com/cloudfoundry/yagnats) for connecting to 
+    the NATS bus and gibson for registering routes with the CloudFoundry router.
 
 = Registrar Executable
 

@@ -1,6 +1,7 @@
 package registrar
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -63,39 +64,24 @@ func (registrar *Registrar) RegisterRoutes() {
 	}
 }
 
-func buildMessageBus(registrar *Registrar) (messageBus yagnats.NATSClient) {
-
-	messageBus = yagnats.NewClient()
-	natsServers := []yagnats.ConnectionProvider{}
+func buildMessageBus(registrar *Registrar) yagnats.NATSConn {
+	var natsServers []string
 
 	for _, server := range registrar.Config.MessageBusServers {
 		registrar.logger.Info(
 			"Adding NATS server",
 			lager.Data{"server": server},
 		)
-		natsServers = append(natsServers, &yagnats.ConnectionInfo{
-			server.Host,
-			server.User,
-			server.Password,
-			nil,
-		})
-	}
-
-	natsInfo := &yagnats.ConnectionCluster{natsServers}
-
-	err := messageBus.Connect(natsInfo)
-
-	if err != nil {
-		registrar.logger.Info(
-			"Error connecting to NATS",
-			lager.Data{"error": err.Error()},
+		natsServers = append(
+			natsServers,
+			fmt.Sprintf("nats://%s:%s@%s", server.User, server.Password, server.Host),
 		)
-		panic("Failed to connect to NATS bus.")
 	}
-
-	registrar.logger.Info("Successfully connected to NATS.")
-
-	return
+	messageBus, err := yagnats.Connect(natsServers)
+	if err != nil {
+		panic(err)
+	}
+	return messageBus
 }
 
 func callbackPeriodically(duration time.Duration, callback callbackFunction, done chan bool) {

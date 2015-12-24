@@ -1,9 +1,11 @@
 package registrar_test
 
 import (
+	"encoding/json"
 	"os"
 	"syscall"
 
+	"github.com/cloudfoundry/gibson"
 	"github.com/cloudfoundry/yagnats"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -87,7 +89,20 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			// Assert that we got the right router.register message
 			var receivedMessage string
 			Eventually(registered, 2).Should(Receive(&receivedMessage))
-			Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+
+			expectedRegistryMessage := gibson.RegistryMessage{
+				URIs: []string{"riakcs.vcap.me"},
+				Host: "127.0.0.1",
+				Port: 8080,
+			}
+
+			var registryMessage gibson.RegistryMessage
+			err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
+			Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
+			Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
 
 			// Assert that we never got a router.unregister message
 			Consistently(unregistered, 2).ShouldNot(Receive())
@@ -140,11 +155,29 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				var receivedMessage string
 				testTimeout := config.HealthChecker.Interval * 3
 
+				expectedRegistryMessage := gibson.RegistryMessage{
+					URIs: []string{"riakcs.vcap.me"},
+					Host: "127.0.0.1",
+					Port: 8080,
+				}
+
+				var registryMessage gibson.RegistryMessage
+
 				Eventually(registered, testTimeout).Should(Receive(&receivedMessage))
-				Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+				err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
+				Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
+				Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
 
 				Eventually(unregistered, testTimeout).Should(Receive(&receivedMessage))
-				Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+				err = json.Unmarshal([]byte(receivedMessage), &registryMessage)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
+				Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
+				Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
 			})
 		})
 
@@ -183,7 +216,20 @@ func verifySignalTriggersUnregister(
 	// Assert that we got the right router.unregister message as a result of the signal
 	var receivedMessage string
 	Eventually(unregistered, 2).Should(Receive(&receivedMessage))
-	Expect(receivedMessage).To(Equal(`{"uris":["riakcs.vcap.me"],"host":"127.0.0.1","port":8080}`))
+
+	expectedRegistryMessage := gibson.RegistryMessage{
+		URIs: []string{"riakcs.vcap.me"},
+		Host: "127.0.0.1",
+		Port: 8080,
+	}
+
+	var registryMessage gibson.RegistryMessage
+	err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
+
+	Expect(err).ShouldNot(HaveOccurred())
+	Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
+	Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
+	Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
 
 	// Assert that RegisterRoutes returned
 	Expect(returned).To(Receive())

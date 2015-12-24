@@ -13,11 +13,11 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gibson",
-			"Rev": "b22bf427d4ffcc52a09b4aab871bc982990c552f"
+			"Rev": "6f731c969fa500ffb1e4ed42c094647fa1aa0de6"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/yagnats",
-			"Rev": "07171a8863c377fb14a44dee402dff9e1282bc49"
+			"Rev": "e417c5169bf58c23f56125b0f0344b50d84e0887"
 		},
 		{
 			"ImportPath": "github.com/fraenkel/candiedyaml",

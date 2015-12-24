@@ -68,6 +68,9 @@ func (c *Client) Ping() bool {
 }
 
 func (c *Client) Connect(cp ConnectionProvider) error {
+
+	c.logger.Warn("WARNING: yagnats.NewClient() and fakeyagnats.New() are deprecated. You should use yagnats.NewApceraClientWrapper() and fakeyagnats.NewApceraClientWrapper() instead")
+
 	conn, err := c.connect(cp)
 	if err != nil {
 		return err
@@ -83,9 +86,11 @@ func (c *Client) Connect(cp ConnectionProvider) error {
 }
 
 func (c *Client) Disconnect() {
+	c.lock.Lock()
 	if !c.connected || c.disconnecting {
 		return
 	}
+	c.lock.Unlock()
 
 	conn := <-c.connection
 	c.disconnecting = true
@@ -199,7 +204,9 @@ func (c *Client) subscribe(subject, queue string, callback Callback) (int64, err
 }
 
 func (c *Client) serveConnections(conn *Connection, cp ConnectionProvider) {
+	c.lock.Lock()
 	c.connected = true
+	c.lock.Unlock()
 
 	// serve connection until disconnected
 	for stop := false; !stop; {

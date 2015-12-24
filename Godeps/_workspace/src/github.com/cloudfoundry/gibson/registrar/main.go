@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/cloudfoundry/gibson"
 	"github.com/cloudfoundry/yagnats"
@@ -22,9 +22,7 @@ var natsPassword = flag.String("natsPassword", "", "authentication password for 
 func main() {
 	flag.Parse()
 
-	nats := yagnats.NewClient()
-
-	natsMembers := []yagnats.ConnectionProvider{}
+	natsMembers := []string{}
 
 	if *natsAddresses == "" {
 		log.Fatalln("must specify at least one nats address (-natsAddresses=1.2.3.4:5678)")
@@ -36,30 +34,20 @@ func main() {
 
 	for _, addr := range strings.Split(*natsAddresses, ",") {
 		log.Println("configuring nats server:", addr)
-		natsMembers = append(natsMembers, &yagnats.ConnectionInfo{
-			Addr:     addr,
-			Username: *natsUsername,
-			Password: *natsPassword,
-		})
+		natsMembers = append(natsMembers,
+			fmt.Sprintf("nats://%s:%s@%s", *natsUsername, *natsPassword, addr))
 	}
 
 	if len(natsMembers) == 0 {
 		log.Fatalln("must specify at least one nats address")
 	}
 
-	natsInfo := &yagnats.ConnectionCluster{natsMembers}
-
-	for {
-		err := nats.Connect(natsInfo)
-		if err == nil {
-			break
-		}
-
-		log.Println("failed to connect to NATS:", err)
-		time.Sleep(1 * time.Second)
+	natsConn, err := yagnats.Connect(natsMembers)
+	if err != nil {
+		log.Fatalln("Cannot connect to NATS", err)
 	}
 
-	client := gibson.NewCFRouterClient(*ip, nats)
+	client := gibson.NewCFRouterClient(*ip, natsConn)
 
 	client.Greet()
 
