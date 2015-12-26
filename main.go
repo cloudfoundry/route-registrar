@@ -63,8 +63,9 @@ func main() {
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	done := make(chan struct{}, 1)
+	ready := make(chan struct{}, 1)
 	go func() {
-		r.Run(signals)
+		r.Run(signals, ready)
 		close(done)
 	}()
 	<-done

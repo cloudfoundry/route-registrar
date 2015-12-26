@@ -31,6 +31,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		messageBusServer config.MessageBusServer
 
 		signals chan os.Signal
+		ready   chan struct{}
 
 		r registrar.Registrar
 	)
@@ -63,6 +64,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		}
 
 		signals = make(chan os.Signal, 1)
+		ready = make(chan struct{}, 1)
 	})
 
 	AfterEach(func() {
@@ -95,8 +97,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			})
 
 			go func() {
-				r.Run(signals)
+				r.Run(signals, ready)
 			}()
+			<-ready
 
 			// Assert that we got the right router.register message
 			var receivedMessage string
@@ -174,8 +177,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				})
 
 				go func() {
-					r.Run(signals)
+					r.Run(signals, ready)
 				}()
+				<-ready
 
 				var receivedMessage string
 				testTimeout := rrConfig.HealthChecker.Interval * 3
@@ -244,8 +248,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				})
 
 				go func() {
-					r.Run(signals)
+					r.Run(signals, ready)
 				}()
+				<-ready
 
 				// Assert that we got the right router.register message
 				var receivedMessage string
@@ -293,7 +298,9 @@ func verifySignalTriggersUnregister(
 		unregistered <- string(msg.Payload)
 	})
 
-	r.Run(signals)
+	ready := make(chan struct{}, 1)
+	r.Run(signals, ready)
+	<-ready
 
 	// Assert that we got the right router.unregister message as a result of the signal
 	var receivedMessage string
