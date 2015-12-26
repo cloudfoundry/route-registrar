@@ -31,6 +31,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		messageBusServer config.MessageBusServer
 
 		signals chan os.Signal
+
+		r registrar.Registrar
 	)
 
 	BeforeEach(func() {
@@ -75,6 +77,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			rrConfig.ExternalHost = "some-external-host"
 			rrConfig.ExternalIp = "127.0.0.1"
 			rrConfig.Port = 8080
+
+			r = registrar.NewRegistrar(rrConfig, logger)
 		})
 
 		It("Sends a router.register message and does not send a router.unregister message", func() {
@@ -90,7 +94,6 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				unregistered <- true
 			})
 
-			r := registrar.NewRegistrar(rrConfig, logger)
 			go func() {
 				r.RegisterRoutes(signals)
 			}()
@@ -148,14 +151,18 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			})
 
 			It("Emits a router.unregister message when registrar's health check fails, and emits a router.register message when registrar's health check back to normal", func() {
+				r = registrar.NewRegistrar(rrConfig, logger)
+
 				healthy := fakes.NewFakeHealthChecker()
 				healthy.CheckReturns(true)
 
+				r.AddHealthCheckHandler(healthy)
+
 				unregistered := make(chan string)
 				registered := make(chan string)
-				var r registrar.Registrar
 
-				// Listen for a router.unregister event, then set health status to true, then listen for a router.register event
+				// Listen for a router.unregister event, then set health status to true,
+				// then listen for a router.register event
 				subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
 					registered <- string(msg.Payload)
 
@@ -166,8 +173,6 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					})
 				})
 
-				r = registrar.NewRegistrar(rrConfig, logger)
-				r.AddHealthCheckHandler(healthy)
 				go func() {
 					r.RegisterRoutes(signals)
 				}()
@@ -200,7 +205,6 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
 			})
 		})
-
 	})
 
 	Context("When backing legacy route registration", func() {
@@ -225,6 +229,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			})
 
 			It("periodically registers all URIs for all URIs associated with the route", func() {
+				r = registrar.NewRegistrar(rrConfig, logger)
+
 				// Detect when a router.register message gets sent
 				var registered chan (string)
 				registered = subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
@@ -237,7 +243,6 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					unregistered <- true
 				})
 
-				r := registrar.NewRegistrar(rrConfig, logger)
 				go func() {
 					r.RegisterRoutes(signals)
 				}()
@@ -274,12 +279,11 @@ func verifySignalTriggersUnregister(
 	logger lager.Logger,
 	testSpyClient *yagnats.Client,
 ) {
+	r := registrar.NewRegistrar(rrConfig, logger)
+
 	unregistered := make(chan string)
-	returned := make(chan bool)
 
-	var r registrar.Registrar
-
-	// Trigger a SIGINT after a successful router.register message
+	// Send a signal after a successful router.register message
 	subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
 		signals <- signal
 	})
@@ -289,13 +293,7 @@ func verifySignalTriggersUnregister(
 		unregistered <- string(msg.Payload)
 	})
 
-	r = registrar.NewRegistrar(rrConfig, logger)
-	go func() {
-		r.RegisterRoutes(signals)
-
-		// Set up a channel to wait for RegisterRoutes to return
-		returned <- true
-	}()
+	r.RegisterRoutes(signals)
 
 	// Assert that we got the right router.unregister message as a result of the signal
 	var receivedMessage string
@@ -314,9 +312,6 @@ func verifySignalTriggersUnregister(
 	Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
 	Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
 	Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
-
-	// Assert that RegisterRoutes returned
-	Expect(returned).To(Receive())
 }
 
 func subscribeToRegisterEvents(
