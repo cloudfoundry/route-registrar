@@ -3,6 +3,7 @@ package registrar
 import (
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/cloudfoundry/gibson"
@@ -20,17 +21,19 @@ type Registrar interface {
 }
 
 type registrar struct {
-	logger               lager.Logger
-	config               config.Config
-	healthChecker        healthchecker.HealthChecker
-	previousHealthStatus bool
+	logger        lager.Logger
+	config        config.Config
+	healthChecker healthchecker.HealthChecker
+	wasHealthy    bool
+
+	lock sync.RWMutex
 }
 
 func NewRegistrar(clientConfig config.Config, logger lager.Logger) Registrar {
 	return &registrar{
-		config:               clientConfig,
-		logger:               logger,
-		previousHealthStatus: false,
+		config:     clientConfig,
+		logger:     logger,
+		wasHealthy: false,
 	}
 }
 
@@ -139,15 +142,22 @@ func callbackPeriodically(duration time.Duration, callback func(), done chan boo
 }
 
 func (r *registrar) updateRegistrationBasedOnHealthCheck(client *gibson.CFRouterClient) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	current := r.healthChecker.Check()
-	if (!current) && r.previousHealthStatus {
-		r.logger.Info("Health check status changed to unavailabile; unregistering the route")
+	if (current) && r.wasHealthy {
+		r.logger.Debug("still healthy")
+	} else if (!current) && !r.wasHealthy {
+		r.logger.Debug("still unhealthy")
+	} else if (!current) && r.wasHealthy {
+		r.logger.Info("Health check status changed to unavailable; unregistering the route")
 		client.Unregister(r.config.Port, r.config.ExternalHost)
-	} else if current && (!r.previousHealthStatus) {
-		r.logger.Info("Health check status changed to availabile; registering the route")
+	} else if current && (!r.wasHealthy) {
+		r.logger.Info("Health check status changed to available; registering the route")
 		client.Register(r.config.Port, r.config.ExternalHost)
 	}
-	r.previousHealthStatus = current
+	r.wasHealthy = current
 }
 
 func (r *registrar) registerSignalHandler(
