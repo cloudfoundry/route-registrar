@@ -50,7 +50,6 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 	if len(r.config.Routes) > 0 {
 		r.logger.Debug("creating client", lager.Data{"config": r.config})
-
 		client := gibson.NewCFRouterClient(r.config.Host, messageBus)
 		client.Greet()
 		r.registerSignalHandler(signals, done, client)
@@ -60,30 +59,34 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		for {
 			select {
 			case <-ticker.C:
-				r.logger.Debug(
-					"registering routes",
-					lager.Data{
-						"port": r.config.Routes[0].Port,
-						"uris": r.config.Routes[0].URIs,
-					},
-				)
-				client.RegisterAll(
-					r.config.Routes[0].Port,
-					r.config.Routes[0].URIs,
-				)
+				for _, route := range r.config.Routes {
+					r.logger.Debug(
+						"registering routes",
+						lager.Data{
+							"port": route.Port,
+							"uris": route.URIs,
+						},
+					)
+					client.RegisterAll(
+						route.Port,
+						route.URIs,
+					)
+				}
 			case <-done:
-				r.logger.Debug(
-					"deregistering routes",
-					lager.Data{
-						"port": r.config.Routes[0].Port,
-						"uris": r.config.Routes[0].URIs,
-					},
-				)
-				client.UnregisterAll(
-					r.config.Routes[0].Port,
-					r.config.Routes[0].URIs,
-				)
-				return nil
+				for _, route := range r.config.Routes {
+					r.logger.Debug(
+						"deregistering routes",
+						lager.Data{
+							"port": route.Port,
+							"uris": route.URIs,
+						},
+					)
+					client.UnregisterAll(
+						route.Port,
+						route.URIs,
+					)
+					return nil
+				}
 			}
 		}
 	}

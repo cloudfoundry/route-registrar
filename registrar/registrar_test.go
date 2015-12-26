@@ -211,15 +211,14 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		})
 	})
 
-	Context("When backing legacy route registration", func() {
+	Context("When backing cf-release style route registration", func() {
 		BeforeEach(func() {
-			rrConfig.RefreshInterval = 1
+			rrConfig.Host = "my host"
+			rrConfig.RefreshInterval = 100 * time.Millisecond
 		})
 
 		Context("one route, multiple URIs", func() {
 			BeforeEach(func() {
-				rrConfig.Host = "my host"
-				rrConfig.RefreshInterval = 500 * time.Millisecond
 				rrConfig.Routes = []config.Route{
 					{
 						Name: "my route",
@@ -230,11 +229,11 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 						},
 					},
 				}
+
+				r = registrar.NewRegistrar(rrConfig, logger)
 			})
 
 			It("periodically registers all URIs for all URIs associated with the route", func() {
-				r = registrar.NewRegistrar(rrConfig, logger)
-
 				// Detect when a router.register message gets sent
 				var registered chan (string)
 				registered = subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
@@ -269,6 +268,87 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
 				Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
 				Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
+
+				// Assert that we never got a router.unregister message
+				Consistently(unregistered, 2).ShouldNot(Receive())
+			})
+		})
+
+		Context("multiple routes, each with multiple URIs", func() {
+			BeforeEach(func() {
+				rrConfig.Routes = []config.Route{
+					{
+						Name: "my route 1",
+						Port: 8080,
+						URIs: []string{
+							"my uri 1.1",
+							"my uri 1.2",
+						},
+					},
+					{
+						Name: "my route 2",
+						Port: 8081,
+						URIs: []string{
+							"my uri 2.1",
+							"my uri 2.2",
+						},
+					},
+				}
+
+				r = registrar.NewRegistrar(rrConfig, logger)
+			})
+
+			It("periodically registers all URIs for all routes", func() {
+				// Detect when a router.register message gets sent
+				var registered chan (string)
+				registered = subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
+					registered <- string(msg.Payload)
+				})
+
+				// Detect when an unregister message gets sent
+				var unregistered chan (bool)
+				unregistered = subscribeToUnregisterEvents(testSpyClient, func(msg *yagnats.Message) {
+					unregistered <- true
+				})
+
+				go func() {
+					r.Run(signals, ready)
+				}()
+				<-ready
+
+				expectedRegistryMessages := []gibson.RegistryMessage{
+					{
+						URIs: rrConfig.Routes[0].URIs,
+						Host: rrConfig.Host,
+						Port: rrConfig.Routes[0].Port,
+					},
+					{
+						URIs: rrConfig.Routes[1].URIs,
+						Host: rrConfig.Host,
+						Port: rrConfig.Routes[1].Port,
+					},
+				}
+
+				for i := 0; i < len(expectedRegistryMessages); i++ {
+					// Assert that we got the right router.register message
+					var receivedMessage string
+					Eventually(registered, 2).Should(Receive(&receivedMessage))
+
+					var registryMessage gibson.RegistryMessage
+					err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
+					Expect(err).ShouldNot(HaveOccurred())
+
+					switch registryMessage.Port {
+					case expectedRegistryMessages[0].Port:
+						Expect(registryMessage.URIs).To(Equal(expectedRegistryMessages[0].URIs))
+						break
+					case expectedRegistryMessages[1].Port:
+						Expect(registryMessage.URIs).To(Equal(expectedRegistryMessages[1].URIs))
+						break
+					default:
+						Fail("Unexpected port")
+					}
+				}
 
 				// Assert that we never got a router.unregister message
 				Consistently(unregistered, 2).ShouldNot(Receive())
