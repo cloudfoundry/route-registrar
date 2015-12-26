@@ -3,8 +3,6 @@ package registrar
 import (
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/cloudfoundry/gibson"
@@ -16,85 +14,86 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-type Registrar struct {
+type Registrar interface {
+	AddHealthCheckHandler(handler healthchecker.HealthChecker)
+	RegisterRoutes(signals <-chan os.Signal)
+}
+
+type registrar struct {
 	logger               lager.Logger
-	Config               config.Config
-	SignalChannel        chan os.Signal
-	HealthChecker        healthchecker.HealthChecker
+	config               config.Config
+	healthChecker        healthchecker.HealthChecker
 	previousHealthStatus bool
 }
 
-func NewRegistrar(clientConfig config.Config, logger lager.Logger) *Registrar {
-	return &Registrar{
-		Config:               clientConfig,
+func NewRegistrar(clientConfig config.Config, logger lager.Logger) Registrar {
+	return &registrar{
+		config:               clientConfig,
 		logger:               logger,
-		SignalChannel:        make(chan os.Signal, 1),
 		previousHealthStatus: false,
 	}
 }
 
-func (registrar *Registrar) AddHealthCheckHandler(handler healthchecker.HealthChecker) {
-	registrar.HealthChecker = handler
+func (r *registrar) AddHealthCheckHandler(handler healthchecker.HealthChecker) {
+	r.healthChecker = handler
 }
 
-type callbackFunction func()
-
-func (registrar *Registrar) RegisterRoutes() {
-	messageBus := buildMessageBus(registrar)
+func (r *registrar) RegisterRoutes(signals <-chan os.Signal) {
+	messageBus := buildMessageBus(r)
 
 	done := make(chan bool)
 
-	if len(registrar.Config.Routes) > 0 {
-		registrar.logger.Debug("creating client", lager.Data{"config": registrar.Config})
+	if len(r.config.Routes) > 0 {
+		r.logger.Debug("creating client", lager.Data{"config": r.config})
 
-		client := gibson.NewCFRouterClient(registrar.Config.Host, messageBus)
+		client := gibson.NewCFRouterClient(r.config.Host, messageBus)
 		client.Greet()
-		registrar.registerSignalHandler(done, client)
+		r.registerSignalHandler(signals, done, client)
 
-		ticker := time.NewTicker(registrar.Config.RefreshInterval)
+		ticker := time.NewTicker(r.config.RefreshInterval)
 
 		for {
 			select {
 			case <-ticker.C:
-				registrar.logger.Debug(
+				r.logger.Debug(
 					"registering routes",
 					lager.Data{
-						"port": registrar.Config.Routes[0].Port,
-						"uris": registrar.Config.Routes[0].URIs,
+						"port": r.config.Routes[0].Port,
+						"uris": r.config.Routes[0].URIs,
 					},
 				)
 				client.RegisterAll(
-					registrar.Config.Routes[0].Port,
-					registrar.Config.Routes[0].URIs,
+					r.config.Routes[0].Port,
+					r.config.Routes[0].URIs,
 				)
 			case <-done:
-				registrar.logger.Debug(
+				r.logger.Debug(
 					"deregistering routes",
 					lager.Data{
-						"port": registrar.Config.Routes[0].Port,
-						"uris": registrar.Config.Routes[0].URIs,
+						"port": r.config.Routes[0].Port,
+						"uris": r.config.Routes[0].URIs,
 					},
 				)
 				client.UnregisterAll(
-					registrar.Config.Routes[0].Port,
-					registrar.Config.Routes[0].URIs,
+					r.config.Routes[0].Port,
+					r.config.Routes[0].URIs,
 				)
 				return
 			}
 		}
 	}
 
-	client := gibson.NewCFRouterClient(registrar.Config.ExternalIp, messageBus)
+	client := gibson.NewCFRouterClient(r.config.ExternalIp, messageBus)
 	client.Greet()
-	registrar.registerSignalHandler(done, client)
+	r.registerSignalHandler(signals, done, client)
 
-	if registrar.HealthChecker != nil {
-		callbackInterval := time.Duration(registrar.Config.HealthChecker.Interval) * time.Second
+	if r.healthChecker != nil {
+		callbackInterval := time.Duration(r.config.HealthChecker.Interval) * time.Second
 		callbackPeriodically(callbackInterval,
-			func() { registrar.updateRegistrationBasedOnHealthCheck(client) },
+			func() { r.updateRegistrationBasedOnHealthCheck(client) },
 			done)
 	} else {
-		client.Register(registrar.Config.Port, registrar.Config.ExternalHost)
+		client.Register(r.config.Port, r.config.ExternalHost)
 
 		select {
 		case <-done:
@@ -103,11 +102,11 @@ func (registrar *Registrar) RegisterRoutes() {
 	}
 }
 
-func buildMessageBus(registrar *Registrar) yagnats.NATSConn {
+func buildMessageBus(r *registrar) yagnats.NATSConn {
 	var natsServers []string
 
-	for _, server := range registrar.Config.MessageBusServers {
-		registrar.logger.Info(
+	for _, server := range r.config.MessageBusServers {
+		r.logger.Info(
 			"Adding NATS server",
 			lager.Data{"server": server},
 		)
@@ -123,7 +122,7 @@ func buildMessageBus(registrar *Registrar) yagnats.NATSConn {
 	return messageBus
 }
 
-func callbackPeriodically(duration time.Duration, callback callbackFunction, done chan bool) {
+func callbackPeriodically(duration time.Duration, callback func(), done chan bool) {
 	interval := time.NewTicker(duration)
 	for stop := false; !stop; {
 		select {
@@ -135,27 +134,29 @@ func callbackPeriodically(duration time.Duration, callback callbackFunction, don
 	}
 }
 
-func (registrar *Registrar) updateRegistrationBasedOnHealthCheck(client *gibson.CFRouterClient) {
-	current := registrar.HealthChecker.Check()
-	if (!current) && registrar.previousHealthStatus {
-		registrar.logger.Info("Health check status changed to unavailabile; unregistering the route")
-		client.Unregister(registrar.Config.Port, registrar.Config.ExternalHost)
-	} else if current && (!registrar.previousHealthStatus) {
-		registrar.logger.Info("Health check status changed to availabile; registering the route")
-		client.Register(registrar.Config.Port, registrar.Config.ExternalHost)
+func (r *registrar) updateRegistrationBasedOnHealthCheck(client *gibson.CFRouterClient) {
+	current := r.healthChecker.Check()
+	if (!current) && r.previousHealthStatus {
+		r.logger.Info("Health check status changed to unavailabile; unregistering the route")
+		client.Unregister(r.config.Port, r.config.ExternalHost)
+	} else if current && (!r.previousHealthStatus) {
+		r.logger.Info("Health check status changed to availabile; registering the route")
+		client.Register(r.config.Port, r.config.ExternalHost)
 	}
-	registrar.previousHealthStatus = current
+	r.previousHealthStatus = current
 }
 
-func (registrar *Registrar) registerSignalHandler(done chan bool, client *gibson.CFRouterClient) {
+func (r *registrar) registerSignalHandler(
+	signals <-chan os.Signal,
+	done chan bool,
+	client *gibson.CFRouterClient,
+) {
 	go func() {
 		select {
-		case <-registrar.SignalChannel:
-			registrar.logger.Info("Received SIGTERM or SIGINT; unregistering the route")
-			client.Unregister(registrar.Config.Port, registrar.Config.ExternalHost)
+		case <-signals:
+			r.logger.Info("Received signal; unregistering the route")
+			client.Unregister(r.config.Port, r.config.ExternalHost)
 			done <- true
 		}
 	}()
-
-	signal.Notify(registrar.SignalChannel, syscall.SIGINT, syscall.SIGTERM)
 }

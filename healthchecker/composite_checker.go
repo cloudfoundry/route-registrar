@@ -1,7 +1,5 @@
 package healthchecker
 
-import ()
-
 type CompositeChecker struct {
 	healthCheckers []HealthChecker
 }

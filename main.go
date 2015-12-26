@@ -4,7 +4,9 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
@@ -57,6 +59,14 @@ func main() {
 		}
 	}
 
-	r.RegisterRoutes()
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
+	done := make(chan struct{}, 1)
+	go func() {
+		r.RegisterRoutes(signals)
+		close(done)
+	}()
+	<-done
 	os.Exit(1)
 }
