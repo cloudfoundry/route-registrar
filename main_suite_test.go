@@ -23,7 +23,6 @@ var (
 	routeRegistrarBinPath string
 	pidFile               string
 	configFile            string
-	scriptPath            string
 	rootConfig            config.Config
 	natsPort              int
 )
@@ -44,7 +43,6 @@ var _ = BeforeSuite(func() {
 	pidFile = filepath.Join(tempDir, "route-registrar.pid")
 
 	configFile = filepath.Join(tempDir, "registrar_settings.yml")
-	scriptPath = filepath.Join(tempDir, "check_node_validity.sh")
 })
 
 var _ = AfterSuite(func() {
@@ -52,7 +50,6 @@ var _ = AfterSuite(func() {
 })
 
 func initConfig() {
-
 	natsPort = 42222 + GinkgoParallelNode()
 
 	messageBusServers := []config.MessageBusServer{
@@ -64,13 +61,13 @@ func initConfig() {
 	}
 
 	healthCheckerConfig := &config.HealthCheckerConf{
-		Name:     "riak-cs-cluster",
+		Name:     "a health-checkable",
 		Interval: 10,
 	}
 
 	rootConfig = config.Config{
 		MessageBusServers: messageBusServers,
-		ExternalHost:      "riakcs-vcap.me",
+		ExternalHost:      "my-external-host.me",
 		ExternalIp:        "127.0.0.1",
 		Port:              8080,
 		HealthChecker:     healthCheckerConfig,

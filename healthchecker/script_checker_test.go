@@ -24,7 +24,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 		tmpDir, err = ioutil.TempDir(os.TempDir(), "healthchecker-test")
 		Expect(err).ToNot(HaveOccurred())
 		scriptPath = filepath.Join(tmpDir, "healthchecker.sh")
-		logger = lagertest.NewTestLogger("RiakCSHealthChecker test")
+		logger = lagertest.NewTestLogger("Script healthchecker test")
 	})
 
 	AfterEach(func() {

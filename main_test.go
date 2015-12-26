@@ -40,7 +40,6 @@ var _ = Describe("Main", func() {
 			routeRegistrarBinPath,
 			fmt.Sprintf("-pidfile=%s", pidFile),
 			fmt.Sprintf("-configPath=%s", configFile),
-			fmt.Sprintf("-scriptPath=%s", scriptPath),
 		)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Ω(err).ShouldNot(HaveOccurred())

@@ -63,7 +63,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 	Context("When single external host is provided", func() {
 		BeforeEach(func() {
-			rrConfig.ExternalHost = "riakcs.vcap.me"
+			rrConfig.ExternalHost = "some-external-host"
 			rrConfig.ExternalIp = "127.0.0.1"
 			rrConfig.Port = 8080
 		})
@@ -91,7 +91,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			Eventually(registered, 2).Should(Receive(&receivedMessage))
 
 			expectedRegistryMessage := gibson.RegistryMessage{
-				URIs: []string{"riakcs.vcap.me"},
+				URIs: []string{rrConfig.ExternalHost},
 				Host: "127.0.0.1",
 				Port: 8080,
 			}
@@ -165,7 +165,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				testTimeout := rrConfig.HealthChecker.Interval * 3
 
 				expectedRegistryMessage := gibson.RegistryMessage{
-					URIs: []string{"riakcs.vcap.me"},
+					URIs: []string{rrConfig.ExternalHost},
 					Host: "127.0.0.1",
 					Port: 8080,
 				}
@@ -290,7 +290,7 @@ func verifySignalTriggersUnregister(
 	Eventually(unregistered, 2).Should(Receive(&receivedMessage))
 
 	expectedRegistryMessage := gibson.RegistryMessage{
-		URIs: []string{"riakcs.vcap.me"},
+		URIs: []string{rrConfig.ExternalHost},
 		Host: "127.0.0.1",
 		Port: 8080,
 	}

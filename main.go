@@ -18,7 +18,6 @@ func main() {
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 	pidfile := flags.String("pidfile", "", "Path to pid file")
-	scriptPath := flags.String("scriptPath", "./check_node_validity.sh", "Path to script file")
 	cf_lager.AddFlags(flags)
 
 	serviceConfig := service_config.New()
@@ -39,7 +38,7 @@ func main() {
 
 	r := registrar.NewRegistrar(registrarConfig, logger)
 	//add health check handler
-	checker := healthchecker.InitHealthChecker(registrarConfig, logger, *scriptPath)
+	checker := healthchecker.InitHealthChecker(registrarConfig, logger)
 	if checker != nil {
 		r.AddHealthCheckHandler(checker)
 	}
