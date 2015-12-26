@@ -3,7 +3,10 @@ package registrar_test
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
+	"os/exec"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -62,7 +65,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 	AfterEach(func() {
 		testSpyClient.Disconnect()
-		stopCmd(natsCmd)
+
+		natsCmd.Process.Kill()
+		natsCmd.Wait()
 	})
 
 	Context("When single external host is provided", func() {
@@ -332,4 +337,29 @@ func subscribeToUnregisterEvents(
 	go testSpyClient.Subscribe("router.unregister", callback)
 
 	return
+}
+
+func startNats(port int) *exec.Cmd {
+	fmt.Fprintf(GinkgoWriter, "Starting gnatsd on port %d\n", port)
+
+	cmd := exec.Command(
+		"gnatsd",
+		"-p", strconv.Itoa(port),
+		"--user", "nats",
+		"--pass", "nats")
+
+	err := cmd.Start()
+	if err != nil {
+		fmt.Printf("gnatsd failed to start: %v\n", err)
+	}
+
+	natsTimeout := 10 * time.Second
+	natsPollingInterval := 20 * time.Millisecond
+	Eventually(func() error {
+		_, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		return err
+	}, natsTimeout, natsPollingInterval).Should(Succeed())
+
+	fmt.Fprintf(GinkgoWriter, "gnatsd running on port %d\n", port)
+	return cmd
 }
