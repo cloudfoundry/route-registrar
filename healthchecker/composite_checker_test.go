@@ -1,10 +1,9 @@
 package healthchecker_test
 
 import (
+	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 )
 
 type FakeHealthChecker struct {
@@ -27,9 +26,9 @@ var _ = Describe("Check", func() {
 		checker1.status = true
 		checker2 := NewFakeHealthChecker()
 		checker2.status = true
-		checkerArray := []HealthChecker{checker1, checker2}
+		checkerArray := []healthchecker.HealthChecker{checker1, checker2}
 
-		compositeChecker := NewCompositeChecker(checkerArray)
+		compositeChecker := healthchecker.NewCompositeChecker(checkerArray)
 		Expect(compositeChecker.Check()).To(Equal(true))
 	})
 
@@ -37,9 +36,9 @@ var _ = Describe("Check", func() {
 		checker1 := NewFakeHealthChecker()
 		checker1.status = true
 		checker2 := NewFakeHealthChecker()
-		checkerArray := []HealthChecker{checker1, checker2}
+		checkerArray := []healthchecker.HealthChecker{checker1, checker2}
 
-		compositeChecker := NewCompositeChecker(checkerArray)
+		compositeChecker := healthchecker.NewCompositeChecker(checkerArray)
 		Expect(compositeChecker.Check()).To(Equal(false))
 	})
 })

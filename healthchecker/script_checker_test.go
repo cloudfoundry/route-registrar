@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
@@ -38,7 +38,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 		})
 
 		It("returns true", func() {
-			scriptHealthChecker := NewScriptHealthChecker(scriptPath, logger)
+			scriptHealthChecker := healthchecker.NewScriptHealthChecker(scriptPath, logger)
 			Expect(scriptHealthChecker.Check()).To(BeTrue(), "Expected Check to return true when stdout is 1")
 		})
 	})
@@ -50,7 +50,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 		})
 
 		It("returns false", func() {
-			scriptHealthChecker := NewScriptHealthChecker(scriptPath, logger)
+			scriptHealthChecker := healthchecker.NewScriptHealthChecker(scriptPath, logger)
 			Expect(scriptHealthChecker.Check()).To(BeFalse(), "Expected Check to return false when stdout is not 1")
 		})
 	})

@@ -8,8 +8,8 @@ import (
 
 	"github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
-	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
-	. "github.com/cloudfoundry-incubator/route-registrar/registrar"
+	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
+	"github.com/cloudfoundry-incubator/route-registrar/registrar"
 	"github.com/pivotal-cf-experimental/service-config"
 	"github.com/pivotal-golang/lager"
 )
@@ -37,11 +37,11 @@ func main() {
 		logger.Fatal("error parsing file: %s\n", err)
 	}
 
-	registrar := NewRegistrar(registrarConfig, logger)
+	r := registrar.NewRegistrar(registrarConfig, logger)
 	//add health check handler
-	checker := InitHealthChecker(registrarConfig, logger, *scriptPath)
+	checker := healthchecker.InitHealthChecker(registrarConfig, logger, *scriptPath)
 	if checker != nil {
-		registrar.AddHealthCheckHandler(checker)
+		r.AddHealthCheckHandler(checker)
 	}
 
 	if *pidfile != "" {
@@ -58,6 +58,6 @@ func main() {
 		}
 	}
 
-	registrar.RegisterRoutes()
+	r.RegisterRoutes()
 	os.Exit(1)
 }

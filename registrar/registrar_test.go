@@ -11,24 +11,24 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/cloudfoundry-incubator/route-registrar/config"
+	"github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/cloudfoundry-incubator/route-registrar/healthchecker/fakes"
-	. "github.com/cloudfoundry-incubator/route-registrar/registrar"
+	"github.com/cloudfoundry-incubator/route-registrar/registrar"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("Registrar.RegisterRoutes", func() {
 	var (
-		config        Config
+		rrConfig      config.Config
 		testSpyClient *yagnats.Client
 
 		logger           lager.Logger
-		messageBusServer MessageBusServer
+		messageBusServer config.MessageBusServer
 	)
 
 	BeforeEach(func() {
-		messageBusServer = MessageBusServer{
+		messageBusServer = config.MessageBusServer{
 			"127.0.0.1:4222",
 			"nats",
 			"nats",
@@ -47,9 +47,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		err := testSpyClient.Connect(&connectionInfo)
 		Expect(err).NotTo(HaveOccurred())
 
-		config = Config{
+		rrConfig = config.Config{
 			// doesn't matter if these are the same, just want to send a slice
-			MessageBusServers: []MessageBusServer{messageBusServer, messageBusServer},
+			MessageBusServers: []config.MessageBusServer{messageBusServer, messageBusServer},
 		}
 	})
 
@@ -59,9 +59,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 	Context("When single external host is provided", func() {
 		BeforeEach(func() {
-			config.ExternalHost = "riakcs.vcap.me"
-			config.ExternalIp = "127.0.0.1"
-			config.Port = 8080
+			rrConfig.ExternalHost = "riakcs.vcap.me"
+			rrConfig.ExternalIp = "127.0.0.1"
+			rrConfig.Port = 8080
 		})
 
 		It("Sends a router.register message and does not send a router.unregister message", func() {
@@ -78,8 +78,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			})
 
 			go func() {
-				registrar := NewRegistrar(config, logger)
-				registrar.RegisterRoutes()
+				r := registrar.NewRegistrar(rrConfig, logger)
+				r.RegisterRoutes()
 			}()
 
 			// Assert that we got the right router.register message
@@ -106,7 +106,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		It("Emits a router.unregister message when SIGINT is sent to the registrar's signal channel", func() {
 			verifySignalTriggersUnregister(
-				config,
+				rrConfig,
 				syscall.SIGINT,
 				logger,
 				testSpyClient,
@@ -115,7 +115,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		It("Emits a router.unregister message when SIGTERM is sent to the registrar's signal channel", func() {
 			verifySignalTriggersUnregister(
-				config,
+				rrConfig,
 				syscall.SIGTERM,
 				logger,
 				testSpyClient,
@@ -124,12 +124,12 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		Context("When the registrar has a healthchecker", func() {
 			BeforeEach(func() {
-				healthCheckerConfig := HealthCheckerConf{
+				healthCheckerConfig := config.HealthCheckerConf{
 					Name:     "a_useful_health_checker",
 					Interval: 1,
 				}
 
-				config.HealthChecker = &healthCheckerConfig
+				rrConfig.HealthChecker = &healthCheckerConfig
 			})
 
 			It("Emits a router.unregister message when registrar's health check fails, and emits a router.register message when registrar's health check back to normal", func() {
@@ -138,7 +138,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 				unregistered := make(chan string)
 				registered := make(chan string)
-				var registrar *Registrar
+				var r *registrar.Registrar
 
 				// Listen for a router.unregister event, then set health status to true, then listen for a router.register event
 				subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
@@ -152,13 +152,13 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				})
 
 				go func() {
-					registrar = NewRegistrar(config, logger)
-					registrar.AddHealthCheckHandler(healthy)
-					registrar.RegisterRoutes()
+					r = registrar.NewRegistrar(rrConfig, logger)
+					r.AddHealthCheckHandler(healthy)
+					r.RegisterRoutes()
 				}()
 
 				var receivedMessage string
-				testTimeout := config.HealthChecker.Interval * 3
+				testTimeout := rrConfig.HealthChecker.Interval * 3
 
 				expectedRegistryMessage := gibson.RegistryMessage{
 					URIs: []string{"riakcs.vcap.me"},
@@ -190,14 +190,14 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 	Context("When backing legacy route registration", func() {
 		BeforeEach(func() {
-			config.RefreshInterval = 1
+			rrConfig.RefreshInterval = 1
 		})
 
 		Context("one route, multiple URIs", func() {
 			BeforeEach(func() {
-				config.Host = "my host"
-				config.RefreshInterval = 500 * time.Millisecond
-				config.Routes = []Route{
+				rrConfig.Host = "my host"
+				rrConfig.RefreshInterval = 500 * time.Millisecond
+				rrConfig.Routes = []config.Route{
 					{
 						Name: "my route",
 						Port: 8080,
@@ -222,9 +222,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					unregistered <- true
 				})
 
-				registrar := NewRegistrar(config, logger)
+				r := registrar.NewRegistrar(rrConfig, logger)
 				go func() {
-					registrar.RegisterRoutes()
+					r.RegisterRoutes()
 				}()
 
 				// Assert that we got the right router.register message
@@ -236,9 +236,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				expectedRegistryMessage := gibson.RegistryMessage{
-					URIs: config.Routes[0].URIs,
-					Host: config.Host,
-					Port: config.Routes[0].Port,
+					URIs: rrConfig.Routes[0].URIs,
+					Host: rrConfig.Host,
+					Port: rrConfig.Routes[0].Port,
 				}
 
 				Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
@@ -253,7 +253,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 })
 
 func verifySignalTriggersUnregister(
-	config Config,
+	rrConfig config.Config,
 	signal os.Signal,
 	logger lager.Logger,
 	testSpyClient *yagnats.Client,
@@ -261,11 +261,11 @@ func verifySignalTriggersUnregister(
 	unregistered := make(chan string)
 	returned := make(chan bool)
 
-	var registrar *Registrar
+	var r *registrar.Registrar
 
 	// Trigger a SIGINT after a successful router.register message
 	subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
-		registrar.SignalChannel <- signal
+		r.SignalChannel <- signal
 	})
 
 	// Detect when a router.unregister message gets sent
@@ -274,8 +274,8 @@ func verifySignalTriggersUnregister(
 	})
 
 	go func() {
-		registrar = NewRegistrar(config, logger)
-		registrar.RegisterRoutes()
+		r = registrar.NewRegistrar(rrConfig, logger)
+		r.RegisterRoutes()
 
 		// Set up a channel to wait for RegisterRoutes to return
 		returned <- true

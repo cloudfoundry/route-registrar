@@ -11,7 +11,7 @@ import (
 	"github.com/cloudfoundry/yagnats"
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
-	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
+	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 
 	"github.com/pivotal-golang/lager"
 )
@@ -20,7 +20,7 @@ type Registrar struct {
 	logger               lager.Logger
 	Config               config.Config
 	SignalChannel        chan os.Signal
-	HealthChecker        HealthChecker
+	HealthChecker        healthchecker.HealthChecker
 	previousHealthStatus bool
 }
 
@@ -33,7 +33,7 @@ func NewRegistrar(clientConfig config.Config, logger lager.Logger) *Registrar {
 	}
 }
 
-func (registrar *Registrar) AddHealthCheckHandler(handler HealthChecker) {
+func (registrar *Registrar) AddHealthCheckHandler(handler healthchecker.HealthChecker) {
 	registrar.HealthChecker = handler
 }
 
@@ -63,7 +63,10 @@ func (registrar *Registrar) RegisterRoutes() {
 						"uris": registrar.Config.Routes[0].URIs,
 					},
 				)
-				client.RegisterAll(registrar.Config.Routes[0].Port, registrar.Config.Routes[0].URIs)
+				client.RegisterAll(
+					registrar.Config.Routes[0].Port,
+					registrar.Config.Routes[0].URIs,
+				)
 			case <-done:
 				registrar.logger.Debug(
 					"deregistering routes",
@@ -72,7 +75,10 @@ func (registrar *Registrar) RegisterRoutes() {
 						"uris": registrar.Config.Routes[0].URIs,
 					},
 				)
-				client.UnregisterAll(registrar.Config.Routes[0].Port, registrar.Config.Routes[0].URIs)
+				client.UnregisterAll(
+					registrar.Config.Routes[0].Port,
+					registrar.Config.Routes[0].URIs,
+				)
 				return
 			}
 		}

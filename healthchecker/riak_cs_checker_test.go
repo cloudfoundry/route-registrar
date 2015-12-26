@@ -4,10 +4,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
@@ -26,13 +26,13 @@ var _ = Describe("RiakCSHealthChecker", func() {
 		})
 
 		It("returns true when the PID file exists", func() {
-			riakCsHealthChecker := NewRiakCSHealthChecker(pidFilename, logger)
+			riakCsHealthChecker := healthchecker.NewRiakCSHealthChecker(pidFilename, logger)
 
 			Expect(riakCsHealthChecker.Check()).To(BeTrue())
 		})
 
 		It("returns false when the PID file does not exist", func() {
-			riakCsHealthChecker := NewRiakCSHealthChecker("/tmp/file-that-does-not-exist", logger)
+			riakCsHealthChecker := healthchecker.NewRiakCSHealthChecker("/tmp/file-that-does-not-exist", logger)
 
 			Expect(riakCsHealthChecker.Check()).To(BeFalse())
 		})

@@ -3,7 +3,7 @@ package healthchecker
 import (
 	"os"
 
-	. "github.com/cloudfoundry-incubator/route-registrar/config"
+	"github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -11,7 +11,7 @@ type HealthChecker interface {
 	Check() bool
 }
 
-func InitHealthChecker(clientConfig Config, logger lager.Logger, scriptPath string) HealthChecker {
+func InitHealthChecker(clientConfig config.Config, logger lager.Logger, scriptPath string) HealthChecker {
 	if clientConfig.HealthChecker != nil {
 		if clientConfig.HealthChecker.Name == "riak-cs-cluster" {
 			//TODO: these should be passed in via registrar_settings.yml
