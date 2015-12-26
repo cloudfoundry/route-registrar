@@ -1,8 +1,6 @@
 package healthchecker
 
 import (
-	"os"
-
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/pivotal-golang/lager"
 )
@@ -18,9 +16,4 @@ func InitHealthChecker(clientConfig config.Config, logger lager.Logger) HealthCh
 		}
 	}
 	return nil
-}
-
-func checkPIDExist(pidFileName string) bool {
-	_, err := os.Stat(pidFileName)
-	return nil == err
 }
