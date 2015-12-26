@@ -88,7 +88,7 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		}
 	}
 
-	client := gibson.NewCFRouterClient(r.config.ExternalIp, messageBus)
+	client := gibson.NewCFRouterClient(r.config.ExternalIP, messageBus)
 	client.Greet()
 	r.registerSignalHandler(signals, done, client)
 

@@ -77,7 +77,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	Context("When single external host is provided", func() {
 		BeforeEach(func() {
 			rrConfig.ExternalHost = "some-external-host"
-			rrConfig.ExternalIp = "127.0.0.1"
+			rrConfig.ExternalIP = "127.0.0.1"
 			rrConfig.Port = 8080
 
 			r = registrar.NewRegistrar(rrConfig, logger)

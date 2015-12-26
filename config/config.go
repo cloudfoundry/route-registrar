@@ -17,7 +17,7 @@ type HealthCheckerConf struct {
 type Config struct {
 	MessageBusServers []MessageBusServer `yaml:"message_bus_servers"`
 	ExternalHost      string             `yaml:"external_host"`
-	ExternalIp        string             `yaml:"external_ip"`
+	ExternalIP        string             `yaml:"external_ip"`
 	Port              int                `yaml:"port"`
 	HealthChecker     *HealthCheckerConf `yaml:"health_checker"`
 	Routes            []Route            `yaml:"routes"`

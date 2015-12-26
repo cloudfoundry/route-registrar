@@ -74,7 +74,7 @@ func initConfig() {
 	rootConfig = config.Config{
 		MessageBusServers: messageBusServers,
 		ExternalHost:      "my-external-host.me",
-		ExternalIp:        "127.0.0.1",
+		ExternalIP:        "127.0.0.1",
 		Port:              8080,
 		HealthChecker:     healthCheckerConfig,
 	}
