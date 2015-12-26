@@ -64,7 +64,7 @@ func main() {
 
 	done := make(chan struct{}, 1)
 	go func() {
-		r.RegisterRoutes(signals)
+		r.Run(signals)
 		close(done)
 	}()
 	<-done

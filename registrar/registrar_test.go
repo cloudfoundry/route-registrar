@@ -95,7 +95,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			})
 
 			go func() {
-				r.RegisterRoutes(signals)
+				r.Run(signals)
 			}()
 
 			// Assert that we got the right router.register message
@@ -174,7 +174,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				})
 
 				go func() {
-					r.RegisterRoutes(signals)
+					r.Run(signals)
 				}()
 
 				var receivedMessage string
@@ -244,7 +244,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				})
 
 				go func() {
-					r.RegisterRoutes(signals)
+					r.Run(signals)
 				}()
 
 				// Assert that we got the right router.register message
@@ -293,7 +293,7 @@ func verifySignalTriggersUnregister(
 		unregistered <- string(msg.Payload)
 	})
 
-	r.RegisterRoutes(signals)
+	r.Run(signals)
 
 	// Assert that we got the right router.unregister message as a result of the signal
 	var receivedMessage string

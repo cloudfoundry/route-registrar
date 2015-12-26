@@ -16,7 +16,7 @@ import (
 
 type Registrar interface {
 	AddHealthCheckHandler(handler healthchecker.HealthChecker)
-	RegisterRoutes(signals <-chan os.Signal)
+	Run(signals <-chan os.Signal)
 }
 
 type registrar struct {
@@ -38,7 +38,7 @@ func (r *registrar) AddHealthCheckHandler(handler healthchecker.HealthChecker) {
 	r.healthChecker = handler
 }
 
-func (r *registrar) RegisterRoutes(signals <-chan os.Signal) {
+func (r *registrar) Run(signals <-chan os.Signal) {
 	messageBus := buildMessageBus(r)
 
 	done := make(chan bool)
