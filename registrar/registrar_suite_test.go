@@ -1,7 +1,6 @@
 package registrar_test
 
 import (
-	"os/exec"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -11,7 +10,6 @@ import (
 
 var (
 	natsPort int
-	natsCmd  *exec.Cmd
 )
 
 func TestRoute_register(t *testing.T) {

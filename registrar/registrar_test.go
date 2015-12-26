@@ -24,6 +24,11 @@ import (
 
 var _ = Describe("Registrar.RegisterRoutes", func() {
 	var (
+		natsCmd      *exec.Cmd
+		natsHost     string
+		natsUsername string
+		natsPassword string
+
 		rrConfig      config.Config
 		testSpyClient *yagnats.Client
 
@@ -37,12 +42,16 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	)
 
 	BeforeEach(func() {
-		natsCmd = startNats(natsPort)
+		natsUsername = "nats-user"
+		natsPassword = "nats-pw"
+		natsHost = "127.0.0.1"
+
+		natsCmd = startNats(natsHost, natsPort, natsUsername, natsPassword)
 
 		messageBusServer = config.MessageBusServer{
-			fmt.Sprintf("127.0.0.1:%d", natsPort),
-			"nats",
-			"nats",
+			fmt.Sprintf("%s:%d", natsHost, natsPort),
+			natsUsername,
+			natsPassword,
 		}
 
 		logger = lagertest.NewTestLogger("Registrar test")
@@ -107,8 +116,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 			expectedRegistryMessage := gibson.RegistryMessage{
 				URIs: []string{rrConfig.ExternalHost},
-				Host: "127.0.0.1",
-				Port: 8080,
+				Host: rrConfig.ExternalIP,
+				Port: rrConfig.Port,
 			}
 
 			var registryMessage gibson.RegistryMessage
@@ -123,24 +132,49 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			Consistently(unregistered, 2).ShouldNot(Receive())
 		})
 
+		verifySignalTriggersUnregister := func(signal os.Signal) {
+			r := registrar.NewRegistrar(rrConfig, logger)
+
+			unregistered := make(chan string)
+
+			// Send a signal after a successful router.register message
+			subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
+				signals <- signal
+			})
+
+			// Detect when a router.unregister message gets sent
+			subscribeToUnregisterEvents(testSpyClient, func(msg *yagnats.Message) {
+				unregistered <- string(msg.Payload)
+			})
+
+			ready := make(chan struct{}, 1)
+			r.Run(signals, ready)
+			<-ready
+
+			// Assert that we got the right router.unregister message as a result of the signal
+			var receivedMessage string
+			Eventually(unregistered, 2).Should(Receive(&receivedMessage))
+
+			expectedRegistryMessage := gibson.RegistryMessage{
+				URIs: []string{rrConfig.ExternalHost},
+				Host: rrConfig.ExternalIP,
+				Port: rrConfig.Port,
+			}
+
+			var registryMessage gibson.RegistryMessage
+			err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
+
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
+			Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
+			Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
+		}
 		It("Emits a router.unregister message when SIGINT is sent to the registrar's signal channel", func() {
-			verifySignalTriggersUnregister(
-				rrConfig,
-				signals,
-				syscall.SIGINT,
-				logger,
-				testSpyClient,
-			)
+			verifySignalTriggersUnregister(syscall.SIGINT)
 		})
 
 		It("Emits a router.unregister message when SIGTERM is sent to the registrar's signal channel", func() {
-			verifySignalTriggersUnregister(
-				rrConfig,
-				signals,
-				syscall.SIGTERM,
-				logger,
-				testSpyClient,
-			)
+			verifySignalTriggersUnregister(syscall.SIGTERM)
 		})
 
 		Context("When the registrar has a healthchecker", func() {
@@ -186,8 +220,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 				expectedRegistryMessage := gibson.RegistryMessage{
 					URIs: []string{rrConfig.ExternalHost},
-					Host: "127.0.0.1",
-					Port: 8080,
+					Host: rrConfig.ExternalIP,
+					Port: rrConfig.Port,
 				}
 
 				var registryMessage gibson.RegistryMessage
@@ -346,7 +380,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 						Expect(registryMessage.URIs).To(Equal(expectedRegistryMessages[1].URIs))
 						break
 					default:
-						Fail("Unexpected port")
+						Fail("Unexpected port in nats message")
 					}
 				}
 
@@ -356,50 +390,6 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		})
 	})
 })
-
-func verifySignalTriggersUnregister(
-	rrConfig config.Config,
-	signals chan os.Signal,
-	signal os.Signal,
-	logger lager.Logger,
-	testSpyClient *yagnats.Client,
-) {
-	r := registrar.NewRegistrar(rrConfig, logger)
-
-	unregistered := make(chan string)
-
-	// Send a signal after a successful router.register message
-	subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
-		signals <- signal
-	})
-
-	// Detect when a router.unregister message gets sent
-	subscribeToUnregisterEvents(testSpyClient, func(msg *yagnats.Message) {
-		unregistered <- string(msg.Payload)
-	})
-
-	ready := make(chan struct{}, 1)
-	r.Run(signals, ready)
-	<-ready
-
-	// Assert that we got the right router.unregister message as a result of the signal
-	var receivedMessage string
-	Eventually(unregistered, 2).Should(Receive(&receivedMessage))
-
-	expectedRegistryMessage := gibson.RegistryMessage{
-		URIs: []string{rrConfig.ExternalHost},
-		Host: "127.0.0.1",
-		Port: 8080,
-	}
-
-	var registryMessage gibson.RegistryMessage
-	err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
-
-	Expect(err).ShouldNot(HaveOccurred())
-	Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
-	Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
-	Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
-}
 
 func subscribeToRegisterEvents(
 	testSpyClient *yagnats.Client,
@@ -421,14 +411,14 @@ func subscribeToUnregisterEvents(
 	return
 }
 
-func startNats(port int) *exec.Cmd {
+func startNats(host string, port int, username, password string) *exec.Cmd {
 	fmt.Fprintf(GinkgoWriter, "Starting gnatsd on port %d\n", port)
 
 	cmd := exec.Command(
 		"gnatsd",
 		"-p", strconv.Itoa(port),
-		"--user", "nats",
-		"--pass", "nats")
+		"--user", username,
+		"--pass", password)
 
 	err := cmd.Start()
 	if err != nil {
@@ -438,7 +428,7 @@ func startNats(port int) *exec.Cmd {
 	natsTimeout := 10 * time.Second
 	natsPollingInterval := 20 * time.Millisecond
 	Eventually(func() error {
-		_, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+		_, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 		return err
 	}, natsTimeout, natsPollingInterval).Should(Succeed())
 
