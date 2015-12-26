@@ -2,6 +2,7 @@ package registrar_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"syscall"
 	"time"
@@ -28,8 +29,10 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	)
 
 	BeforeEach(func() {
+		natsCmd = startNats(natsPort)
+
 		messageBusServer = config.MessageBusServer{
-			"127.0.0.1:4222",
+			fmt.Sprintf("127.0.0.1:%d", natsPort),
 			"nats",
 			"nats",
 		}
@@ -55,6 +58,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 	AfterEach(func() {
 		testSpyClient.Disconnect()
+		stopCmd(natsCmd)
 	})
 
 	Context("When single external host is provided", func() {
