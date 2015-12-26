@@ -16,7 +16,7 @@ import (
 
 type Registrar interface {
 	AddHealthCheckHandler(handler healthchecker.HealthChecker)
-	Run(signals <-chan os.Signal, ready chan<- struct{})
+	Run(signals <-chan os.Signal, ready chan<- struct{}) error
 }
 
 type registrar struct {
@@ -38,7 +38,7 @@ func (r *registrar) AddHealthCheckHandler(handler healthchecker.HealthChecker) {
 	r.healthChecker = handler
 }
 
-func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) {
+func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	messageBus := buildMessageBus(r)
 
 	done := make(chan bool)
@@ -80,7 +80,7 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) {
 					r.config.Routes[0].Port,
 					r.config.Routes[0].URIs,
 				)
-				return
+				return nil
 			}
 		}
 	}
@@ -91,7 +91,8 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) {
 
 	if r.healthChecker != nil {
 		callbackInterval := time.Duration(r.config.HealthChecker.Interval) * time.Second
-		callbackPeriodically(callbackInterval,
+		callbackPeriodically(
+			callbackInterval,
 			func() { r.updateRegistrationBasedOnHealthCheck(client) },
 			done)
 	} else {
@@ -99,9 +100,10 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) {
 
 		select {
 		case <-done:
-			return
+			return nil
 		}
 	}
+	return nil
 }
 
 func buildMessageBus(r *registrar) yagnats.NATSConn {

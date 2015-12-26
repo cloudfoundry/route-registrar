@@ -4,9 +4,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
-	"os/signal"
 	"strconv"
-	"syscall"
 
 	"github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
@@ -14,6 +12,7 @@ import (
 	"github.com/cloudfoundry-incubator/route-registrar/registrar"
 	"github.com/pivotal-cf-experimental/service-config"
 	"github.com/pivotal-golang/lager"
+	"github.com/tedsuo/ifrit"
 )
 
 func main() {
@@ -59,15 +58,7 @@ func main() {
 		}
 	}
 
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-
-	done := make(chan struct{}, 1)
-	ready := make(chan struct{}, 1)
-	go func() {
-		r.Run(signals, ready)
-		close(done)
-	}()
-	<-done
+	process := ifrit.Invoke(r)
+	_ = <-process.Wait()
 	os.Exit(1)
 }

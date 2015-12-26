@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
@@ -17,7 +16,6 @@ import (
 )
 
 var _ = Describe("Main", func() {
-
 	var natsCmd *exec.Cmd
 
 	BeforeEach(func() {
@@ -36,29 +34,6 @@ var _ = Describe("Main", func() {
 	AfterEach(func() {
 		natsCmd.Process.Kill()
 		natsCmd.Wait()
-	})
-
-	It("ignores SIGHUP", func() {
-		command := exec.Command(
-			routeRegistrarBinPath,
-			fmt.Sprintf("-pidfile=%s", pidFile),
-			fmt.Sprintf("-configPath=%s", configFile),
-		)
-		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		Expect(err).ShouldNot(HaveOccurred())
-
-		Eventually(session.Out).Should(gbytes.Say("Route Registrar"))
-
-		time.Sleep(500 * time.Millisecond)
-
-		session.Signal(syscall.SIGHUP)
-
-		// Give it some time to *not* terminate
-		time.Sleep(1 * time.Second)
-
-		session.Terminate().Wait()
-		Eventually(session).Should(gexec.Exit())
-		Expect(session.ExitCode()).ToNot(BeZero())
 	})
 
 	It("Starts correctly and exits 1 on SIGTERM", func() {
@@ -93,7 +68,7 @@ func initConfig() {
 
 	healthCheckerConfig := &config.HealthCheckerConf{
 		Name:     "a health-checkable",
-		Interval: 10,
+		Interval: 0.1, // in seconds
 	}
 
 	rootConfig = config.Config{
