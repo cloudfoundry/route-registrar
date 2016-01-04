@@ -67,15 +67,11 @@ func initConfig() {
 	}
 
 	healthCheckerConfig := &config.HealthCheckerConf{
-		Name:     "a health-checkable",
-		Interval: 0.1, // in seconds
+		Name: "a health-checkable",
 	}
 
 	rootConfig = config.Config{
 		MessageBusServers: messageBusServers,
-		ExternalHost:      "my-external-host.me",
-		ExternalIP:        "127.0.0.1",
-		Port:              8080,
 		HealthChecker:     healthCheckerConfig,
 	}
 }

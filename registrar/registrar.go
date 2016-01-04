@@ -46,70 +46,52 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 	done := make(chan bool)
 
+	r.logger.Debug("creating client", lager.Data{"config": r.config})
+	client := gibson.NewCFRouterClient(r.config.Host, messageBus)
+	client.Greet()
+
+	go func() {
+		<-signals
+		close(done)
+	}()
 	close(ready)
 
-	if len(r.config.Routes) > 0 {
-		r.logger.Debug("creating client", lager.Data{"config": r.config})
-		client := gibson.NewCFRouterClient(r.config.Host, messageBus)
-		client.Greet()
-		r.registerSignalHandler(signals, done, client)
+	ticker := time.NewTicker(r.config.RefreshInterval)
 
-		ticker := time.NewTicker(r.config.RefreshInterval)
-
-		for {
-			select {
-			case <-ticker.C:
-				for _, route := range r.config.Routes {
-					r.logger.Debug(
-						"registering routes",
-						lager.Data{
-							"port": route.Port,
-							"uris": route.URIs,
-						},
-					)
-					client.RegisterAll(
-						route.Port,
-						route.URIs,
-					)
-				}
-			case <-done:
-				for _, route := range r.config.Routes {
-					r.logger.Debug(
-						"deregistering routes",
-						lager.Data{
-							"port": route.Port,
-							"uris": route.URIs,
-						},
-					)
-					client.UnregisterAll(
-						route.Port,
-						route.URIs,
-					)
-					return nil
-				}
+	for {
+		select {
+		case <-ticker.C:
+			for _, route := range r.config.Routes {
+				r.logger.Debug(
+					"registering routes",
+					lager.Data{
+						"port": route.Port,
+						"uris": route.URIs,
+					},
+				)
+				client.RegisterAll(
+					route.Port,
+					route.URIs,
+				)
+			}
+		case <-done:
+			r.logger.Info("Received signal; shutting down")
+			for _, route := range r.config.Routes {
+				r.logger.Debug(
+					"deregistering routes",
+					lager.Data{
+						"port": route.Port,
+						"uris": route.URIs,
+					},
+				)
+				client.UnregisterAll(
+					route.Port,
+					route.URIs,
+				)
+				return nil
 			}
 		}
 	}
-
-	client := gibson.NewCFRouterClient(r.config.ExternalIP, messageBus)
-	client.Greet()
-	r.registerSignalHandler(signals, done, client)
-
-	if r.healthChecker != nil {
-		callbackInterval := time.Duration(r.config.HealthChecker.Interval) * time.Second
-		callbackPeriodically(
-			callbackInterval,
-			func() { r.updateRegistrationBasedOnHealthCheck(client) },
-			done)
-	} else {
-		client.Register(r.config.Port, r.config.ExternalHost)
-
-		select {
-		case <-done:
-			return nil
-		}
-	}
-	return nil
 }
 
 func buildMessageBus(r *registrar) yagnats.NATSConn {
@@ -142,38 +124,4 @@ func callbackPeriodically(duration time.Duration, callback func(), done chan boo
 			return
 		}
 	}
-}
-
-func (r *registrar) updateRegistrationBasedOnHealthCheck(client *gibson.CFRouterClient) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	current := r.healthChecker.Check()
-	if (current) && r.wasHealthy {
-		r.logger.Debug("still healthy")
-	} else if (!current) && !r.wasHealthy {
-		r.logger.Debug("still unhealthy")
-	} else if (!current) && r.wasHealthy {
-		r.logger.Info("Health check status changed to unavailable; unregistering the route")
-		client.Unregister(r.config.Port, r.config.ExternalHost)
-	} else if current && (!r.wasHealthy) {
-		r.logger.Info("Health check status changed to available; registering the route")
-		client.Register(r.config.Port, r.config.ExternalHost)
-	}
-	r.wasHealthy = current
-}
-
-func (r *registrar) registerSignalHandler(
-	signals <-chan os.Signal,
-	done chan bool,
-	client *gibson.CFRouterClient,
-) {
-	go func() {
-		select {
-		case <-signals:
-			r.logger.Info("Received signal; unregistering the route")
-			client.Unregister(r.config.Port, r.config.ExternalHost)
-			done <- true
-		}
-	}()
 }
