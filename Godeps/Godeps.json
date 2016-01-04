@@ -1,6 +1,9 @@
 {
 	"ImportPath": "github.com/cloudfoundry-incubator/route-registrar",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5.1",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/apcera/nats",
@@ -49,6 +52,10 @@
 		{
 			"ImportPath": "github.com/pivotal-golang/lager",
 			"Rev": "09a71f6eb2dcc1c2335e37ceb78a91c6f618d561"
+		},
+		{
+			"ImportPath": "github.com/tedsuo/ifrit",
+			"Rev": "3a41de6efdb78719e66467a1b170f2b7f1e1014d"
 		}
 	]
 }
