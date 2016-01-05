@@ -22,10 +22,8 @@ type Config struct {
 }
 
 type Route struct {
-	Name string   `yaml:"name"`
-	Port int      `yaml:"port"`
-	Tags []Tag    `yaml:"tags"`
-	URIs []string `yaml:"uris"`
+	Name string            `yaml:"name"`
+	Port int               `yaml:"port"`
+	Tags map[string]string `yaml:"tags"`
+	URIs []string          `yaml:"uris"`
 }
-
-type Tag map[string]string
