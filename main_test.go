@@ -45,13 +45,37 @@ var _ = Describe("Main", func() {
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).ShouldNot(HaveOccurred())
 
-		Eventually(session.Out).Should(gbytes.Say("Route Registrar"))
+		Eventually(session.Out).Should(gbytes.Say("Initializing"))
+		Eventually(session.Out).Should(gbytes.Say("Writing pid"))
+		Eventually(session.Out).Should(gbytes.Say("Running"))
 
 		time.Sleep(500 * time.Millisecond)
 
 		session.Terminate().Wait()
 		Eventually(session).Should(gexec.Exit())
 		Expect(session.ExitCode()).ToNot(BeZero())
+	})
+
+	Context("When the config validatation fails", func() {
+		BeforeEach(func() {
+			rootConfig.UpdateFrequency = 0
+			writeConfig()
+		})
+
+		It("exits with error", func() {
+			command := exec.Command(
+				routeRegistrarBinPath,
+				fmt.Sprintf("-configPath=%s", configFile),
+			)
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Eventually(session.Out).Should(gbytes.Say("Initializing"))
+			Eventually(session.Err).Should(gbytes.Say("Invalid update frequency"))
+
+			Eventually(session).Should(gexec.Exit())
+			Expect(session.ExitCode()).ToNot(BeZero())
+		})
 	})
 })
 
@@ -73,6 +97,7 @@ func initConfig() {
 	rootConfig = config.Config{
 		MessageBusServers: messageBusServers,
 		HealthChecker:     healthCheckerConfig,
+		UpdateFrequency:   1,
 	}
 }
 

@@ -56,7 +56,8 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	}()
 	close(ready)
 
-	ticker := time.NewTicker(r.config.RefreshInterval)
+	duration := time.Duration(r.config.UpdateFrequency) * time.Second
+	ticker := time.NewTicker(duration)
 
 	for {
 		select {

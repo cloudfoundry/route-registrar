@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 
@@ -29,12 +30,17 @@ func main() {
 
 	logger, _ := cf_lager.New("Route Registrar")
 
-	logger.Info("Route Registrar started")
+	logger.Info("Initializing")
 
 	var registrarConfig config.Config
 	err := serviceConfig.Read(&registrarConfig)
 	if err != nil {
 		logger.Fatal("error parsing file: %s\n", err)
+	}
+
+	err = registrarConfig.Validate()
+	if err != nil {
+		log.Fatalln(err)
 	}
 
 	r := registrar.NewRegistrar(registrarConfig, logger)
@@ -47,6 +53,7 @@ func main() {
 	if *pidfile != "" {
 		pid := strconv.Itoa(os.Getpid())
 		err := ioutil.WriteFile(*pidfile, []byte(pid), 0644)
+		logger.Info("Writing pid", lager.Data{"pid": pid, "file": *pidfile})
 		if err != nil {
 			logger.Fatal(
 				"error writing pid to pidfile",
@@ -57,6 +64,8 @@ func main() {
 			)
 		}
 	}
+
+	logger.Info("Running")
 
 	process := ifrit.Invoke(r)
 	_ = <-process.Wait()

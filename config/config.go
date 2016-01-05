@@ -1,6 +1,6 @@
 package config
 
-import "time"
+import "fmt"
 
 type MessageBusServer struct {
 	Host     string `yaml:"host"`
@@ -17,7 +17,7 @@ type Config struct {
 	MessageBusServers []MessageBusServer `yaml:"message_bus_servers"`
 	HealthChecker     *HealthCheckerConf `yaml:"health_checker"`
 	Routes            []Route            `yaml:"routes"`
-	RefreshInterval   time.Duration      `yaml:"refresh_interval"`
+	UpdateFrequency   int                `yaml:"update_frequency"`
 	Host              string             `yaml:"host"`
 }
 
@@ -26,4 +26,12 @@ type Route struct {
 	Port int               `yaml:"port"`
 	Tags map[string]string `yaml:"tags"`
 	URIs []string          `yaml:"uris"`
+}
+
+func (c Config) Validate() error {
+	if c.UpdateFrequency <= 0 {
+		return fmt.Errorf("Invalid update frequency: %d", c.UpdateFrequency)
+	}
+	return nil
+
 }

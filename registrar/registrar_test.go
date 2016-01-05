@@ -84,7 +84,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	Context("When backing cf-release style route registration", func() {
 		BeforeEach(func() {
 			rrConfig.Host = "my host"
-			rrConfig.RefreshInterval = 100 * time.Millisecond
+			rrConfig.UpdateFrequency = 1
 		})
 
 		Context("multiple routes, each with multiple URIs", func() {
