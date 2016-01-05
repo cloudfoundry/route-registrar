@@ -16,7 +16,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/gibson",
-			"Rev": "6f731c969fa500ffb1e4ed42c094647fa1aa0de6"
+			"Rev": "a5dc7a502e4a6876d52caa4339d752e44c8fe46f"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/yagnats",
