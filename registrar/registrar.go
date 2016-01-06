@@ -21,6 +21,13 @@ type Registrar interface {
 	Run(signals <-chan os.Signal, ready chan<- struct{}) error
 }
 
+type Message struct {
+	URIs              []string `json:"uris"`
+	Host              string   `json:"host"`
+	Port              int      `json:"port"`
+	PrivateInstanceId string   `json:"private_instance_id"`
+}
+
 type registrar struct {
 	logger            lager.Logger
 	config            config.Config
@@ -113,15 +120,8 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	}
 }
 
-type message struct {
-	URIs              []string `json:"uris"`
-	Host              string   `json:"host"`
-	Port              int      `json:"port"`
-	PrivateInstanceId string   `json:"private_instance_id"`
-}
-
 func (r registrar) sendMessage(subject string, host string, route config.Route) error {
-	msg := &message{
+	msg := &Message{
 		URIs:              route.URIs,
 		Host:              host,
 		Port:              route.Port,

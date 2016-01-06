@@ -9,8 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cloudfoundry/gibson"
-	"github.com/cloudfoundry/yagnats"
+	"github.com/apcera/nats"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -28,10 +27,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		natsPassword string
 
 		rrConfig      config.Config
-		testSpyClient *yagnats.Client
+		testSpyClient *nats.Conn
 
-		logger           lager.Logger
-		messageBusServer config.MessageBusServer
+		logger lager.Logger
 
 		signals chan os.Signal
 		ready   chan struct{}
@@ -46,24 +44,29 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		natsCmd = startNats(natsHost, natsPort, natsUsername, natsPassword)
 
-		messageBusServer = config.MessageBusServer{
+		logger = lagertest.NewTestLogger("Registrar test")
+		var err error
+		servers := []string{
+			fmt.Sprintf(
+				"nats://%s:%s@%s:%d",
+				natsUsername,
+				natsPassword,
+				natsHost,
+				natsPort,
+			),
+		}
+
+		opts := nats.DefaultOptions
+		opts.Servers = servers
+
+		testSpyClient, err = opts.Connect()
+		Expect(err).ShouldNot(HaveOccurred())
+
+		messageBusServer := config.MessageBusServer{
 			fmt.Sprintf("%s:%d", natsHost, natsPort),
 			natsUsername,
 			natsPassword,
 		}
-
-		logger = lagertest.NewTestLogger("Registrar test")
-		testSpyClient = yagnats.NewClient()
-
-		connectionInfo := yagnats.ConnectionInfo{
-			messageBusServer.Host,
-			messageBusServer.User,
-			messageBusServer.Password,
-			nil,
-		}
-
-		err := testSpyClient.Connect(&connectionInfo)
-		Expect(err).NotTo(HaveOccurred())
 
 		rrConfig = config.Config{
 			// doesn't matter if these are the same, just want to send a slice
@@ -75,7 +78,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	})
 
 	AfterEach(func() {
-		testSpyClient.Disconnect()
+		testSpyClient.Close()
 
 		natsCmd.Process.Kill()
 		natsCmd.Wait()
@@ -114,13 +117,13 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			It("periodically registers all URIs for all routes", func() {
 				// Detect when a router.register message gets sent
 				var registered chan (string)
-				registered = subscribeToRegisterEvents(testSpyClient, func(msg *yagnats.Message) {
-					registered <- string(msg.Payload)
+				registered = subscribeToRegisterEvents(testSpyClient, func(msg *nats.Msg) {
+					registered <- string(msg.Data)
 				})
 
 				// Detect when an unregister message gets sent
 				var unregistered chan (bool)
-				unregistered = subscribeToUnregisterEvents(testSpyClient, func(msg *yagnats.Message) {
+				unregistered = subscribeToUnregisterEvents(testSpyClient, func(msg *nats.Msg) {
 					unregistered <- true
 				})
 
@@ -130,7 +133,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				}()
 				<-ready
 
-				expectedRegistryMessages := []gibson.RegistryMessage{
+				expectedRegistryMessages := []registrar.Message{
 					{
 						URIs: rrConfig.Routes[0].URIs,
 						Host: rrConfig.Host,
@@ -148,7 +151,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					var receivedMessage string
 					Eventually(registered, 2).Should(Receive(&receivedMessage))
 
-					var registryMessage gibson.RegistryMessage
+					var registryMessage registrar.Message
 					err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
 					Expect(err).ShouldNot(HaveOccurred())
 
@@ -172,8 +175,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 })
 
 func subscribeToRegisterEvents(
-	testSpyClient *yagnats.Client,
-	callback func(msg *yagnats.Message),
+	testSpyClient *nats.Conn,
+	callback func(msg *nats.Msg),
 ) (registerChannel chan string) {
 	registerChannel = make(chan string)
 	go testSpyClient.Subscribe("router.register", callback)
@@ -182,8 +185,8 @@ func subscribeToRegisterEvents(
 }
 
 func subscribeToUnregisterEvents(
-	testSpyClient *yagnats.Client,
-	callback func(msg *yagnats.Message),
+	testSpyClient *nats.Conn,
+	callback func(msg *nats.Msg),
 ) (unregisterChannel chan bool) {
 	unregisterChannel = make(chan bool)
 	go testSpyClient.Subscribe("router.unregister", callback)

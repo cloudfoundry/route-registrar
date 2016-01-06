@@ -15,14 +15,6 @@
 			"Rev": "7178833173e7124dab16158273f7708ed73b81ff"
 		},
 		{
-			"ImportPath": "github.com/cloudfoundry/gibson",
-			"Rev": "a5dc7a502e4a6876d52caa4339d752e44c8fe46f"
-		},
-		{
-			"ImportPath": "github.com/cloudfoundry/yagnats",
-			"Rev": "e417c5169bf58c23f56125b0f0344b50d84e0887"
-		},
-		{
 			"ImportPath": "github.com/fraenkel/candiedyaml",
 			"Rev": "84842532f8194fe186b48a009251dfaec9924ccd"
 		},
@@ -30,6 +22,11 @@
 			"ImportPath": "github.com/imdario/mergo",
 			"Comment": "0.2.0-3-g2fcac99",
 			"Rev": "2fcac9923693d66dc0e03988a31b21da05cdea84"
+		},
+		{
+			"ImportPath": "github.com/nats-io/nats",
+			"Comment": "v1.1.6",
+			"Rev": "355b5b97e0842dc94f1106729aa88e33e06317ca"
 		},
 		{
 			"ImportPath": "github.com/nu7hatch/gouuid",
