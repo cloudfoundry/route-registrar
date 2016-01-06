@@ -32,6 +32,10 @@ func (c Config) Validate() error {
 	if c.UpdateFrequency <= 0 {
 		return fmt.Errorf("Invalid update frequency: %d", c.UpdateFrequency)
 	}
+
+	if c.Host == "" {
+		return fmt.Errorf("Invalid host: %s", c.Host)
+	}
 	return nil
 
 }

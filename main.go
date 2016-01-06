@@ -5,7 +5,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
@@ -65,9 +67,19 @@ func main() {
 		}
 	}
 
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGKILL)
+
 	logger.Info("Running")
 
 	process := ifrit.Invoke(r)
-	_ = <-process.Wait()
-	os.Exit(1)
+	for {
+		select {
+		case s := <-c:
+			logger.Info("Caught signal", lager.Data{"signal": s})
+			process.Signal(s)
+		case _ = <-process.Wait():
+			os.Exit(1)
+		}
+	}
 }

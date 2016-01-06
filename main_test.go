@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -36,7 +37,7 @@ var _ = Describe("Main", func() {
 		natsCmd.Wait()
 	})
 
-	It("Starts correctly and exits 1 on SIGTERM", func() {
+	It("Writes pid to the provided pidfile", func() {
 		command := exec.Command(
 			routeRegistrarBinPath,
 			fmt.Sprintf("-pidfile=%s", pidFile),
@@ -49,9 +50,30 @@ var _ = Describe("Main", func() {
 		Eventually(session.Out).Should(gbytes.Say("Writing pid"))
 		Eventually(session.Out).Should(gbytes.Say("Running"))
 
-		time.Sleep(500 * time.Millisecond)
+		session.Kill().Wait()
+		Eventually(session).Should(gexec.Exit())
 
-		session.Terminate().Wait()
+		pidFileContents, err := ioutil.ReadFile(pidFile)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		Expect(len(pidFileContents)).To(BeNumerically(">", 0))
+	})
+
+	It("Starts correctly and shuts down on SIGINT", func() {
+		command := exec.Command(
+			routeRegistrarBinPath,
+			fmt.Sprintf("-configPath=%s", configFile),
+		)
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		Eventually(session.Out).Should(gbytes.Say("Initializing"))
+		Eventually(session.Out).Should(gbytes.Say("Running"))
+		Eventually(session.Out, 10*time.Second).Should(gbytes.Say("Registering"))
+
+		session.Interrupt().Wait()
+		Eventually(session.Out).Should(gbytes.Say("Caught signal"))
+		Eventually(session.Out).Should(gbytes.Say("Deregistering"))
 		Eventually(session).Should(gexec.Exit())
 		Expect(session.ExitCode()).ToNot(BeZero())
 	})
@@ -94,10 +116,20 @@ func initConfig() {
 		Name: "a health-checkable",
 	}
 
+	routes := []config.Route{
+		{
+			Name: "My route",
+			Port: 12345,
+			URIs: []string{"uri-1", "uri-2"},
+		},
+	}
+
 	rootConfig = config.Config{
 		MessageBusServers: messageBusServers,
 		HealthChecker:     healthCheckerConfig,
 		UpdateFrequency:   1,
+		Host:              "127.0.0.1",
+		Routes:            routes,
 	}
 }
 

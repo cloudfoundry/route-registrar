@@ -44,16 +44,10 @@ func (r *registrar) AddHealthCheckHandler(handler healthchecker.HealthChecker) {
 func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	messageBus := buildMessageBus(r)
 
-	done := make(chan bool)
-
-	r.logger.Debug("creating client", lager.Data{"config": r.config})
+	r.logger.Info("creating client", lager.Data{"config": r.config})
 	client := gibson.NewCFRouterClient(r.config.Host, messageBus)
 	client.Greet()
 
-	go func() {
-		<-signals
-		close(done)
-	}()
 	close(ready)
 
 	duration := time.Duration(r.config.UpdateFrequency) * time.Second
@@ -63,8 +57,8 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		select {
 		case <-ticker.C:
 			for _, route := range r.config.Routes {
-				r.logger.Debug(
-					"registering routes",
+				r.logger.Info(
+					"Registering routes",
 					lager.Data{
 						"port": route.Port,
 						"uris": route.URIs,
@@ -75,11 +69,11 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 					route.URIs,
 				)
 			}
-		case <-done:
+		case <-signals:
 			r.logger.Info("Received signal; shutting down")
 			for _, route := range r.config.Routes {
-				r.logger.Debug(
-					"deregistering routes",
+				r.logger.Info(
+					"Deregistering routes",
 					lager.Data{
 						"port": route.Port,
 						"uris": route.URIs,
@@ -113,16 +107,4 @@ func buildMessageBus(r *registrar) yagnats.NATSConn {
 		panic(err)
 	}
 	return messageBus
-}
-
-func callbackPeriodically(duration time.Duration, callback func(), done chan bool) {
-	interval := time.NewTicker(duration)
-	for stop := false; !stop; {
-		select {
-		case <-interval.C:
-			callback()
-		case stop = <-done:
-			return
-		}
-	}
 }
