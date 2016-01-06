@@ -64,10 +64,14 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 						"uris": route.URIs,
 					},
 				)
-				client.RegisterAll(
+				err := client.RegisterAll(
 					route.Port,
 					route.URIs,
 				)
+
+				if err != nil {
+					return err
+				}
 			}
 		case <-signals:
 			r.logger.Info("Received signal; shutting down")
@@ -79,10 +83,14 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 						"uris": route.URIs,
 					},
 				)
-				client.UnregisterAll(
+				err := client.UnregisterAll(
 					route.Port,
 					route.URIs,
 				)
+
+				if err != nil {
+					return err
+				}
 				return nil
 			}
 		}

@@ -78,9 +78,12 @@ func main() {
 		case s := <-c:
 			logger.Info("Caught signal", lager.Data{"signal": s})
 			process.Signal(s)
-		case _ = <-process.Wait():
+		case err := <-process.Wait():
 			logger.Info("Shutting down")
-			os.Exit(1)
+			if err != nil {
+				logger.Fatal("error occurred", err)
+			}
+			os.Exit(0)
 		}
 	}
 }

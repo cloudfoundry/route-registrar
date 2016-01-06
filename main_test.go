@@ -71,11 +71,11 @@ var _ = Describe("Main", func() {
 		Eventually(session.Out).Should(gbytes.Say("Running"))
 		Eventually(session.Out, 10*time.Second).Should(gbytes.Say("Registering"))
 
-		session.Interrupt().Wait()
+		session.Interrupt().Wait(10 * time.Second)
 		Eventually(session.Out).Should(gbytes.Say("Caught signal"))
 		Eventually(session.Out).Should(gbytes.Say("Deregistering"))
 		Eventually(session).Should(gexec.Exit())
-		Expect(session.ExitCode()).ToNot(BeZero())
+		Expect(session.ExitCode()).To(BeZero())
 	})
 
 	It("Starts correctly and shuts down on SIGTERM", func() {
@@ -90,11 +90,11 @@ var _ = Describe("Main", func() {
 		Eventually(session.Out).Should(gbytes.Say("Running"))
 		Eventually(session.Out, 10*time.Second).Should(gbytes.Say("Registering"))
 
-		session.Terminate().Wait()
+		session.Terminate().Wait(10 * time.Second)
 		Eventually(session.Out).Should(gbytes.Say("Caught signal"))
 		Eventually(session.Out).Should(gbytes.Say("Deregistering"))
 		Eventually(session).Should(gexec.Exit())
-		Expect(session.ExitCode()).ToNot(BeZero())
+		Expect(session.ExitCode()).To(BeZero())
 	})
 
 	Context("When the config validatation fails", func() {
