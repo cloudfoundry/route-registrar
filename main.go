@@ -68,7 +68,7 @@ func main() {
 	}
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGKILL)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
 	logger.Info("Running")
 
@@ -79,6 +79,7 @@ func main() {
 			logger.Info("Caught signal", lager.Data{"signal": s})
 			process.Signal(s)
 		case _ = <-process.Wait():
+			logger.Info("Shutting down")
 			os.Exit(1)
 		}
 	}

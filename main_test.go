@@ -78,6 +78,25 @@ var _ = Describe("Main", func() {
 		Expect(session.ExitCode()).ToNot(BeZero())
 	})
 
+	It("Starts correctly and shuts down on SIGTERM", func() {
+		command := exec.Command(
+			routeRegistrarBinPath,
+			fmt.Sprintf("-configPath=%s", configFile),
+		)
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		Eventually(session.Out).Should(gbytes.Say("Initializing"))
+		Eventually(session.Out).Should(gbytes.Say("Running"))
+		Eventually(session.Out, 10*time.Second).Should(gbytes.Say("Registering"))
+
+		session.Terminate().Wait()
+		Eventually(session.Out).Should(gbytes.Say("Caught signal"))
+		Eventually(session.Out).Should(gbytes.Say("Deregistering"))
+		Eventually(session).Should(gexec.Exit())
+		Expect(session.ExitCode()).ToNot(BeZero())
+	})
+
 	Context("When the config validatation fails", func() {
 		BeforeEach(func() {
 			rootConfig.UpdateFrequency = 0
