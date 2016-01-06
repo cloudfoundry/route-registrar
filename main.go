@@ -79,10 +79,10 @@ func main() {
 			logger.Info("Caught signal", lager.Data{"signal": s})
 			process.Signal(s)
 		case err := <-process.Wait():
-			logger.Info("Shutting down")
 			if err != nil {
-				logger.Fatal("error occurred", err)
+				logger.Fatal("Exiting with error", err)
 			}
+			logger.Info("Exiting without error")
 			os.Exit(0)
 		}
 	}
