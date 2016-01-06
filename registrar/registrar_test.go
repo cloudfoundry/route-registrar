@@ -125,7 +125,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				})
 
 				go func() {
-					r.Run(signals, ready)
+					err := r.Run(signals, ready)
+					Expect(err).ShouldNot(HaveOccurred())
 				}()
 				<-ready
 
