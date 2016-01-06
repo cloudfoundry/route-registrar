@@ -13,43 +13,49 @@ You can colocate `route-registrar` into any BOSH deployment using https://github
 
 ### Executing tests
 1. Run the following commands to install ginkgo and gomega
-
- ```
- go get github.com/onsi/ginkgo/ginkgo  # installs the ginkgo CLI
- go install -v github.com/onsi/ginkgo/ginkgo
- go get github.com/onsi/gomega
- go install -v github.com/onsi/gomega
- ```
+  ```
+  go get github.com/onsi/ginkgo/ginkgo  # installs the ginkgo CLI
+  go install -v github.com/onsi/ginkgo/ginkgo
+  go get github.com/onsi/gomega
+  go install -v github.com/onsi/gomega
+  ```
 
 1. Run tests, by running the following command from root of this reposirtory
-```
-bin/test
-```
+  ```
+  bin/test
+  ```
 
 ### Installation
 1. Run
-	```
-	git clone https://github.com/cloudfoundry-incubator/route-registrar
-	```
+  ```
+  git clone https://github.com/cloudfoundry-incubator/route-registrar
+  ```
+
 1. Run the following command to install route-registrar
-	```go install github.com/cloudfoundry-incubator/route-registrar```
+  ```
+  go install github.com/cloudfoundry-incubator/route-registrar
+  ```
 
 1. The route-registrar expects a configuration YAML file like the one below:
-
-	```
-	message_bus_servers:
-     - host: REPLACE_WITH_NATS_URL
-       user: REPLACE_WITH_NATS_USERNAME
-       password: REPLACE_WITH_NATS_PASSWORD
-	external_host: REPLACE_WITH_ROUTE_TO_REGISTER
-	external_ip: REPLACE_WITH_VM_IP
-	port: REPLACE_WITH_VM_PORT
-	```
+  ```yaml
+  message_bus_servers:
+  - host: REPLACE_WITH_NATS_URL
+    user: REPLACE_WITH_NATS_USERNAME
+    password: REPLACE_WITH_NATS_PASSWORD
+  update_frequency: UPDATE_FREQUENCY_IN_SECONDS
+  host: HOSTNAME_OR_IP_OF_ROUTE_DESTINATION
+  routes:
+  - name: SOME_ROUTE_NAME
+    port: REPLACE_WITH_VM_PORT
+    tags:
+      optional_tag_field: some_tag_value
+      another_tag_field: some_other_value
+    uris:
+    - some_uri_for_the_router_should_listen_on
+    - some_other_uri_for_the_router_to_listen_on
+  ```
 
 1. Run route-registrar binaries using the following command
-
-```
-./bin/route-registrar -configPath=FILE_PATH_TO_CONFIG_YML --pidFile=PATH_TO_PIDFILE
-
-```
-
+  ```
+  ./bin/route-registrar -configPath=FILE_PATH_TO_CONFIG_YML --pidFile=PATH_TO_PIDFILE
+  ```
