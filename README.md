@@ -12,6 +12,10 @@ This uses [nats-io/nats](https://github.com/nats-io/nats) for connecting to the 
 You can colocate `route-registrar` into any BOSH deployment using https://github.com/cloudfoundry-community/route-registrar-boshrelease BOSH release.
 
 ### Executing tests
+
+Tests are triggered on new commits to master by our
+[concourse](https://mega.ci.cf-app.com/pipelines/route-registrar).
+
 1. Install the ginkgo binary with `go get`:
   ```
   go get github.com/onsi/ginkgo/ginkgo

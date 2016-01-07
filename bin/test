@@ -3,10 +3,6 @@
 MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( cd "${MY_DIR}"/.. && pwd )"
 
-pushd "${PROJECT_DIR}" > /dev/null
-  godep restore
-popd > /dev/null
-
 go get -v github.com/apcera/gnatsd
 go install -v github.com/apcera/gnatsd
 
