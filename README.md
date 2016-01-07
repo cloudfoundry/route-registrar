@@ -3,7 +3,7 @@ route-registrar
 
 A standalone executable written in golang that continuously broadcasts a route using NATS to the CF router.
 
-This uses [yagnats](https://github.com/cloudfoundry/yagnats) for connecting to the NATS bus and [gibson](https://github.com/cloudfoundry/gibson) for registering routes with the CloudFoundry router.
+This uses [nats-io/nats](https://github.com/nats-io/nats) for connecting to the NATS bus.
 
 ## Usage
 
@@ -12,12 +12,9 @@ This uses [yagnats](https://github.com/cloudfoundry/yagnats) for connecting to t
 You can colocate `route-registrar` into any BOSH deployment using https://github.com/cloudfoundry-community/route-registrar-boshrelease BOSH release.
 
 ### Executing tests
-1. Run the following commands to install ginkgo and gomega
+1. Install the ginkgo binary with `go get`:
   ```
-  go get github.com/onsi/ginkgo/ginkgo  # installs the ginkgo CLI
-  go install -v github.com/onsi/ginkgo/ginkgo
-  go get github.com/onsi/gomega
-  go install -v github.com/onsi/gomega
+  go get github.com/onsi/ginkgo/ginkgo
   ```
 
 1. Run tests, by running the following command from root of this reposirtory
