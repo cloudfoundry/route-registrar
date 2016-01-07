@@ -3,8 +3,7 @@
 MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( cd "${MY_DIR}"/.. && pwd )"
 
-go get -v github.com/apcera/gnatsd
-go install -v github.com/apcera/gnatsd
+go get github.com/apcera/gnatsd
 
 echo -e "\nFormatting packages..."
 go fmt github.com/cloudfoundry-incubator/route-registrar/...
