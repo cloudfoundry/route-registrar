@@ -17,7 +17,6 @@ import (
 )
 
 type Registrar interface {
-	AddHealthCheckHandler(handler healthchecker.HealthChecker)
 	Run(signals <-chan os.Signal, ready chan<- struct{}) error
 }
 
@@ -39,7 +38,11 @@ type registrar struct {
 	lock sync.RWMutex
 }
 
-func NewRegistrar(clientConfig config.Config, logger lager.Logger) Registrar {
+func NewRegistrar(
+	clientConfig config.Config,
+	healthChecker healthchecker.HealthChecker,
+	logger lager.Logger,
+) Registrar {
 	aUUID, err := uuid.NewV4()
 	if err != nil {
 		panic(err)
@@ -49,11 +52,8 @@ func NewRegistrar(clientConfig config.Config, logger lager.Logger) Registrar {
 		logger:            logger,
 		wasHealthy:        false,
 		privateInstanceId: aUUID.String(),
+		healthChecker:     healthChecker,
 	}
-}
-
-func (r *registrar) AddHealthCheckHandler(handler healthchecker.HealthChecker) {
-	r.healthChecker = handler
 }
 
 func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
@@ -66,9 +66,6 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	}
 	defer r.messageBus.Close()
 
-	// client := gibson.NewCFRouterClient(r.config.Host, messageBus)
-	// client.Greet()
-
 	close(ready)
 
 	duration := time.Duration(r.config.UpdateFrequency) * time.Second
@@ -78,39 +75,43 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		select {
 		case <-ticker.C:
 			for _, route := range r.config.Routes {
-				r.logger.Info(
-					"Registering routes",
-					lager.Data{
-						"port": route.Port,
-						"uris": route.URIs,
-					},
-				)
-				err := r.sendMessage("router.register", r.config.Host, route)
-				// err := client.RegisterAll(
-				// 	route.Port,
-				// 	route.URIs,
-				// )
+				if route.HealthChecker == nil || route.HealthChecker.ScriptPath == "" {
+					r.logger.Info("no healthchecker found for route", lager.Data{"route": route})
 
-				if err != nil {
-					return err
+					err := r.registerRoutes(route)
+					if err != nil {
+						return err
+					}
+				} else {
+					ok, err := r.healthChecker.Check(route.HealthChecker.ScriptPath)
+					if err != nil {
+						r.logger.Info("healthchecker errored for route", lager.Data{"route": route})
+						err := r.unregisterRoutes(route)
+						if err != nil {
+							panic(err)
+							// return err
+						}
+					} else if ok {
+						r.logger.Info("healthchecker returned healthy for route", lager.Data{"route": route})
+						err := r.registerRoutes(route)
+						if err != nil {
+							panic(err)
+							// return err
+						}
+					} else {
+						r.logger.Info("healthchecker returned unhealthy for route", lager.Data{"route": route})
+						err := r.unregisterRoutes(route)
+						if err != nil {
+							return err
+						}
+					}
 				}
 			}
 		case <-signals:
 			r.logger.Info("Received signal; shutting down")
-			for _, route := range r.config.Routes {
-				r.logger.Info(
-					"Deregistering routes",
-					lager.Data{
-						"port": route.Port,
-						"uris": route.URIs,
-					},
-				)
-				err := r.sendMessage("router.unregister", r.config.Host, route)
-				// err := client.UnregisterAll(
-				// 	route.Port,
-				// 	route.URIs,
-				// )
 
+			for _, route := range r.config.Routes {
+				err := r.unregisterRoutes(route)
 				if err != nil {
 					return err
 				}
@@ -118,6 +119,40 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			}
 		}
 	}
+}
+
+func (r registrar) registerRoutes(route config.Route) error {
+	r.logger.Info(
+		"Registering routes",
+		lager.Data{
+			"port": route.Port,
+			"uris": route.URIs,
+		},
+	)
+
+	err := r.sendMessage("router.register", r.config.Host, route)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r registrar) unregisterRoutes(route config.Route) error {
+	r.logger.Info(
+		"Unregistering routes",
+		lager.Data{
+			"port": route.Port,
+			"uris": route.URIs,
+		},
+	)
+
+	err := r.sendMessage("router.unregister", r.config.Host, route)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r registrar) sendMessage(subject string, host string, route config.Route) error {

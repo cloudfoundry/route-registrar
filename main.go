@@ -45,12 +45,8 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	r := registrar.NewRegistrar(registrarConfig, logger)
-	//add health check handler
-	checker := healthchecker.InitHealthChecker(registrarConfig, logger)
-	if checker != nil {
-		r.AddHealthCheckHandler(checker)
-	}
+	hc := healthchecker.NewHealthChecker(logger)
+	r := registrar.NewRegistrar(registrarConfig, hc, logger)
 
 	if *pidfile != "" {
 		pid := strconv.Itoa(os.Getpid())

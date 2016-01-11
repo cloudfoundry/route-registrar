@@ -14,10 +14,12 @@ import (
 )
 
 var _ = Describe("ScriptHealthChecker", func() {
-	var logger lager.Logger
-	var tmpDir string
-	var scriptPath string
-	var scriptText string
+	var (
+		logger     lager.Logger
+		tmpDir     string
+		scriptPath string
+		scriptText string
+	)
 
 	BeforeEach(func() {
 		var err error
@@ -38,8 +40,8 @@ var _ = Describe("ScriptHealthChecker", func() {
 		})
 
 		It("returns true", func() {
-			scriptHealthChecker := healthchecker.NewScriptHealthChecker(scriptPath, logger)
-			Expect(scriptHealthChecker.Check()).To(BeTrue(), "Expected Check to return true when stdout is 1")
+			healthChecker := healthchecker.NewHealthChecker(logger)
+			Expect(healthChecker.Check(scriptPath)).To(BeTrue(), "Expected Check to return true when stdout is 1")
 		})
 	})
 
@@ -50,8 +52,8 @@ var _ = Describe("ScriptHealthChecker", func() {
 		})
 
 		It("returns false", func() {
-			scriptHealthChecker := healthchecker.NewScriptHealthChecker(scriptPath, logger)
-			Expect(scriptHealthChecker.Check()).To(BeFalse(), "Expected Check to return false when stdout is not 1")
+			healthChecker := healthchecker.NewHealthChecker(logger)
+			Expect(healthChecker.Check(scriptPath)).To(BeFalse(), "Expected Check to return false when stdout is not 1")
 		})
 	})
 })

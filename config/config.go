@@ -8,24 +8,24 @@ type MessageBusServer struct {
 	Password string `yaml:"password"`
 }
 
-type HealthCheckerConf struct {
-	Name              string `yaml:"name"`
-	HealthcheckScript string `yaml:"healthcheck_script_path"`
+type HealthChecker struct {
+	Name       string `yaml:"name"`
+	ScriptPath string `yaml:"script_path"`
 }
 
 type Config struct {
 	MessageBusServers []MessageBusServer `yaml:"message_bus_servers"`
-	HealthChecker     *HealthCheckerConf `yaml:"health_checker"`
 	Routes            []Route            `yaml:"routes"`
 	UpdateFrequency   int                `yaml:"update_frequency"`
 	Host              string             `yaml:"host"`
 }
 
 type Route struct {
-	Name string            `yaml:"name"`
-	Port int               `yaml:"port"`
-	Tags map[string]string `yaml:"tags"`
-	URIs []string          `yaml:"uris"`
+	Name          string            `yaml:"name"`
+	Port          int               `yaml:"port"`
+	Tags          map[string]string `yaml:"tags"`
+	URIs          []string          `yaml:"uris"`
+	HealthChecker *HealthChecker    `yaml:"health_checker"`
 }
 
 func (c Config) Validate() error {

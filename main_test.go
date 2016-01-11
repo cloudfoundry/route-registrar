@@ -73,7 +73,7 @@ var _ = Describe("Main", func() {
 
 		session.Interrupt().Wait(10 * time.Second)
 		Eventually(session.Out).Should(gbytes.Say("Caught signal"))
-		Eventually(session.Out).Should(gbytes.Say("Deregistering"))
+		Eventually(session.Out).Should(gbytes.Say("Unregistering"))
 		Eventually(session).Should(gexec.Exit())
 		Expect(session.ExitCode()).To(BeZero())
 	})
@@ -92,7 +92,7 @@ var _ = Describe("Main", func() {
 
 		session.Terminate().Wait(10 * time.Second)
 		Eventually(session.Out).Should(gbytes.Say("Caught signal"))
-		Eventually(session.Out).Should(gbytes.Say("Deregistering"))
+		Eventually(session.Out).Should(gbytes.Say("Unregistering"))
 		Eventually(session).Should(gexec.Exit())
 		Expect(session.ExitCode()).To(BeZero())
 	})
@@ -131,10 +131,6 @@ func initConfig() {
 		},
 	}
 
-	healthCheckerConfig := &config.HealthCheckerConf{
-		Name: "a health-checkable",
-	}
-
 	routes := []config.Route{
 		{
 			Name: "My route",
@@ -145,7 +141,6 @@ func initConfig() {
 
 	rootConfig = config.Config{
 		MessageBusServers: messageBusServers,
-		HealthChecker:     healthCheckerConfig,
 		UpdateFrequency:   1,
 		Host:              "127.0.0.1",
 		Routes:            routes,

@@ -7,36 +7,40 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-type ScriptHealthChecker struct {
-	logger     lager.Logger
-	scriptPath string
+//go:generate counterfeiter . HealthChecker
+
+type HealthChecker interface {
+	Check(string) (bool, error)
 }
 
-func NewScriptHealthChecker(scriptPath string, logger lager.Logger) *ScriptHealthChecker {
-	return &ScriptHealthChecker{
-		scriptPath: scriptPath,
-		logger:     logger,
+type healthChecker struct {
+	logger lager.Logger
+}
+
+func NewHealthChecker(logger lager.Logger) HealthChecker {
+	return &healthChecker{
+		logger: logger,
 	}
 }
 
-func (checker *ScriptHealthChecker) Check() bool {
-	cmd := exec.Command(checker.scriptPath)
+func (checker healthChecker) Check(scriptPath string) (bool, error) {
+	cmd := exec.Command(scriptPath)
 	checker.logger.Info(
 		"Executing script",
-		lager.Data{"scriptPath": checker.scriptPath},
+		lager.Data{"scriptPath": scriptPath},
 	)
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		checker.logger.Info(
 			"Error executing script",
-			lager.Data{"script": checker.scriptPath,
+			lager.Data{"script": scriptPath,
 				"error": err.Error(),
 			},
 		)
-		return false
+		return false, nil
 	}
 
 	matchesOne := regexp.MustCompile(`1`)
-	return matchesOne.MatchString(string(out[:]))
+	return matchesOne.MatchString(string(out[:])), nil
 }
