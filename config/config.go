@@ -11,6 +11,7 @@ type MessageBusServer struct {
 type HealthCheck struct {
 	Name       string `yaml:"name"`
 	ScriptPath string `yaml:"script_path"`
+	Timeout    int    `yaml:"timeout"`
 }
 
 type Config struct {
@@ -36,6 +37,6 @@ func (c Config) Validate() error {
 	if c.Host == "" {
 		return fmt.Errorf("Invalid host: %s", c.Host)
 	}
-	return nil
 
+	return nil
 }

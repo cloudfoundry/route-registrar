@@ -8,6 +8,7 @@ go get github.com/apcera/gnatsd
 pushd "${PROJECT_DIR}" > /dev/null
   ginkgo \
     -r \
+    -p \
     -failOnPending \
     -randomizeAllSpecs \
     -randomizeSuites \

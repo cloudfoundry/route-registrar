@@ -307,7 +307,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			})
 		})
 
-		Context("given an errored healthcheck", func() {
+		Context("when the healthcheck errors", func() {
 			var expectedErr error
 
 			BeforeEach(func() {

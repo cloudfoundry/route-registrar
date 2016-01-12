@@ -2,7 +2,9 @@ package healthchecker
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
+	"time"
 
 	"github.com/pivotal-golang/lager"
 )
@@ -10,7 +12,7 @@ import (
 //go:generate counterfeiter . HealthChecker
 
 type HealthChecker interface {
-	Check(string) (bool, error)
+	Check(scriptPath string, timeout int) (bool, error)
 }
 
 type healthChecker struct {
@@ -23,9 +25,9 @@ func NewHealthChecker(logger lager.Logger) HealthChecker {
 	}
 }
 
-func (checker healthChecker) Check(scriptPath string) (bool, error) {
+func (h healthChecker) Check(scriptPath string, timeout int) (bool, error) {
 	cmd := exec.Command(scriptPath)
-	checker.logger.Info(
+	h.logger.Info(
 		"Executing script",
 		lager.Data{"scriptPath": scriptPath},
 	)
@@ -36,7 +38,7 @@ func (checker healthChecker) Check(scriptPath string) (bool, error) {
 
 	err := cmd.Start()
 	if err != nil {
-		checker.logger.Info(
+		h.logger.Info(
 			"Error starting script",
 			lager.Data{
 				"script": scriptPath,
@@ -48,10 +50,37 @@ func (checker healthChecker) Check(scriptPath string) (bool, error) {
 		return false, err
 	}
 
-	err = cmd.Wait()
+	cmdErrChan := make(chan error)
+	go func() {
+		cmdErrChan <- cmd.Wait()
+	}()
 
+	if timeout <= 0 {
+		err := <-cmdErrChan
+		return h.handleOutput(scriptPath, err, outbuf, errbuf)
+	}
+
+	select {
+	case <-time.After(time.Duration(timeout) * time.Second):
+		h.logger.Info(
+			"Script failed to exit within timeout",
+			lager.Data{
+				"script":  scriptPath,
+				"stdout":  outbuf.String(),
+				"stderr":  errbuf.String(),
+				"timeout": timeout,
+			},
+		)
+		return false, fmt.Errorf("Script failed to exit within %d seconds", timeout)
+
+	case err := <-cmdErrChan:
+		return h.handleOutput(scriptPath, err, outbuf, errbuf)
+	}
+}
+
+func (h healthChecker) handleOutput(scriptPath string, err error, outbuf, errbuf bytes.Buffer) (bool, error) {
 	if err != nil {
-		checker.logger.Info(
+		h.logger.Info(
 			"Script exited with error",
 			lager.Data{
 				"script": scriptPath,
@@ -73,7 +102,7 @@ func (checker healthChecker) Check(scriptPath string) (bool, error) {
 		return false, err
 	}
 
-	checker.logger.Info(
+	h.logger.Info(
 		"Script exited without error",
 		lager.Data{
 			"script": scriptPath,

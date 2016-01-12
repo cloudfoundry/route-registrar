@@ -83,26 +83,24 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 						return err
 					}
 				} else {
-					ok, err := r.healthChecker.Check(route.HealthCheck.ScriptPath)
+					ok, err := r.healthChecker.Check(route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
 					if err != nil {
 						r.logger.Info("healthchecker errored for route", lager.Data{"route": route})
 						err := r.unregisterRoutes(route)
 						if err != nil {
 							panic(err)
-							// return err
 						}
 					} else if ok {
 						r.logger.Info("healthchecker returned healthy for route", lager.Data{"route": route})
 						err := r.registerRoutes(route)
 						if err != nil {
 							panic(err)
-							// return err
 						}
 					} else {
 						r.logger.Info("healthchecker returned unhealthy for route", lager.Data{"route": route})
 						err := r.unregisterRoutes(route)
 						if err != nil {
-							return err
+							panic(err)
 						}
 					}
 				}

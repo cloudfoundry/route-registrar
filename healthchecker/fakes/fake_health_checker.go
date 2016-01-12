@@ -8,10 +8,11 @@ import (
 )
 
 type FakeHealthChecker struct {
-	CheckStub        func(string) (bool, error)
+	CheckStub        func(scriptPath string, timeout int) (bool, error)
 	checkMutex       sync.RWMutex
 	checkArgsForCall []struct {
-		arg1 string
+		scriptPath string
+		timeout    int
 	}
 	checkReturns struct {
 		result1 bool
@@ -19,14 +20,15 @@ type FakeHealthChecker struct {
 	}
 }
 
-func (fake *FakeHealthChecker) Check(arg1 string) (bool, error) {
+func (fake *FakeHealthChecker) Check(scriptPath string, timeout int) (bool, error) {
 	fake.checkMutex.Lock()
 	fake.checkArgsForCall = append(fake.checkArgsForCall, struct {
-		arg1 string
-	}{arg1})
+		scriptPath string
+		timeout    int
+	}{scriptPath, timeout})
 	fake.checkMutex.Unlock()
 	if fake.CheckStub != nil {
-		return fake.CheckStub(arg1)
+		return fake.CheckStub(scriptPath, timeout)
 	} else {
 		return fake.checkReturns.result1, fake.checkReturns.result2
 	}
@@ -38,10 +40,10 @@ func (fake *FakeHealthChecker) CheckCallCount() int {
 	return len(fake.checkArgsForCall)
 }
 
-func (fake *FakeHealthChecker) CheckArgsForCall(i int) string {
+func (fake *FakeHealthChecker) CheckArgsForCall(i int) (string, int) {
 	fake.checkMutex.RLock()
 	defer fake.checkMutex.RUnlock()
-	return fake.checkArgsForCall[i].arg1
+	return fake.checkArgsForCall[i].scriptPath, fake.checkArgsForCall[i].timeout
 }
 
 func (fake *FakeHealthChecker) CheckReturns(result1 bool, result2 error) {
