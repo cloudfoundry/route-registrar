@@ -1,8 +1,8 @@
 package healthchecker
 
 import (
+	"bytes"
 	"os/exec"
-	"regexp"
 
 	"github.com/pivotal-golang/lager"
 )
@@ -30,17 +30,56 @@ func (checker healthChecker) Check(scriptPath string) (bool, error) {
 		lager.Data{"scriptPath": scriptPath},
 	)
 
-	out, err := cmd.CombinedOutput()
+	var outbuf, errbuf bytes.Buffer
+	cmd.Stdout = &outbuf
+	cmd.Stderr = &errbuf
+
+	err := cmd.Start()
 	if err != nil {
 		checker.logger.Info(
-			"Error executing script",
-			lager.Data{"script": scriptPath,
-				"error": err.Error(),
+			"Error starting script",
+			lager.Data{
+				"script": scriptPath,
+				"error":  err.Error(),
+				"stdout": outbuf.String(),
+				"stderr": errbuf.String(),
 			},
 		)
-		return false, nil
+		return false, err
 	}
 
-	matchesOne := regexp.MustCompile(`1`)
-	return matchesOne.MatchString(string(out[:])), nil
+	err = cmd.Wait()
+
+	if err != nil {
+		checker.logger.Info(
+			"Script exited with error",
+			lager.Data{
+				"script": scriptPath,
+				"error":  err.Error(),
+				"stdout": outbuf.String(),
+				"stderr": errbuf.String(),
+			},
+		)
+
+		// If the script exited non-zero then we do not consider that an error
+		_, ok := err.(*exec.ExitError)
+		if ok {
+			return false, nil
+		}
+
+		// Untested due to difficulty of reproducing this case under test
+		// E.g. this path would be encountered for I/O errors between the script
+		// and the golang parent process which we cannot force in a test.
+		return false, err
+	}
+
+	checker.logger.Info(
+		"Script exited without error",
+		lager.Data{
+			"script": scriptPath,
+			"stdout": outbuf.String(),
+			"stderr": errbuf.String(),
+		},
+	)
+	return true, nil
 }
