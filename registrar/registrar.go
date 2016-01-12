@@ -75,7 +75,7 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		select {
 		case <-ticker.C:
 			for _, route := range r.config.Routes {
-				if route.HealthChecker == nil || route.HealthChecker.ScriptPath == "" {
+				if route.HealthCheck == nil || route.HealthCheck.ScriptPath == "" {
 					r.logger.Info("no healthchecker found for route", lager.Data{"route": route})
 
 					err := r.registerRoutes(route)
@@ -83,7 +83,7 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 						return err
 					}
 				} else {
-					ok, err := r.healthChecker.Check(route.HealthChecker.ScriptPath)
+					ok, err := r.healthChecker.Check(route.HealthCheck.ScriptPath)
 					if err != nil {
 						r.logger.Info("healthchecker errored for route", lager.Data{"route": route})
 						err := r.unregisterRoutes(route)

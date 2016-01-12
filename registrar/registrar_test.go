@@ -181,7 +181,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		BeforeEach(func() {
 			scriptPath = "/path/to/some/script/"
 
-			rrConfig.Routes[0].HealthChecker = &config.HealthChecker{
+			rrConfig.Routes[0].HealthCheck = &config.HealthCheck{
 				Name:       "My Healthcheck process",
 				ScriptPath: scriptPath,
 			}

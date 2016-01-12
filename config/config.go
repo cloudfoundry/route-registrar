@@ -8,7 +8,7 @@ type MessageBusServer struct {
 	Password string `yaml:"password"`
 }
 
-type HealthChecker struct {
+type HealthCheck struct {
 	Name       string `yaml:"name"`
 	ScriptPath string `yaml:"script_path"`
 }
@@ -21,11 +21,11 @@ type Config struct {
 }
 
 type Route struct {
-	Name          string            `yaml:"name"`
-	Port          int               `yaml:"port"`
-	Tags          map[string]string `yaml:"tags"`
-	URIs          []string          `yaml:"uris"`
-	HealthChecker *HealthChecker    `yaml:"health_checker"`
+	Name        string            `yaml:"name"`
+	Port        int               `yaml:"port"`
+	Tags        map[string]string `yaml:"tags"`
+	URIs        []string          `yaml:"uris"`
+	HealthCheck *HealthCheck      `yaml:"health_check"`
 }
 
 func (c Config) Validate() error {
