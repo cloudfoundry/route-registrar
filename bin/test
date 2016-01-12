@@ -5,21 +5,11 @@ PROJECT_DIR="$( cd "${MY_DIR}"/.. && pwd )"
 
 go get github.com/apcera/gnatsd
 
-echo -e "\nFormatting packages..."
-go fmt github.com/cloudfoundry-incubator/route-registrar/...
-
-result=0
-
-echo -e "\nTesting packages..."
-pushd "${PROJECT_DIR}"
+pushd "${PROJECT_DIR}" > /dev/null
   ginkgo \
     -r \
     -failOnPending \
     -randomizeAllSpecs \
     -randomizeSuites \
     "$@"
-  let "result+=$?"
 popd > /dev/null
-
-echo -e "\nExit Code: $result"
-exit $result
