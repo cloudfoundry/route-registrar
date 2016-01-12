@@ -27,14 +27,9 @@ Tests are triggered on new commits to master by our
   ```
 
 ### Installation
-1. Run
-  ```
-  git clone https://github.com/cloudfoundry-incubator/route-registrar
-  ```
-
 1. Run the following command to install route-registrar
   ```
-  go install github.com/cloudfoundry-incubator/route-registrar
+  go get github.com/cloudfoundry-incubator/route-registrar
   ```
 
 1. The route-registrar expects a configuration YAML file like the one below:
@@ -54,6 +49,10 @@ Tests are triggered on new commits to master by our
     uris:
     - some_uri_for_the_router_should_listen_on
     - some_other_uri_for_the_router_to_listen_on
+    health_check: # optional
+      name: my-healthcheck
+      script_path: /path/to/check/script/
+      timeout: 1 # optional
   ```
 
 1. Run route-registrar binaries using the following command
