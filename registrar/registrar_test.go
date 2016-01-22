@@ -23,6 +23,8 @@ import (
 
 var _ = Describe("Registrar.RegisterRoutes", func() {
 	var (
+		messageBus mynats.MessageBus
+
 		natsCmd      *exec.Cmd
 		natsHost     string
 		natsUsername string
@@ -103,7 +105,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		fakeHealthChecker = &healthchecker_fakes.FakeHealthChecker{}
 
-		r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger)
+		messageBus = mynats.NewMessageBus(logger)
+
+		r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, messageBus)
 	})
 
 	AfterEach(func() {
@@ -187,14 +191,14 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				ScriptPath: scriptPath,
 			}
 
-			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger)
+			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, messageBus)
 		})
 
 		Context("and the healthcheck succeeds", func() {
 			BeforeEach(func() {
 				fakeHealthChecker.CheckReturns(true, nil)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, messageBus)
 			})
 
 			It("registers routes", func() {
@@ -246,7 +250,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			BeforeEach(func() {
 				fakeHealthChecker.CheckReturns(false, nil)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, messageBus)
 			})
 
 			It("unregisters routes", func() {
@@ -315,7 +319,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				expectedErr = fmt.Errorf("boom")
 				fakeHealthChecker.CheckReturns(true, expectedErr)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, messageBus)
 			})
 
 			It("unregisters routes", func() {

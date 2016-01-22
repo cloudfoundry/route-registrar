@@ -12,6 +12,7 @@ import (
 	"github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
+	"github.com/cloudfoundry-incubator/route-registrar/nats"
 	"github.com/cloudfoundry-incubator/route-registrar/registrar"
 	"github.com/pivotal-cf-experimental/service-config"
 	"github.com/pivotal-golang/lager"
@@ -46,7 +47,11 @@ func main() {
 	}
 
 	hc := healthchecker.NewHealthChecker(logger)
-	r := registrar.NewRegistrar(registrarConfig, hc, logger)
+
+	logger.Info("creating nats connection")
+	messageBus := nats.NewMessageBus(logger)
+
+	r := registrar.NewRegistrar(registrarConfig, hc, logger, messageBus)
 
 	if *pidfile != "" {
 		pid := strconv.Itoa(os.Getpid())

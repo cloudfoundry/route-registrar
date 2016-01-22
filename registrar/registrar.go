@@ -2,10 +2,9 @@ package registrar
 
 import (
 	"os"
-	"sync"
 	"time"
 
-	mynats "github.com/cloudfoundry-incubator/route-registrar/nats"
+	"github.com/cloudfoundry-incubator/route-registrar/nats"
 	"github.com/nu7hatch/gouuid"
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
@@ -22,16 +21,15 @@ type registrar struct {
 	logger            lager.Logger
 	config            config.Config
 	healthChecker     healthchecker.HealthChecker
-	messageBus        mynats.MessageBus
+	messageBus        nats.MessageBus
 	privateInstanceId string
-
-	lock sync.RWMutex
 }
 
 func NewRegistrar(
 	clientConfig config.Config,
 	healthChecker healthchecker.HealthChecker,
 	logger lager.Logger,
+	messageBus nats.MessageBus,
 ) Registrar {
 	aUUID, err := uuid.NewV4()
 	if err != nil {
@@ -42,6 +40,7 @@ func NewRegistrar(
 		logger:            logger,
 		privateInstanceId: aUUID.String(),
 		healthChecker:     healthChecker,
+		messageBus:        messageBus,
 	}
 }
 
@@ -50,7 +49,6 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 	r.logger.Info("creating nats connection", lager.Data{"config": r.config})
 
-	r.messageBus = mynats.NewMessageBus(r.logger)
 	err = r.messageBus.Connect(r.config.MessageBusServers)
 	if err != nil {
 		panic(err)
