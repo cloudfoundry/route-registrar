@@ -3,6 +3,7 @@ package main_test
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -29,6 +30,14 @@ var _ = Describe("Main", func() {
 			"--user", "nats",
 			"--pass", "nats")
 		err := natsCmd.Start()
+
+		natsAddress := fmt.Sprintf("127.0.0.1:%d", natsPort)
+
+		Eventually(func() error {
+			_, err := net.Dial("tcp", natsAddress)
+			return err
+		}).Should(Succeed())
+
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 
