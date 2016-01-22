@@ -1,13 +1,11 @@
 package registrar
 
 import (
-	"encoding/json"
-	"fmt"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/nats-io/nats"
+	mynats "github.com/cloudfoundry-incubator/route-registrar/nats"
 	"github.com/nu7hatch/gouuid"
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
@@ -20,19 +18,11 @@ type Registrar interface {
 	Run(signals <-chan os.Signal, ready chan<- struct{}) error
 }
 
-type Message struct {
-	URIs              []string `json:"uris"`
-	Host              string   `json:"host"`
-	Port              int      `json:"port"`
-	PrivateInstanceId string   `json:"private_instance_id"`
-}
-
 type registrar struct {
 	logger            lager.Logger
 	config            config.Config
 	healthChecker     healthchecker.HealthChecker
-	wasHealthy        bool
-	messageBus        *nats.Conn
+	messageBus        mynats.MessageBus
 	privateInstanceId string
 
 	lock sync.RWMutex
@@ -50,7 +40,6 @@ func NewRegistrar(
 	return &registrar{
 		config:            clientConfig,
 		logger:            logger,
-		wasHealthy:        false,
 		privateInstanceId: aUUID.String(),
 		healthChecker:     healthChecker,
 	}
@@ -60,7 +49,9 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	var err error
 
 	r.logger.Info("creating nats connection", lager.Data{"config": r.config})
-	r.messageBus, err = buildMessageBus(r)
+
+	r.messageBus = mynats.NewMessageBus(r.logger)
+	err = r.messageBus.Connect(r.config.MessageBusServers)
 	if err != nil {
 		panic(err)
 	}
@@ -80,7 +71,7 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 					err := r.registerRoutes(route)
 					if err != nil {
-						return err
+						panic(err)
 					}
 				} else {
 					ok, err := r.healthChecker.Check(route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
@@ -128,7 +119,7 @@ func (r registrar) registerRoutes(route config.Route) error {
 		},
 	)
 
-	err := r.sendMessage("router.register", r.config.Host, route)
+	err := r.messageBus.SendMessage("router.register", r.config.Host, route, r.privateInstanceId)
 	if err != nil {
 		return err
 	}
@@ -145,46 +136,10 @@ func (r registrar) unregisterRoutes(route config.Route) error {
 		},
 	)
 
-	err := r.sendMessage("router.unregister", r.config.Host, route)
+	err := r.messageBus.SendMessage("router.unregister", r.config.Host, route, r.privateInstanceId)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (r registrar) sendMessage(subject string, host string, route config.Route) error {
-	msg := &Message{
-		URIs:              route.URIs,
-		Host:              host,
-		Port:              route.Port,
-		PrivateInstanceId: r.privateInstanceId,
-	}
-
-	json, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-
-	return r.messageBus.Publish(subject, json)
-}
-
-func buildMessageBus(r *registrar) (*nats.Conn, error) {
-	var natsServers []string
-
-	for _, server := range r.config.MessageBusServers {
-		r.logger.Info(
-			"Adding NATS server",
-			lager.Data{"server": server},
-		)
-		natsServers = append(
-			natsServers,
-			fmt.Sprintf("nats://%s:%s@%s", server.User, server.Password, server.Host),
-		)
-	}
-
-	opts := nats.DefaultOptions
-	opts.Servers = natsServers
-
-	return opts.Connect()
 }

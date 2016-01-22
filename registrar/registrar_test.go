@@ -15,6 +15,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	healthchecker_fakes "github.com/cloudfoundry-incubator/route-registrar/healthchecker/fakes"
+	mynats "github.com/cloudfoundry-incubator/route-registrar/nats"
 	"github.com/cloudfoundry-incubator/route-registrar/registrar"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
@@ -133,7 +134,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		}()
 		<-ready
 
-		expectedRegistryMessages := []registrar.Message{
+		expectedRegistryMessages := []mynats.Message{
 			{
 				URIs: rrConfig.Routes[0].URIs,
 				Host: rrConfig.Host,
@@ -151,7 +152,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			var receivedMessage string
 			Eventually(registered, 2).Should(Receive(&receivedMessage))
 
-			var registryMessage registrar.Message
+			var registryMessage mynats.Message
 			err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
 			Expect(err).ShouldNot(HaveOccurred())
 
@@ -215,7 +216,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				}()
 				<-ready
 
-				expectedRegistryMessage := registrar.Message{
+				expectedRegistryMessage := mynats.Message{
 					URIs: rrConfig.Routes[0].URIs,
 					Host: rrConfig.Host,
 					Port: rrConfig.Routes[0].Port,
@@ -225,7 +226,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				var receivedMessage string
 				Eventually(registered, 2).Should(Receive(&receivedMessage))
 
-				var registryMessage registrar.Message
+				var registryMessage mynats.Message
 				err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
 				Expect(err).ShouldNot(HaveOccurred())
 
@@ -267,7 +268,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				}()
 				<-ready
 
-				expectedUnregisterMessage := registrar.Message{
+				expectedUnregisterMessage := mynats.Message{
 					URIs: rrConfig.Routes[0].URIs,
 					Host: rrConfig.Host,
 					Port: rrConfig.Routes[0].Port,
@@ -277,7 +278,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				var receivedUnregisterMessage string
 				Eventually(unregistered, 2).Should(Receive(&receivedUnregisterMessage))
 
-				var unregisterMessage registrar.Message
+				var unregisterMessage mynats.Message
 				err := json.Unmarshal([]byte(receivedUnregisterMessage), &unregisterMessage)
 				Expect(err).ShouldNot(HaveOccurred())
 
@@ -288,13 +289,13 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				var receivedRegisterMessage string
 				Eventually(registered, 2).Should(Receive(&receivedRegisterMessage))
 
-				expectedRegisterMessage := registrar.Message{
+				expectedRegisterMessage := mynats.Message{
 					URIs: rrConfig.Routes[1].URIs,
 					Host: rrConfig.Host,
 					Port: rrConfig.Routes[1].Port,
 				}
 
-				var registerMessage registrar.Message
+				var registerMessage mynats.Message
 				err = json.Unmarshal([]byte(receivedRegisterMessage), &registerMessage)
 				Expect(err).ShouldNot(HaveOccurred())
 
@@ -337,7 +338,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				}()
 				<-ready
 
-				expectedUnregisterMessage := registrar.Message{
+				expectedUnregisterMessage := mynats.Message{
 					URIs: rrConfig.Routes[0].URIs,
 					Host: rrConfig.Host,
 					Port: rrConfig.Routes[0].Port,
@@ -347,7 +348,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				var receivedUnregisterMessage string
 				Eventually(unregistered, 2).Should(Receive(&receivedUnregisterMessage))
 
-				var unregisterMessage registrar.Message
+				var unregisterMessage mynats.Message
 				err := json.Unmarshal([]byte(receivedUnregisterMessage), &unregisterMessage)
 				Expect(err).ShouldNot(HaveOccurred())
 
@@ -358,13 +359,13 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				var receivedRegisterMessage string
 				Eventually(registered, 2).Should(Receive(&receivedRegisterMessage))
 
-				expectedRegisterMessage := registrar.Message{
+				expectedRegisterMessage := mynats.Message{
 					URIs: rrConfig.Routes[1].URIs,
 					Host: rrConfig.Host,
 					Port: rrConfig.Routes[1].Port,
 				}
 
-				var registerMessage registrar.Message
+				var registerMessage mynats.Message
 				err = json.Unmarshal([]byte(receivedRegisterMessage), &registerMessage)
 				Expect(err).ShouldNot(HaveOccurred())
 
