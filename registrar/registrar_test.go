@@ -1,13 +1,8 @@
 package registrar_test
 
 import (
-	"encoding/json"
 	"fmt"
-	"net"
 	"os"
-	"os/exec"
-	"strconv"
-	"time"
 
 	"github.com/apcera/nats"
 	. "github.com/onsi/ginkgo"
@@ -15,7 +10,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	healthchecker_fakes "github.com/cloudfoundry-incubator/route-registrar/healthchecker/fakes"
-	mynats "github.com/cloudfoundry-incubator/route-registrar/nats"
+	messagebus_fakes "github.com/cloudfoundry-incubator/route-registrar/messagebus/fakes"
 	"github.com/cloudfoundry-incubator/route-registrar/registrar"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
@@ -23,15 +18,13 @@ import (
 
 var _ = Describe("Registrar.RegisterRoutes", func() {
 	var (
-		messageBus mynats.MessageBus
+		fakeMessageBus *messagebus_fakes.FakeMessageBus
 
-		natsCmd      *exec.Cmd
 		natsHost     string
 		natsUsername string
 		natsPassword string
 
-		rrConfig      config.Config
-		testSpyClient *nats.Conn
+		rrConfig config.Config
 
 		logger lager.Logger
 
@@ -48,10 +41,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		natsPassword = "nats-pw"
 		natsHost = "127.0.0.1"
 
-		natsCmd = startNats(natsHost, natsPort, natsUsername, natsPassword)
-
 		logger = lagertest.NewTestLogger("Registrar test")
-		var err error
 		servers := []string{
 			fmt.Sprintf(
 				"nats://%s:%s@%s:%d",
@@ -64,9 +54,6 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		opts := nats.DefaultOptions
 		opts.Servers = servers
-
-		testSpyClient, err = opts.Connect()
-		Expect(err).ShouldNot(HaveOccurred())
 
 		messageBusServer := config.MessageBusServer{
 			fmt.Sprintf("%s:%d", natsHost, natsPort),
@@ -103,81 +90,76 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			},
 		}
 
-		fakeHealthChecker = &healthchecker_fakes.FakeHealthChecker{}
+		fakeHealthChecker = new(healthchecker_fakes.FakeHealthChecker)
+		fakeMessageBus = new(messagebus_fakes.FakeMessageBus)
 
-		messageBus = mynats.NewMessageBus(logger)
-
-		r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, messageBus)
+		r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
 	})
 
-	AfterEach(func() {
-		testSpyClient.Close()
-
-		err := natsCmd.Process.Kill()
-		Expect(err).NotTo(HaveOccurred())
-		// err = natsCmd.Wait()
-		// Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("periodically registers all URIs for all routes", func() {
-		// Detect when a router.register message gets sent
-		var registered chan (string)
-		registered = subscribeToRegisterEvents(testSpyClient, func(msg *nats.Msg) {
-			registered <- string(msg.Data)
-		})
-
-		// Detect when an unregister message gets sent
-		var unregistered chan (string)
-		unregistered = subscribeToUnregisterEvents(testSpyClient, func(msg *nats.Msg) {
-			close(unregistered)
-		})
-
+	It("connects to messagebus", func() {
 		runStatus := make(chan error)
 		go func() {
 			runStatus <- r.Run(signals, ready)
 		}()
 		<-ready
 
-		expectedRegistryMessages := []mynats.Message{
-			{
-				URIs: rrConfig.Routes[0].URIs,
-				Host: rrConfig.Host,
-				Port: rrConfig.Routes[0].Port,
-			},
-			{
-				URIs: rrConfig.Routes[1].URIs,
-				Host: rrConfig.Host,
-				Port: rrConfig.Routes[1].Port,
-			},
-		}
+		Expect(fakeMessageBus.ConnectCallCount()).To(Equal(1))
+	})
 
-		for i := 0; i < len(expectedRegistryMessages); i++ {
-			// Assert that we got the right router.register message
-			var receivedMessage string
-			Eventually(registered, 2).Should(Receive(&receivedMessage))
-
-			var registryMessage mynats.Message
-			err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			switch registryMessage.Port {
-			case expectedRegistryMessages[0].Port:
-				Expect(registryMessage.URIs).To(Equal(expectedRegistryMessages[0].URIs))
-				break
-			case expectedRegistryMessages[1].Port:
-				Expect(registryMessage.URIs).To(Equal(expectedRegistryMessages[1].URIs))
-				break
-			default:
-				Fail("Unexpected port in nats message")
-			}
-		}
-
-		// Assert that we never got a router.unregister message
-		Consistently(unregistered, 2).ShouldNot(Receive())
+	It("unregisters on shutdown", func() {
+		runStatus := make(chan error)
+		go func() {
+			runStatus <- r.Run(signals, ready)
+		}()
+		<-ready
 
 		close(signals)
 		err := <-runStatus
 		Expect(err).ShouldNot(HaveOccurred())
+
+		Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 1))
+
+		subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
+		Expect(subject).To(Equal("router.unregister"))
+		Expect(host).To(Equal(rrConfig.Host))
+		Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
+		Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
+		Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+		Expect(privateInstanceId).NotTo(Equal(""))
+
+		subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
+		Expect(subject).To(Equal("router.unregister"))
+		Expect(host).To(Equal(rrConfig.Host))
+		Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
+		Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
+		Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+		Expect(privateInstanceId).NotTo(Equal(""))
+	})
+
+	It("periodically registers all URIs for all routes", func() {
+		runStatus := make(chan error)
+		go func() {
+			runStatus <- r.Run(signals, ready)
+		}()
+		<-ready
+
+		Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 1))
+
+		subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
+		Expect(subject).To(Equal("router.register"))
+		Expect(host).To(Equal(rrConfig.Host))
+		Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
+		Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
+		Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+		Expect(privateInstanceId).NotTo(Equal(""))
+
+		subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
+		Expect(subject).To(Equal("router.register"))
+		Expect(host).To(Equal(rrConfig.Host))
+		Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
+		Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
+		Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+		Expect(privateInstanceId).NotTo(Equal(""))
 	})
 
 	Context("given a healthcheck", func() {
@@ -190,59 +172,45 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				Name:       "My Healthcheck process",
 				ScriptPath: scriptPath,
 			}
+			rrConfig.Routes[1].HealthCheck = &config.HealthCheck{
+				Name:       "My Healthcheck process 2",
+				ScriptPath: scriptPath,
+			}
 
-			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, messageBus)
+			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
 		})
 
 		Context("and the healthcheck succeeds", func() {
 			BeforeEach(func() {
 				fakeHealthChecker.CheckReturns(true, nil)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, messageBus)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
 			})
 
 			It("registers routes", func() {
-				// Detect when a router.register message gets sent
-				var registered chan (string)
-				registered = subscribeToRegisterEvents(testSpyClient, func(msg *nats.Msg) {
-					registered <- string(msg.Data)
-				})
-
-				// Detect when an unregister message gets sent
-				var unregistered chan (string)
-				unregistered = subscribeToUnregisterEvents(testSpyClient, func(msg *nats.Msg) {
-					unregistered <- string(msg.Data)
-				})
-
 				runStatus := make(chan error)
 				go func() {
 					runStatus <- r.Run(signals, ready)
 				}()
 				<-ready
 
-				expectedRegistryMessage := mynats.Message{
-					URIs: rrConfig.Routes[0].URIs,
-					Host: rrConfig.Host,
-					Port: rrConfig.Routes[0].Port,
-				}
+				Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 1))
 
-				// Assert that we got the right router.register message
-				var receivedMessage string
-				Eventually(registered, 2).Should(Receive(&receivedMessage))
+				subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
+				Expect(subject).To(Equal("router.register"))
+				Expect(host).To(Equal(rrConfig.Host))
+				Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
+				Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
+				Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+				Expect(privateInstanceId).NotTo(Equal(""))
 
-				var registryMessage mynats.Message
-				err := json.Unmarshal([]byte(receivedMessage), &registryMessage)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
-				Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
-
-				// Assert that we never got a router.unregister message
-				Consistently(unregistered, 2).ShouldNot(Receive())
-
-				close(signals)
-				err = <-runStatus
-				Expect(err).ShouldNot(HaveOccurred())
+				subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
+				Expect(subject).To(Equal("router.register"))
+				Expect(host).To(Equal(rrConfig.Host))
+				Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
+				Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
+				Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+				Expect(privateInstanceId).NotTo(Equal(""))
 			})
 		})
 
@@ -250,65 +218,33 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			BeforeEach(func() {
 				fakeHealthChecker.CheckReturns(false, nil)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, messageBus)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
 			})
 
 			It("unregisters routes", func() {
-				// Detect when a router.register message gets sent
-				var registered chan (string)
-				registered = subscribeToRegisterEvents(testSpyClient, func(msg *nats.Msg) {
-					registered <- string(msg.Data)
-				})
-
-				// Detect when an unregister message gets sent
-				var unregistered chan (string)
-				unregistered = subscribeToUnregisterEvents(testSpyClient, func(msg *nats.Msg) {
-					unregistered <- string(msg.Data)
-				})
-
 				runStatus := make(chan error)
 				go func() {
 					runStatus <- r.Run(signals, ready)
 				}()
 				<-ready
 
-				expectedUnregisterMessage := mynats.Message{
-					URIs: rrConfig.Routes[0].URIs,
-					Host: rrConfig.Host,
-					Port: rrConfig.Routes[0].Port,
-				}
+				Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 1))
 
-				// Assert that we got the right router.unregister message
-				var receivedUnregisterMessage string
-				Eventually(unregistered, 2).Should(Receive(&receivedUnregisterMessage))
+				subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
+				Expect(subject).To(Equal("router.unregister"))
+				Expect(host).To(Equal(rrConfig.Host))
+				Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
+				Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
+				Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+				Expect(privateInstanceId).NotTo(Equal(""))
 
-				var unregisterMessage mynats.Message
-				err := json.Unmarshal([]byte(receivedUnregisterMessage), &unregisterMessage)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(unregisterMessage.URIs).To(Equal(expectedUnregisterMessage.URIs))
-				Expect(unregisterMessage.Port).To(Equal(expectedUnregisterMessage.Port))
-
-				// register
-				var receivedRegisterMessage string
-				Eventually(registered, 2).Should(Receive(&receivedRegisterMessage))
-
-				expectedRegisterMessage := mynats.Message{
-					URIs: rrConfig.Routes[1].URIs,
-					Host: rrConfig.Host,
-					Port: rrConfig.Routes[1].Port,
-				}
-
-				var registerMessage mynats.Message
-				err = json.Unmarshal([]byte(receivedRegisterMessage), &registerMessage)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(registerMessage.URIs).To(Equal(expectedRegisterMessage.URIs))
-				Expect(registerMessage.Port).To(Equal(expectedRegisterMessage.Port))
-
-				close(signals)
-				err = <-runStatus
-				Expect(err).ShouldNot(HaveOccurred())
+				subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
+				Expect(subject).To(Equal("router.unregister"))
+				Expect(host).To(Equal(rrConfig.Host))
+				Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
+				Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
+				Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+				Expect(privateInstanceId).NotTo(Equal(""))
 			})
 		})
 
@@ -319,112 +255,34 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				expectedErr = fmt.Errorf("boom")
 				fakeHealthChecker.CheckReturns(true, expectedErr)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, messageBus)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
 			})
 
 			It("unregisters routes", func() {
-
-				// Detect when a router.register message gets sent
-				var registered chan (string)
-				registered = subscribeToRegisterEvents(testSpyClient, func(msg *nats.Msg) {
-					registered <- string(msg.Data)
-				})
-
-				// Detect when an unregister message gets sent
-				var unregistered chan (string)
-				unregistered = subscribeToUnregisterEvents(testSpyClient, func(msg *nats.Msg) {
-					unregistered <- string(msg.Data)
-				})
-
 				runStatus := make(chan error)
 				go func() {
 					runStatus <- r.Run(signals, ready)
 				}()
 				<-ready
 
-				expectedUnregisterMessage := mynats.Message{
-					URIs: rrConfig.Routes[0].URIs,
-					Host: rrConfig.Host,
-					Port: rrConfig.Routes[0].Port,
-				}
+				Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 1))
 
-				// Assert that we got the right router.unregister message
-				var receivedUnregisterMessage string
-				Eventually(unregistered, 2).Should(Receive(&receivedUnregisterMessage))
+				subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
+				Expect(subject).To(Equal("router.unregister"))
+				Expect(host).To(Equal(rrConfig.Host))
+				Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
+				Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
+				Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+				Expect(privateInstanceId).NotTo(Equal(""))
 
-				var unregisterMessage mynats.Message
-				err := json.Unmarshal([]byte(receivedUnregisterMessage), &unregisterMessage)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(unregisterMessage.URIs).To(Equal(expectedUnregisterMessage.URIs))
-				Expect(unregisterMessage.Port).To(Equal(expectedUnregisterMessage.Port))
-
-				// register
-				var receivedRegisterMessage string
-				Eventually(registered, 2).Should(Receive(&receivedRegisterMessage))
-
-				expectedRegisterMessage := mynats.Message{
-					URIs: rrConfig.Routes[1].URIs,
-					Host: rrConfig.Host,
-					Port: rrConfig.Routes[1].Port,
-				}
-
-				var registerMessage mynats.Message
-				err = json.Unmarshal([]byte(receivedRegisterMessage), &registerMessage)
-				Expect(err).ShouldNot(HaveOccurred())
-
-				Expect(registerMessage.URIs).To(Equal(expectedRegisterMessage.URIs))
-				Expect(registerMessage.Port).To(Equal(expectedRegisterMessage.Port))
-
-				close(signals)
-				err = <-runStatus
-				Expect(err).ShouldNot(HaveOccurred())
+				subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
+				Expect(subject).To(Equal("router.unregister"))
+				Expect(host).To(Equal(rrConfig.Host))
+				Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
+				Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
+				Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+				Expect(privateInstanceId).NotTo(Equal(""))
 			})
 		})
 	})
 })
-
-func subscribeToRegisterEvents(
-	testSpyClient *nats.Conn,
-	callback func(msg *nats.Msg),
-) chan string {
-	registerChannel := make(chan string)
-	go testSpyClient.Subscribe("router.register", callback)
-
-	return registerChannel
-}
-
-func subscribeToUnregisterEvents(
-	testSpyClient *nats.Conn,
-	callback func(msg *nats.Msg),
-) chan string {
-	unregisterChannel := make(chan string)
-	go testSpyClient.Subscribe("router.unregister", callback)
-
-	return unregisterChannel
-}
-
-func startNats(host string, port int, username, password string) *exec.Cmd {
-	fmt.Fprintf(GinkgoWriter, "Starting gnatsd on port %d\n", port)
-
-	cmd := exec.Command(
-		"gnatsd",
-		"-p", strconv.Itoa(port),
-		"--user", username,
-		"--pass", password)
-
-	err := cmd.Start()
-	if err != nil {
-		fmt.Printf("gnatsd failed to start: %v\n", err)
-	}
-
-	natsTimeout := 10 * time.Second
-	natsPollingInterval := 20 * time.Millisecond
-	Eventually(func() error {
-		_, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
-		return err
-	}, natsTimeout, natsPollingInterval).Should(Succeed())
-
-	fmt.Fprintf(GinkgoWriter, "gnatsd running on port %d\n", port)
-	return cmd
-}

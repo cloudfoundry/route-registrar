@@ -1,4 +1,4 @@
-package nats_test
+package messagebus_test
 
 import (
 	"encoding/json"
@@ -13,7 +13,7 @@ import (
 
 	real_nats "github.com/apcera/nats"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
-	"github.com/cloudfoundry-incubator/route-registrar/nats"
+	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
@@ -29,7 +29,7 @@ var _ = Describe("Nats test Suite", func() {
 
 		logger            lager.Logger
 		messageBusServers []config.MessageBusServer
-		messageBus        nats.MessageBus
+		messageBus        messagebus.MessageBus
 	)
 
 	BeforeEach(func() {
@@ -65,8 +65,7 @@ var _ = Describe("Nats test Suite", func() {
 
 		messageBusServers = []config.MessageBusServer{messageBusServer, messageBusServer}
 
-		messageBus = nats.NewMessageBus(logger)
-
+		messageBus = messagebus.NewMessageBus(logger)
 	})
 
 	AfterEach(func() {
@@ -134,13 +133,13 @@ var _ = Describe("Nats test Suite", func() {
 			var receivedMessage string
 			Eventually(registered).Should(Receive(&receivedMessage))
 
-			expectedRegistryMessage := nats.Message{
+			expectedRegistryMessage := messagebus.Message{
 				URIs: route.URIs,
 				Host: host,
 				Port: route.Port,
 			}
 
-			var registryMessage nats.Message
+			var registryMessage messagebus.Message
 			err = json.Unmarshal([]byte(receivedMessage), &registryMessage)
 			Expect(err).ShouldNot(HaveOccurred())
 

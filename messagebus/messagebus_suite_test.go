@@ -1,4 +1,4 @@
-package nats_test
+package messagebus_test
 
 import (
 	"testing"

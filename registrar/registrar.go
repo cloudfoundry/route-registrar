@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/cloudfoundry-incubator/route-registrar/nats"
+	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 	"github.com/nu7hatch/gouuid"
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
@@ -21,7 +21,7 @@ type registrar struct {
 	logger            lager.Logger
 	config            config.Config
 	healthChecker     healthchecker.HealthChecker
-	messageBus        nats.MessageBus
+	messageBus        messagebus.MessageBus
 	privateInstanceId string
 }
 
@@ -29,7 +29,7 @@ func NewRegistrar(
 	clientConfig config.Config,
 	healthChecker healthchecker.HealthChecker,
 	logger lager.Logger,
-	messageBus nats.MessageBus,
+	messageBus messagebus.MessageBus,
 ) Registrar {
 	aUUID, err := uuid.NewV4()
 	if err != nil {
@@ -100,44 +100,36 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 			for _, route := range r.config.Routes {
 				err := r.unregisterRoutes(route)
 				if err != nil {
-					return err
+					panic(err)
 				}
-				return nil
 			}
+			return nil
 		}
 	}
 }
 
 func (r registrar) registerRoutes(route config.Route) error {
-	r.logger.Info(
-		"Registering routes",
-		lager.Data{
-			"port": route.Port,
-			"uris": route.URIs,
-		},
-	)
+	r.logger.Info("Registering route", lager.Data{"route": route})
 
 	err := r.messageBus.SendMessage("router.register", r.config.Host, route, r.privateInstanceId)
 	if err != nil {
 		return err
 	}
 
+	r.logger.Info("Registered routes successfully")
+
 	return nil
 }
 
 func (r registrar) unregisterRoutes(route config.Route) error {
-	r.logger.Info(
-		"Unregistering routes",
-		lager.Data{
-			"port": route.Port,
-			"uris": route.URIs,
-		},
-	)
+	r.logger.Info("Unregistering route", lager.Data{"route": route})
 
 	err := r.messageBus.SendMessage("router.unregister", r.config.Host, route, r.privateInstanceId)
 	if err != nil {
 		return err
 	}
+
+	r.logger.Info("Unregistered routes successfully")
 
 	return nil
 }

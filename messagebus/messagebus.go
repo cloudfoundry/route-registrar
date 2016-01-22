@@ -1,4 +1,4 @@
-package nats
+package messagebus
 
 import (
 	"encoding/json"
