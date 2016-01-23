@@ -1,6 +1,7 @@
 package registrar_test
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -221,30 +222,49 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
 			})
 
-			It("unregisters routes", func() {
-				runStatus := make(chan error)
-				go func() {
-					runStatus <- r.Run(signals, ready)
-				}()
-				<-ready
+			Context("deregistering routes with error", func() {
 
-				Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 1))
+				It("returns error", func() {
+					fakeMessageBus.SendMessageStub = func(string, string, config.Route, string) error {
+						return errors.New("Failed to deregister")
+					}
 
-				subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
-				Expect(subject).To(Equal("router.unregister"))
-				Expect(host).To(Equal(rrConfig.Host))
-				Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
-				Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
-				Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
-				Expect(privateInstanceId).NotTo(Equal(""))
+					runStatus := make(chan error)
+					go func() {
+						runStatus <- r.Run(signals, ready)
+					}()
+					<-ready
 
-				subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
-				Expect(subject).To(Equal("router.unregister"))
-				Expect(host).To(Equal(rrConfig.Host))
-				Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
-				Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
-				Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
-				Expect(privateInstanceId).NotTo(Equal(""))
+					Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(Equal(1))
+				})
+			})
+
+			Context("deregistering routes without error", func() {
+				It("without error", func() {
+					runStatus := make(chan error)
+					go func() {
+						runStatus <- r.Run(signals, ready)
+					}()
+					<-ready
+
+					Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 1))
+
+					subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
+					Expect(subject).To(Equal("router.unregister"))
+					Expect(host).To(Equal(rrConfig.Host))
+					Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
+					Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
+					Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+					Expect(privateInstanceId).NotTo(Equal(""))
+
+					subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
+					Expect(subject).To(Equal("router.unregister"))
+					Expect(host).To(Equal(rrConfig.Host))
+					Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
+					Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
+					Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+					Expect(privateInstanceId).NotTo(Equal(""))
+				})
 			})
 		})
 

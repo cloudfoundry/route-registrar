@@ -89,7 +89,7 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 						r.logger.Info("healthchecker returned unhealthy for route", lager.Data{"route": route})
 						err := r.unregisterRoutes(route)
 						if err != nil {
-							panic(err)
+							return err
 						}
 					}
 				}
