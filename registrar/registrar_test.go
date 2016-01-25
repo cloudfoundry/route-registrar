@@ -107,6 +107,29 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		Expect(fakeMessageBus.ConnectCallCount()).To(Equal(1))
 	})
 
+	Context("when connecting to messagebus errors", func() {
+		var err error
+
+		BeforeEach(func() {
+			err = errors.New("Failed to connect")
+
+			fakeMessageBus.ConnectStub = func([]config.MessageBusServer) error {
+				return err
+			}
+		})
+
+		It("forwards the error", func() {
+			runStatus := make(chan error)
+			go func() {
+				runStatus <- r.Run(signals, ready)
+			}()
+
+			returned := <-runStatus
+
+			Expect(returned).To(Equal(err))
+		})
+	})
+
 	It("unregisters on shutdown", func() {
 		runStatus := make(chan error)
 		go func() {
@@ -137,6 +160,31 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		Expect(privateInstanceId).NotTo(Equal(""))
 	})
 
+	Context("when unregistering routes errors", func() {
+		var err error
+
+		BeforeEach(func() {
+			err = errors.New("Failed to register")
+
+			fakeMessageBus.SendMessageStub = func(string, string, config.Route, string) error {
+				return err
+			}
+		})
+
+		It("forwards the error", func() {
+			runStatus := make(chan error)
+			go func() {
+				runStatus <- r.Run(signals, ready)
+			}()
+
+			<-ready
+			close(signals)
+			returned := <-runStatus
+
+			Expect(returned).To(Equal(err))
+		})
+	})
+
 	It("periodically registers all URIs for all routes", func() {
 		runStatus := make(chan error)
 		go func() {
@@ -161,6 +209,30 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
 		Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
 		Expect(privateInstanceId).NotTo(Equal(""))
+	})
+
+	Context("when registering routes errors", func() {
+		var err error
+
+		BeforeEach(func() {
+			err = errors.New("Failed to register")
+
+			fakeMessageBus.SendMessageStub = func(string, string, config.Route, string) error {
+				return err
+			}
+		})
+
+		It("forwards the error", func() {
+			runStatus := make(chan error)
+			go func() {
+				runStatus <- r.Run(signals, ready)
+			}()
+
+			<-ready
+			returned := <-runStatus
+
+			Expect(returned).To(Equal(err))
+		})
 	})
 
 	Context("given a healthcheck", func() {
@@ -213,67 +285,35 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
 				Expect(privateInstanceId).NotTo(Equal(""))
 			})
+
+			Context("when registering routes errors", func() {
+				var err error
+
+				BeforeEach(func() {
+					err = errors.New("Failed to register")
+
+					fakeMessageBus.SendMessageStub = func(string, string, config.Route, string) error {
+						return err
+					}
+				})
+
+				It("forwards the error", func() {
+					runStatus := make(chan error)
+					go func() {
+						runStatus <- r.Run(signals, ready)
+					}()
+
+					<-ready
+					returned := <-runStatus
+
+					Expect(returned).To(Equal(err))
+				})
+			})
 		})
 
 		Context("when the healthcheck fails", func() {
 			BeforeEach(func() {
 				fakeHealthChecker.CheckReturns(false, nil)
-
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
-			})
-
-			Context("deregistering routes with error", func() {
-
-				It("returns error", func() {
-					fakeMessageBus.SendMessageStub = func(string, string, config.Route, string) error {
-						return errors.New("Failed to deregister")
-					}
-
-					runStatus := make(chan error)
-					go func() {
-						runStatus <- r.Run(signals, ready)
-					}()
-					<-ready
-
-					Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(Equal(1))
-				})
-			})
-
-			Context("deregistering routes without error", func() {
-				It("without error", func() {
-					runStatus := make(chan error)
-					go func() {
-						runStatus <- r.Run(signals, ready)
-					}()
-					<-ready
-
-					Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 1))
-
-					subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
-					Expect(subject).To(Equal("router.unregister"))
-					Expect(host).To(Equal(rrConfig.Host))
-					Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
-					Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
-					Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
-					Expect(privateInstanceId).NotTo(Equal(""))
-
-					subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
-					Expect(subject).To(Equal("router.unregister"))
-					Expect(host).To(Equal(rrConfig.Host))
-					Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
-					Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
-					Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
-					Expect(privateInstanceId).NotTo(Equal(""))
-				})
-			})
-		})
-
-		Context("when the healthcheck errors", func() {
-			var expectedErr error
-
-			BeforeEach(func() {
-				expectedErr = fmt.Errorf("boom")
-				fakeHealthChecker.CheckReturns(true, expectedErr)
 
 				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
 			})
@@ -302,6 +342,91 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
 				Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
 				Expect(privateInstanceId).NotTo(Equal(""))
+			})
+
+			Context("when unregistering routes errors", func() {
+				var err error
+
+				BeforeEach(func() {
+					err = errors.New("Failed to unregister")
+
+					fakeMessageBus.SendMessageStub = func(string, string, config.Route, string) error {
+						return err
+					}
+				})
+
+				It("forwards the error", func() {
+					runStatus := make(chan error)
+					go func() {
+						runStatus <- r.Run(signals, ready)
+					}()
+
+					<-ready
+					returned := <-runStatus
+
+					Expect(returned).To(Equal(err))
+				})
+			})
+		})
+
+		Context("when the healthcheck errors", func() {
+			var healthcheckErr error
+
+			BeforeEach(func() {
+				healthcheckErr = fmt.Errorf("boom")
+				fakeHealthChecker.CheckReturns(true, healthcheckErr)
+
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
+			})
+
+			It("unregisters routes", func() {
+				runStatus := make(chan error)
+				go func() {
+					runStatus <- r.Run(signals, ready)
+				}()
+				<-ready
+
+				Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 1))
+
+				subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
+				Expect(subject).To(Equal("router.unregister"))
+				Expect(host).To(Equal(rrConfig.Host))
+				Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
+				Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
+				Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+				Expect(privateInstanceId).NotTo(Equal(""))
+
+				subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
+				Expect(subject).To(Equal("router.unregister"))
+				Expect(host).To(Equal(rrConfig.Host))
+				Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
+				Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
+				Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+				Expect(privateInstanceId).NotTo(Equal(""))
+			})
+
+			Context("when unregistering routes errors", func() {
+				var err error
+
+				BeforeEach(func() {
+					err = errors.New("Failed to unregister")
+
+					fakeMessageBus.SendMessageStub = func(string, string, config.Route, string) error {
+						return err
+					}
+				})
+
+				It("forwards the error", func() {
+					runStatus := make(chan error)
+					go func() {
+						runStatus <- r.Run(signals, ready)
+					}()
+
+					<-ready
+					returned := <-runStatus
+
+					Expect(returned).To(Equal(err))
+				})
 			})
 		})
 	})
