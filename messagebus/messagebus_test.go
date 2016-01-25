@@ -11,21 +11,21 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	real_nats "github.com/apcera/nats"
+	"github.com/apcera/nats"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 )
 
-var _ = Describe("Nats test Suite", func() {
+var _ = Describe("Messagebus test Suite", func() {
 	var (
 		natsCmd      *exec.Cmd
 		natsHost     string
 		natsUsername string
 		natsPassword string
 
-		testSpyClient *real_nats.Conn
+		testSpyClient *nats.Conn
 
 		logger            lager.Logger
 		messageBusServers []config.MessageBusServer
@@ -51,7 +51,7 @@ var _ = Describe("Nats test Suite", func() {
 			),
 		}
 
-		opts := real_nats.DefaultOptions
+		opts := nats.DefaultOptions
 		opts.Servers = servers
 
 		testSpyClient, err = opts.Connect()
@@ -117,7 +117,7 @@ var _ = Describe("Nats test Suite", func() {
 
 		It("send messages", func() {
 			registered := make(chan string)
-			testSpyClient.Subscribe(topic, func(msg *real_nats.Msg) {
+			testSpyClient.Subscribe(topic, func(msg *nats.Msg) {
 				registered <- string(msg.Data)
 			})
 

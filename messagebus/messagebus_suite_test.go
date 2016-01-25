@@ -12,10 +12,10 @@ var (
 	natsPort int
 )
 
-func TestNats(t *testing.T) {
+func TestMessagebus(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecs(t, "Nats Suite")
+	RunSpecs(t, "Messagebus Suite")
 }
 
 var _ = BeforeSuite(func() {
