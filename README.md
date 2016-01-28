@@ -38,7 +38,6 @@ Tests are triggered on new commits to master by our
   - host: REPLACE_WITH_NATS_URL
     user: REPLACE_WITH_NATS_USERNAME
     password: REPLACE_WITH_NATS_PASSWORD
-  update_frequency: UPDATE_FREQUENCY_IN_SECONDS
   host: HOSTNAME_OR_IP_OF_ROUTE_DESTINATION
   routes:
   - name: SOME_ROUTE_NAME
@@ -49,6 +48,7 @@ Tests are triggered on new commits to master by our
     uris:
     - some_uri_for_the_router_should_listen_on
     - some_other_uri_for_the_router_to_listen_on
+    registration_interval: REGISTRATION_INTERVAL_IN_SECONDS
     health_check: # optional
       name: my-healthcheck
       script_path: /path/to/check/script/

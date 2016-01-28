@@ -108,7 +108,7 @@ var _ = Describe("Main", func() {
 
 	Context("When the config validatation fails", func() {
 		BeforeEach(func() {
-			rootConfig.UpdateFrequency = 0
+			rootConfig.Host = ""
 			writeConfig()
 		})
 
@@ -121,7 +121,7 @@ var _ = Describe("Main", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			Eventually(session.Out).Should(gbytes.Say("Initializing"))
-			Eventually(session.Err).Should(gbytes.Say("Invalid update frequency"))
+			Eventually(session.Err).Should(gbytes.Say("Invalid host"))
 
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).ToNot(BeZero())
@@ -142,15 +142,15 @@ func initConfig() {
 
 	routes := []config.Route{
 		{
-			Name: "My route",
-			Port: 12345,
-			URIs: []string{"uri-1", "uri-2"},
+			Name:                 "My route",
+			Port:                 12345,
+			URIs:                 []string{"uri-1", "uri-2"},
+			RegistrationInterval: 1,
 		},
 	}
 
 	rootConfig = config.Config{
 		MessageBusServers: messageBusServers,
-		UpdateFrequency:   1,
 		Host:              "127.0.0.1",
 		Routes:            routes,
 	}

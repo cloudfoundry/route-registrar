@@ -17,21 +17,23 @@ type HealthCheck struct {
 type Config struct {
 	MessageBusServers []MessageBusServer `yaml:"message_bus_servers"`
 	Routes            []Route            `yaml:"routes"`
-	UpdateFrequency   int                `yaml:"update_frequency"`
 	Host              string             `yaml:"host"`
 }
 
 type Route struct {
-	Name        string            `yaml:"name"`
-	Port        int               `yaml:"port"`
-	Tags        map[string]string `yaml:"tags"`
-	URIs        []string          `yaml:"uris"`
-	HealthCheck *HealthCheck      `yaml:"health_check"`
+	Name                 string            `yaml:"name"`
+	Port                 int               `yaml:"port"`
+	Tags                 map[string]string `yaml:"tags"`
+	URIs                 []string          `yaml:"uris"`
+	RegistrationInterval int               `yaml:"registration_interval"`
+	HealthCheck          *HealthCheck      `yaml:"health_check"`
 }
 
 func (c Config) Validate() error {
-	if c.UpdateFrequency <= 0 {
-		return fmt.Errorf("Invalid update frequency: %d", c.UpdateFrequency)
+	for _, r := range c.Routes {
+		if r.RegistrationInterval <= 0 {
+			return fmt.Errorf("Invalid update frequency: %d", r.RegistrationInterval)
+		}
 	}
 
 	if c.Host == "" {

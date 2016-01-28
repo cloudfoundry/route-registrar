@@ -126,7 +126,7 @@ func (r registrar) periodicallyDetermineHealth(
 	routeHealthChan chan<- routeHealth,
 	closeChan chan struct{},
 ) {
-	duration := time.Duration(r.config.UpdateFrequency) * time.Second
+	duration := time.Duration(route.RegistrationInterval) * time.Second
 
 	ticker := time.NewTicker(duration)
 	defer ticker.Stop()

@@ -67,7 +67,6 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			// doesn't matter if these are the same, just want to send a slice
 			MessageBusServers: []config.MessageBusServer{messageBusServer, messageBusServer},
 			Host:              "my host",
-			UpdateFrequency:   1,
 		}
 
 		signals = make(chan os.Signal, 1)
@@ -81,6 +80,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					"my uri 1.1",
 					"my uri 1.2",
 				},
+				RegistrationInterval: 1,
 			},
 			{
 				Name: "my route 2",
@@ -89,6 +89,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					"my uri 2.1",
 					"my uri 2.2",
 				},
+				RegistrationInterval: 1,
 			},
 		}
 
@@ -492,13 +493,12 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				}()
 				<-ready
 
-				// Must be greater than the polling frequency to ensure the loop runs
+				// Must be greater than the registration interval to ensure the loop runs
 				// at least once
 				time.Sleep(1500 * time.Millisecond)
 
 				close(signals)
-				// err := <-runStatus
-				Eventually(runStatus).Should(Receive())
+				Eventually(runStatus).Should(Receive(nil))
 			})
 		})
 	})
