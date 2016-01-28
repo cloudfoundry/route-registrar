@@ -45,9 +45,10 @@ func NewRegistrar(
 }
 
 type routeHealth struct {
-	route   config.Route
-	healthy bool
-	err     error
+	route          config.Route
+	hasHealthcheck bool
+	healthy        bool
+	err            error
 }
 
 func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
@@ -65,13 +66,21 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 	routeHealthChan := make(chan routeHealth, len(r.config.Routes))
 
-	duration := time.Duration(r.config.UpdateFrequency) * time.Second
-	ticker := time.NewTicker(duration)
+	for _, route := range r.config.Routes {
+		go r.periodicallyDetermineHealth(route, routeHealthChan)
+	}
 
 	for {
 		select {
 		case s := <-routeHealthChan:
-			if s.err != nil {
+			if !s.hasHealthcheck {
+				r.logger.Info("no healthchecker found for route", lager.Data{"route": s.route})
+
+				err := r.registerRoutes(s.route)
+				if err != nil {
+					return err
+				}
+			} else if s.err != nil {
 				r.logger.Info("healthchecker errored for route", lager.Data{"route": s.route})
 				err := r.unregisterRoutes(s.route)
 				if err != nil {
@@ -90,27 +99,6 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 					return err
 				}
 			}
-		case <-ticker.C:
-			for _, route := range r.config.Routes {
-				if route.HealthCheck == nil || route.HealthCheck.ScriptPath == "" {
-					r.logger.Info("no healthchecker found for route", lager.Data{"route": route})
-
-					err := r.registerRoutes(route)
-					if err != nil {
-						return err
-					}
-				} else {
-					go func(route config.Route) {
-						ok, err := r.healthChecker.Check(route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
-						routeStatus := routeHealth{
-							route:   route,
-							healthy: ok,
-							err:     err,
-						}
-						routeHealthChan <- routeStatus
-					}(route)
-				}
-			}
 		case <-signals:
 			r.logger.Info("Received signal; shutting down")
 
@@ -121,6 +109,32 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 				}
 			}
 			return nil
+		}
+	}
+}
+
+func (r registrar) periodicallyDetermineHealth(route config.Route, routeHealthChan chan<- routeHealth) {
+	duration := time.Duration(r.config.UpdateFrequency) * time.Second
+
+	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+
+	routeStatus := routeHealth{
+		route: route,
+	}
+
+	for {
+		select {
+		case <-ticker.C:
+			if route.HealthCheck == nil || route.HealthCheck.ScriptPath == "" {
+				routeStatus.hasHealthcheck = false
+			} else {
+				routeStatus.hasHealthcheck = true
+				ok, err := r.healthChecker.Check(route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
+				routeStatus.healthy = ok
+				routeStatus.err = err
+			}
+			routeHealthChan <- routeStatus
 		}
 	}
 }
