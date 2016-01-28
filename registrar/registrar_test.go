@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/apcera/nats"
 	. "github.com/onsi/ginkgo"
@@ -197,17 +198,28 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
 		Expect(subject).To(Equal("router.register"))
 		Expect(host).To(Equal(rrConfig.Host))
-		Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
-		Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
-		Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+
+		var firstRoute, secondRoute config.Route
+		if route.Name == rrConfig.Routes[0].Name {
+			firstRoute = rrConfig.Routes[0]
+			secondRoute = rrConfig.Routes[1]
+		} else {
+			firstRoute = rrConfig.Routes[1]
+			secondRoute = rrConfig.Routes[0]
+		}
+
+		Expect(route.Name).To(Equal(firstRoute.Name))
+		Expect(route.URIs).To(Equal(firstRoute.URIs))
+		Expect(route.Port).To(Equal(firstRoute.Port))
 		Expect(privateInstanceId).NotTo(Equal(""))
 
 		subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
 		Expect(subject).To(Equal("router.register"))
 		Expect(host).To(Equal(rrConfig.Host))
-		Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
-		Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
-		Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+
+		Expect(route.Name).To(Equal(secondRoute.Name))
+		Expect(route.URIs).To(Equal(secondRoute.URIs))
+		Expect(route.Port).To(Equal(secondRoute.Port))
 		Expect(privateInstanceId).NotTo(Equal(""))
 	})
 
@@ -272,17 +284,28 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
 				Expect(subject).To(Equal("router.register"))
 				Expect(host).To(Equal(rrConfig.Host))
-				Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
-				Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
-				Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+
+				var firstRoute, secondRoute config.Route
+				if route.Name == rrConfig.Routes[0].Name {
+					firstRoute = rrConfig.Routes[0]
+					secondRoute = rrConfig.Routes[1]
+				} else {
+					firstRoute = rrConfig.Routes[1]
+					secondRoute = rrConfig.Routes[0]
+				}
+
+				Expect(route.Name).To(Equal(firstRoute.Name))
+				Expect(route.URIs).To(Equal(firstRoute.URIs))
+				Expect(route.Port).To(Equal(firstRoute.Port))
 				Expect(privateInstanceId).NotTo(Equal(""))
 
 				subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
 				Expect(subject).To(Equal("router.register"))
 				Expect(host).To(Equal(rrConfig.Host))
-				Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
-				Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
-				Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+
+				Expect(route.Name).To(Equal(secondRoute.Name))
+				Expect(route.URIs).To(Equal(secondRoute.URIs))
+				Expect(route.Port).To(Equal(secondRoute.Port))
 				Expect(privateInstanceId).NotTo(Equal(""))
 			})
 
@@ -330,17 +353,28 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
 				Expect(subject).To(Equal("router.unregister"))
 				Expect(host).To(Equal(rrConfig.Host))
-				Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
-				Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
-				Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+
+				var firstRoute, secondRoute config.Route
+				if route.Name == rrConfig.Routes[0].Name {
+					firstRoute = rrConfig.Routes[0]
+					secondRoute = rrConfig.Routes[1]
+				} else {
+					firstRoute = rrConfig.Routes[1]
+					secondRoute = rrConfig.Routes[0]
+				}
+
+				Expect(route.Name).To(Equal(firstRoute.Name))
+				Expect(route.URIs).To(Equal(firstRoute.URIs))
+				Expect(route.Port).To(Equal(firstRoute.Port))
 				Expect(privateInstanceId).NotTo(Equal(""))
 
 				subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
 				Expect(subject).To(Equal("router.unregister"))
 				Expect(host).To(Equal(rrConfig.Host))
-				Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
-				Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
-				Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+
+				Expect(route.Name).To(Equal(secondRoute.Name))
+				Expect(route.URIs).To(Equal(secondRoute.URIs))
+				Expect(route.Port).To(Equal(secondRoute.Port))
 				Expect(privateInstanceId).NotTo(Equal(""))
 			})
 
@@ -391,17 +425,28 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
 				Expect(subject).To(Equal("router.unregister"))
 				Expect(host).To(Equal(rrConfig.Host))
-				Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
-				Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
-				Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+
+				var firstRoute, secondRoute config.Route
+				if route.Name == rrConfig.Routes[0].Name {
+					firstRoute = rrConfig.Routes[0]
+					secondRoute = rrConfig.Routes[1]
+				} else {
+					firstRoute = rrConfig.Routes[1]
+					secondRoute = rrConfig.Routes[0]
+				}
+
+				Expect(route.Name).To(Equal(firstRoute.Name))
+				Expect(route.URIs).To(Equal(firstRoute.URIs))
+				Expect(route.Port).To(Equal(firstRoute.Port))
 				Expect(privateInstanceId).NotTo(Equal(""))
 
 				subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
 				Expect(subject).To(Equal("router.unregister"))
 				Expect(host).To(Equal(rrConfig.Host))
-				Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
-				Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
-				Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+
+				Expect(route.Name).To(Equal(secondRoute.Name))
+				Expect(route.URIs).To(Equal(secondRoute.URIs))
+				Expect(route.Port).To(Equal(secondRoute.Port))
 				Expect(privateInstanceId).NotTo(Equal(""))
 			})
 
@@ -427,6 +472,33 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 					Expect(returned).To(Equal(err))
 				})
+			})
+		})
+
+		Context("when the healthcheck is in progress", func() {
+			BeforeEach(func() {
+				fakeHealthChecker.CheckStub = func(string, int) (bool, error) {
+					time.Sleep(2 * time.Second)
+					return true, nil
+				}
+
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
+			})
+
+			It("returns instantly upon interrupt", func() {
+				runStatus := make(chan error)
+				go func() {
+					runStatus <- r.Run(signals, ready)
+				}()
+				<-ready
+
+				// Must be greater than the polling frequency to ensure the loop runs
+				// at least once
+				time.Sleep(1500 * time.Millisecond)
+
+				close(signals)
+				// err := <-runStatus
+				Eventually(runStatus).Should(Receive())
 			})
 		})
 	})
