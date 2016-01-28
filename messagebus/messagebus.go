@@ -23,10 +23,11 @@ type msgBus struct {
 }
 
 type Message struct {
-	URIs              []string `json:"uris"`
-	Host              string   `json:"host"`
-	Port              int      `json:"port"`
-	PrivateInstanceId string   `json:"private_instance_id"`
+	URIs              []string          `json:"uris"`
+	Host              string            `json:"host"`
+	Port              int               `json:"port"`
+	Tags              map[string]string `json:"tags"`
+	PrivateInstanceId string            `json:"private_instance_id"`
 }
 
 func NewMessageBus(logger lager.Logger) MessageBus {
@@ -71,6 +72,7 @@ func (m msgBus) SendMessage(subject string, host string, route config.Route, pri
 		URIs:              route.URIs,
 		Host:              host,
 		Port:              route.Port,
+		Tags:              route.Tags,
 		PrivateInstanceId: privateInstanceId,
 	}
 

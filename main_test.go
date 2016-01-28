@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -9,7 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/apcera/nats"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
+	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 	"github.com/fraenkel/candiedyaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,17 +21,25 @@ import (
 )
 
 var _ = Describe("Main", func() {
-	var natsCmd *exec.Cmd
+	var (
+		natsCmd       *exec.Cmd
+		testSpyClient *nats.Conn
+	)
 
 	BeforeEach(func() {
+		natsUsername := "nats"
+		natsPassword := "nats"
+		natsHost := "127.0.0.1"
+
 		initConfig()
 		writeConfig()
 
 		natsCmd = exec.Command(
 			"gnatsd",
 			"-p", strconv.Itoa(natsPort),
-			"--user", "nats",
-			"--pass", "nats")
+			"--user", natsUsername,
+			"--pass", natsPassword,
+		)
 		err := natsCmd.Start()
 
 		natsAddress := fmt.Sprintf("127.0.0.1:%d", natsPort)
@@ -37,6 +48,21 @@ var _ = Describe("Main", func() {
 			_, err := net.Dial("tcp", natsAddress)
 			return err
 		}).Should(Succeed())
+
+		servers := []string{
+			fmt.Sprintf(
+				"nats://%s:%s@%s:%d",
+				natsUsername,
+				natsPassword,
+				natsHost,
+				natsPort,
+			),
+		}
+
+		opts := nats.DefaultOptions
+		opts.Servers = servers
+
+		testSpyClient, err = opts.Connect()
 
 		Expect(err).ShouldNot(HaveOccurred())
 	})
@@ -66,6 +92,49 @@ var _ = Describe("Main", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 
 		Expect(len(pidFileContents)).To(BeNumerically(">", 0))
+	})
+
+	It("registers routes via NATS", func() {
+		const (
+			topic = "router.register"
+		)
+
+		registered := make(chan string)
+		testSpyClient.Subscribe(topic, func(msg *nats.Msg) {
+			registered <- string(msg.Data)
+		})
+
+		command := exec.Command(
+			routeRegistrarBinPath,
+			fmt.Sprintf("-configPath=%s", configFile),
+		)
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		Eventually(session.Out).Should(gbytes.Say("Initializing"))
+		Eventually(session.Out).Should(gbytes.Say("Running"))
+		Eventually(session.Out, 10*time.Second).Should(gbytes.Say("Registering"))
+
+		var receivedMessage string
+		Eventually(registered, 10*time.Second).Should(Receive(&receivedMessage))
+
+		expectedRegistryMessage := messagebus.Message{
+			URIs: []string{"uri-1", "uri-2"},
+			Host: "127.0.0.1",
+			Port: 12345,
+			Tags: map[string]string{"tag1": "val1", "tag2": "val2"},
+		}
+
+		var registryMessage messagebus.Message
+		err = json.Unmarshal([]byte(receivedMessage), &registryMessage)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
+		Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
+		Expect(registryMessage.Tags).To(Equal(expectedRegistryMessage.Tags))
+
+		session.Kill().Wait()
+		Eventually(session).Should(gexec.Exit())
 	})
 
 	It("Starts correctly and shuts down on SIGINT", func() {
@@ -147,6 +216,7 @@ func initConfig() {
 			Name:                 "My route",
 			Port:                 12345,
 			URIs:                 []string{"uri-1", "uri-2"},
+			Tags:                 map[string]string{"tag1": "val1", "tag2": "val2"},
 			RegistrationInterval: &registrationInterval,
 		},
 	}

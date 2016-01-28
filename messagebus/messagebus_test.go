@@ -112,6 +112,7 @@ var _ = Describe("Messagebus test Suite", func() {
 				Name: "some_name",
 				Port: 12345,
 				URIs: []string{"uri1", "uri2"},
+				Tags: map[string]string{"tag1": "val1", "tag2": "val2"},
 			}
 		})
 
@@ -137,6 +138,7 @@ var _ = Describe("Messagebus test Suite", func() {
 				URIs: route.URIs,
 				Host: host,
 				Port: route.Port,
+				Tags: route.Tags,
 			}
 
 			var registryMessage messagebus.Message
@@ -145,6 +147,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 			Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
 			Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
+			Expect(registryMessage.Tags).To(Equal(expectedRegistryMessage.Tags))
 		})
 
 		Context("when the connection is already closed", func() {

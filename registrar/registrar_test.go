@@ -81,6 +81,10 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					"my uri 1.1",
 					"my uri 1.2",
 				},
+				Tags: map[string]string{
+					"tag1.1": "value1.1",
+					"tag1.2": "value1.2",
+				},
 				RegistrationInterval: &registrationInterval,
 			},
 			{
@@ -89,6 +93,10 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				URIs: []string{
 					"my uri 2.1",
 					"my uri 2.2",
+				},
+				Tags: map[string]string{
+					"tag2.1": "value2.1",
+					"tag2.2": "value2.2",
 				},
 				RegistrationInterval: &registrationInterval,
 			},
@@ -152,6 +160,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
 		Expect(route.URIs).To(Equal(rrConfig.Routes[0].URIs))
 		Expect(route.Port).To(Equal(rrConfig.Routes[0].Port))
+		Expect(route.Tags).To(Equal(rrConfig.Routes[0].Tags))
 		Expect(privateInstanceId).NotTo(Equal(""))
 
 		subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
@@ -160,6 +169,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
 		Expect(route.URIs).To(Equal(rrConfig.Routes[1].URIs))
 		Expect(route.Port).To(Equal(rrConfig.Routes[1].Port))
+		Expect(route.Tags).To(Equal(rrConfig.Routes[1].Tags))
 		Expect(privateInstanceId).NotTo(Equal(""))
 	})
 

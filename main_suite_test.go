@@ -7,6 +7,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	. "github.com/onsi/ginkgo"
+	gconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
@@ -41,6 +42,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).ShouldNot(HaveOccurred())
 
 	pidFile = filepath.Join(tempDir, "route-registrar.pid")
+
+	natsPort = 40000 + gconfig.GinkgoConfig.ParallelNode
 
 	configFile = filepath.Join(tempDir, "registrar_settings.yml")
 })
