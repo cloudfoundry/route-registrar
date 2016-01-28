@@ -108,7 +108,7 @@ var _ = Describe("Main", func() {
 
 	Context("When the config validatation fails", func() {
 		BeforeEach(func() {
-			rootConfig.Host = ""
+			rootConfig.Routes[0].RegistrationInterval = nil
 			writeConfig()
 		})
 
@@ -121,7 +121,7 @@ var _ = Describe("Main", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			Eventually(session.Out).Should(gbytes.Say("Initializing"))
-			Eventually(session.Err).Should(gbytes.Say("Invalid host"))
+			Eventually(session.Err).Should(gbytes.Say("Update frequency not provided"))
 
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).ToNot(BeZero())
@@ -131,6 +131,8 @@ var _ = Describe("Main", func() {
 
 func initConfig() {
 	natsPort = 42222 + GinkgoParallelNode()
+
+	registrationInterval := 1
 
 	messageBusServers := []config.MessageBusServer{
 		config.MessageBusServer{
@@ -145,7 +147,7 @@ func initConfig() {
 			Name:                 "My route",
 			Port:                 12345,
 			URIs:                 []string{"uri-1", "uri-2"},
-			RegistrationInterval: 1,
+			RegistrationInterval: &registrationInterval,
 		},
 	}
 

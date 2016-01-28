@@ -14,10 +14,11 @@ var _ = Describe("Config", func() {
 		)
 
 		BeforeEach(func() {
+			registrationInterval := 20
 			c = config.Config{
 				Routes: []config.Route{
 					{
-						RegistrationInterval: 20,
+						RegistrationInterval: &registrationInterval,
 					},
 				},
 				Host: "127.0.0.1",
@@ -29,9 +30,21 @@ var _ = Describe("Config", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		Context("The registration interval is nil", func() {
+			BeforeEach(func() {
+				c.Routes[0].RegistrationInterval = nil
+			})
+
+			It("returns an error", func() {
+				err := c.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Update frequency not provided"))
+			})
+		})
+
 		Context("The registration interval is zero", func() {
 			BeforeEach(func() {
-				c.Routes[0].RegistrationInterval = 0
+				*c.Routes[0].RegistrationInterval = 0
 			})
 
 			It("returns an error", func() {

@@ -54,6 +54,7 @@ Tests are triggered on new commits to master by our
       script_path: /path/to/check/script/
       timeout: 1 # optional
   ```
+  `registration_interval` must be provided and be an `int` greater than zero
 
 1. Run route-registrar binaries using the following command
   ```

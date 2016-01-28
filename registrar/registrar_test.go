@@ -72,6 +72,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		signals = make(chan os.Signal, 1)
 		ready = make(chan struct{}, 1)
 
+		registrationInterval := 1
 		rrConfig.Routes = []config.Route{
 			{
 				Name: "my route 1",
@@ -80,7 +81,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					"my uri 1.1",
 					"my uri 1.2",
 				},
-				RegistrationInterval: 1,
+				RegistrationInterval: &registrationInterval,
 			},
 			{
 				Name: "my route 2",
@@ -89,7 +90,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					"my uri 2.1",
 					"my uri 2.2",
 				},
-				RegistrationInterval: 1,
+				RegistrationInterval: &registrationInterval,
 			},
 		}
 

@@ -25,13 +25,17 @@ type Route struct {
 	Port                 int               `yaml:"port"`
 	Tags                 map[string]string `yaml:"tags"`
 	URIs                 []string          `yaml:"uris"`
-	RegistrationInterval int               `yaml:"registration_interval"`
-	HealthCheck          *HealthCheck      `yaml:"health_check"`
+	RegistrationInterval *int              `yaml:"registration_interval,omitempty"`
+	HealthCheck          *HealthCheck      `yaml:"health_check,omitempty"`
 }
 
 func (c Config) Validate() error {
 	for _, r := range c.Routes {
-		if r.RegistrationInterval <= 0 {
+		if r.RegistrationInterval == nil {
+			return fmt.Errorf("Update frequency not provided")
+		}
+
+		if *r.RegistrationInterval <= 0 {
 			return fmt.Errorf("Invalid update frequency: %d", r.RegistrationInterval)
 		}
 	}
