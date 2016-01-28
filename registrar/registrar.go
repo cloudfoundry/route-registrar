@@ -65,9 +65,13 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	close(ready)
 
 	routeHealthChan := make(chan routeHealth, len(r.config.Routes))
+	periodicHealthcheckCloseChans := make([]chan struct{}, len(r.config.Routes))
+	for i := range periodicHealthcheckCloseChans {
+		periodicHealthcheckCloseChans[i] = make(chan struct{}, len(r.config.Routes))
+	}
 
-	for _, route := range r.config.Routes {
-		go r.periodicallyDetermineHealth(route, routeHealthChan)
+	for i, route := range r.config.Routes {
+		go r.periodicallyDetermineHealth(route, routeHealthChan, periodicHealthcheckCloseChans[i])
 	}
 
 	for {
@@ -102,6 +106,10 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		case <-signals:
 			r.logger.Info("Received signal; shutting down")
 
+			for _, c := range periodicHealthcheckCloseChans {
+				close(c)
+			}
+
 			for _, route := range r.config.Routes {
 				err := r.unregisterRoutes(route)
 				if err != nil {
@@ -113,7 +121,11 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	}
 }
 
-func (r registrar) periodicallyDetermineHealth(route config.Route, routeHealthChan chan<- routeHealth) {
+func (r registrar) periodicallyDetermineHealth(
+	route config.Route,
+	routeHealthChan chan<- routeHealth,
+	closeChan chan struct{},
+) {
 	duration := time.Duration(r.config.UpdateFrequency) * time.Second
 
 	ticker := time.NewTicker(duration)
@@ -135,6 +147,8 @@ func (r registrar) periodicallyDetermineHealth(route config.Route, routeHealthCh
 				routeStatus.err = err
 			}
 			routeHealthChan <- routeStatus
+		case <-closeChan:
+			return
 		}
 	}
 }
