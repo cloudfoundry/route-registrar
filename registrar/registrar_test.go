@@ -493,7 +493,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		Context("when the healthcheck is in progress", func() {
 			BeforeEach(func() {
 				fakeHealthChecker.CheckStub = func(string, int) (bool, error) {
-					time.Sleep(2 * time.Second)
+					time.Sleep(10 * time.Second)
 					return true, nil
 				}
 
@@ -512,7 +512,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				time.Sleep(1500 * time.Millisecond)
 
 				close(signals)
-				Eventually(runStatus).Should(Receive(nil))
+				Eventually(runStatus, 100*time.Millisecond).Should(Receive(nil))
 			})
 		})
 	})
