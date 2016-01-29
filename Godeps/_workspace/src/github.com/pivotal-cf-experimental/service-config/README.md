@@ -26,11 +26,11 @@ See the [example service](examples/test_service.go) for usage.
 
 ## Dependencies
 
-service-config depends on [candiedyaml](https://github.com/cloudfoundry-incubator/candiedyaml) for json & yaml parsing and
+service-config depends on [yaml](https://github.com/go-yaml/yaml) for json & yaml parsing and
 on [mergo](https://github.com/imdario/mergo) merging defaults.
 
 ```
-$ go get -u github.com/cloudfoundry-incubator/candiedyaml
+$ go get -u github.com/go-yaml/yaml
 $ go get -u github.com/imdario/mergo
 ```
 

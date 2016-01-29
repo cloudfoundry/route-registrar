@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/fraenkel/candiedyaml"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -120,7 +120,7 @@ func (c ServiceConfig) PrintUsage() {
 	c.flagSet.PrintDefaults()
 
 	if c.defaultModel != nil {
-		defaultStr, err := candiedyaml.Marshal(c.defaultModel)
+		defaultStr, err := yaml.Marshal(c.defaultModel)
 		if err != nil {
 			fmt.Fprintf(c.helpWriter, "Error printing defaults: %v", err)
 		} else {

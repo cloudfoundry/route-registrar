@@ -4,7 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/fraenkel/candiedyaml"
+	"gopkg.in/yaml.v2"
+
 	"github.com/imdario/mergo"
 )
 
@@ -19,7 +20,7 @@ func NewReader(configBytes []byte) *Reader {
 }
 
 func (r Reader) Read(model interface{}) error {
-	err := candiedyaml.Unmarshal(r.configBytes, model)
+	err := yaml.Unmarshal(r.configBytes, model)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Unmarshaling config: %s", err.Error()))
 	}

@@ -44,7 +44,7 @@
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf-experimental/service-config",
-			"Rev": "082c03bb0ac6627891c8270d45d4ca8652e1dce4"
+			"Rev": "b1dc94de6ada8bfddf159ce2234958a8f02aec77"
 		},
 		{
 			"ImportPath": "github.com/pivotal-golang/lager",

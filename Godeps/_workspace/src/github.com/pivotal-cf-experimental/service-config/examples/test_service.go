@@ -9,25 +9,25 @@ import (
 )
 
 type ShipConfig struct {
-	Name   string
-	ID     int
-	Crew   Crew
-	Active bool
+	Name   string `yaml:"Name"`
+	ID     int    `yaml:"ID"`
+	Crew   Crew   `yaml:"Crew"`
+	Active bool   `yaml:"Active"`
 }
 
 type Crew struct {
-	Officers   []Officer
-	Passengers []Passenger
+	Officers   []Officer   `yaml:"Officers"`
+	Passengers []Passenger `yaml:"Passengers"`
 }
 
 type Officer struct {
-	Name string
-	Role string
+	Name string `yaml:"Name"`
+	Role string `yaml:"Role"`
 }
 
 type Passenger struct {
-	Name  string
-	Title string
+	Name  string `yaml:"Name"`
+	Title string `yaml:"Title"`
 }
 
 func main() {
