@@ -65,5 +65,28 @@ var _ = Describe("Config", func() {
 				Expect(err.Error()).To(ContainSubstring("Invalid host"))
 			})
 		})
+
+		Context("healthcheck is provided", func() {
+			BeforeEach(func() {
+				c.Routes[0].HealthCheck = &config.HealthCheck{
+					Name:       "my healthcheck",
+					ScriptPath: "/some/script/path",
+				}
+			})
+
+			Context("healthcheck timeout is not provided", func() {
+				BeforeEach(func() {
+					c.Routes[0].HealthCheck.Timeout = nil
+				})
+
+				It("defaults to half of the registration interval", func() {
+					err := c.Validate()
+					Expect(err).NotTo(HaveOccurred())
+
+					expectedTimeout := *c.Routes[0].RegistrationInterval / 2
+					Expect(*c.Routes[0].HealthCheck.Timeout).To(Equal(expectedTimeout))
+				})
+			})
+		})
 	})
 })

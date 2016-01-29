@@ -11,7 +11,7 @@ type MessageBusServer struct {
 type HealthCheck struct {
 	Name       string `yaml:"name"`
 	ScriptPath string `yaml:"script_path"`
-	Timeout    int    `yaml:"timeout"`
+	Timeout    *int   `yaml:"timeout"`
 }
 
 type Config struct {
@@ -37,6 +37,13 @@ func (c Config) Validate() error {
 
 		if *r.RegistrationInterval <= 0 {
 			return fmt.Errorf("Invalid update frequency: %d", r.RegistrationInterval)
+		}
+
+		if r.HealthCheck != nil {
+			if r.HealthCheck.Timeout == nil {
+				defaultTimeout := *r.RegistrationInterval / 2
+				r.HealthCheck.Timeout = &defaultTimeout
+			}
 		}
 	}
 
