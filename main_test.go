@@ -196,6 +196,46 @@ var _ = Describe("Main", func() {
 			Expect(session.ExitCode()).ToNot(BeZero())
 		})
 	})
+
+	Context("When the config has a missing value for registration interval", func() {
+		BeforeEach(func() {
+			rootConfig.Routes[0].RegistrationInterval = nil
+			rrConfig := `---
+message_bus_servers:
+- host: "127.0.0.1:12345"
+  user: nats
+  password: nats
+routes:
+- name: My route
+  port: 12345
+  uris:
+  - "uri-1"
+  - "uri-2"
+  tags:
+    tag1: val1
+    tag2: val2
+  registration_interval:
+host: "127.0.0.1"
+`
+			err := ioutil.WriteFile(configFile, []byte(rrConfig), os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("exits with error", func() {
+			command := exec.Command(
+				routeRegistrarBinPath,
+				fmt.Sprintf("-configPath=%s", configFile),
+			)
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Eventually(session.Out).Should(gbytes.Say("Initializing"))
+			Eventually(session.Err).Should(gbytes.Say("Update frequency not provided"))
+
+			Eventually(session).Should(gexec.Exit())
+			Expect(session.ExitCode()).ToNot(BeZero())
+		})
+	})
 })
 
 func initConfig() {
