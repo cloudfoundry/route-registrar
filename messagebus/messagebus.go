@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/apcera/nats"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
+	"github.com/nats-io/nats"
 	"github.com/pivotal-golang/lager"
 )
 

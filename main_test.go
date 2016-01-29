@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/apcera/nats"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 	"github.com/fraenkel/candiedyaml"
+	"github.com/nats-io/nats"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"

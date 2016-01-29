@@ -6,11 +6,6 @@
 	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/apcera/nats",
-			"Comment": "v1.0.6-17-gd19a6ce",
-			"Rev": "d19a6cec4083353ca586e7052a89e0f719946ee5"
-		},
-		{
 			"ImportPath": "github.com/cloudfoundry-incubator/cf-lager",
 			"Rev": "7178833173e7124dab16158273f7708ed73b81ff"
 		},
@@ -53,6 +48,10 @@
 		{
 			"ImportPath": "github.com/tedsuo/ifrit",
 			"Rev": "3a41de6efdb78719e66467a1b170f2b7f1e1014d"
+		},
+		{
+			"ImportPath": "gopkg.in/yaml.v2",
+			"Rev": "49c95bdc21843256fb6c4e0d370a05f24a0bf213"
 		}
 	]
 }

@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/apcera/nats"
+	"github.com/nats-io/nats"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -265,13 +265,16 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		BeforeEach(func() {
 			scriptPath = "/path/to/some/script/"
 
+			timeout := 1
 			rrConfig.Routes[0].HealthCheck = &config.HealthCheck{
 				Name:       "My Healthcheck process",
 				ScriptPath: scriptPath,
+				Timeout:    &timeout,
 			}
 			rrConfig.Routes[1].HealthCheck = &config.HealthCheck{
 				Name:       "My Healthcheck process 2",
 				ScriptPath: scriptPath,
+				Timeout:    &timeout,
 			}
 
 			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
