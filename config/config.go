@@ -32,11 +32,11 @@ type Route struct {
 func (c Config) Validate() error {
 	for _, r := range c.Routes {
 		if r.RegistrationInterval == nil {
-			return fmt.Errorf("Update frequency not provided")
+			return fmt.Errorf("registration_interval not provided")
 		}
 
 		if *r.RegistrationInterval <= 0 {
-			return fmt.Errorf("Invalid update frequency: %d", r.RegistrationInterval)
+			return fmt.Errorf("Invalid registration_interval: %d", *r.RegistrationInterval)
 		}
 
 		if r.HealthCheck != nil {

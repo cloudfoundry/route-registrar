@@ -190,7 +190,7 @@ var _ = Describe("Main", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			Eventually(session.Out).Should(gbytes.Say("Initializing"))
-			Eventually(session.Err).Should(gbytes.Say("Update frequency not provided"))
+			Eventually(session.Err).Should(gbytes.Say("registration_interval not provided"))
 
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).ToNot(BeZero())
@@ -230,7 +230,7 @@ host: "127.0.0.1"
 			Expect(err).ShouldNot(HaveOccurred())
 
 			Eventually(session.Out).Should(gbytes.Say("Initializing"))
-			Eventually(session.Err).Should(gbytes.Say("Update frequency not provided"))
+			Eventually(session.Err).Should(gbytes.Say("registration_interval not provided"))
 
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).ToNot(BeZero())

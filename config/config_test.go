@@ -38,7 +38,7 @@ var _ = Describe("Config", func() {
 			It("returns an error", func() {
 				err := c.Validate()
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Update frequency not provided"))
+				Expect(err.Error()).To(ContainSubstring("registration_interval not provided"))
 			})
 		})
 
@@ -50,7 +50,19 @@ var _ = Describe("Config", func() {
 			It("returns an error", func() {
 				err := c.Validate()
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Invalid update frequency"))
+				Expect(err.Error()).To(ContainSubstring("Invalid registration_interval"))
+			})
+		})
+
+		Context("The registration interval is negative", func() {
+			BeforeEach(func() {
+				*c.Routes[0].RegistrationInterval = -1
+			})
+
+			It("returns an error", func() {
+				err := c.Validate()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Invalid registration_interval: -1"))
 			})
 		})
 
