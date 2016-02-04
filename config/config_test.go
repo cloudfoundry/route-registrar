@@ -18,6 +18,9 @@ var _ = Describe("Config", func() {
 
 		registrationInterval0 time.Duration
 		registrationInterval1 time.Duration
+
+		routeName1 string
+		routeName2 string
 	)
 
 	BeforeEach(func() {
@@ -26,6 +29,9 @@ var _ = Describe("Config", func() {
 
 		registrationInterval0 = 20 * time.Second
 		registrationInterval1 = 10 * time.Second
+
+		routeName1 = "route-1"
+		routeName2 = "route-2"
 
 		configSchema = config.ConfigSchema{
 			MessageBusServers: []config.MessageBusServerSchema{
@@ -42,11 +48,13 @@ var _ = Describe("Config", func() {
 			},
 			Routes: []config.RouteSchema{
 				{
+					Name:                 routeName1,
 					Port:                 3000,
 					RegistrationInterval: registrationInterval0String,
 					URIs:                 []string{"my-app.my-domain.com"},
 				},
 				{
+					Name:                 routeName2,
 					Port:                 3001,
 					RegistrationInterval: registrationInterval1String,
 					URIs:                 []string{"my-other-app.my-domain.com"},
@@ -77,11 +85,13 @@ var _ = Describe("Config", func() {
 				},
 				Routes: []config.Route{
 					{
+						Name:                 routeName1,
 						Port:                 configSchema.Routes[0].Port,
 						RegistrationInterval: registrationInterval0,
 						URIs:                 configSchema.Routes[0].URIs,
 					},
 					{
+						Name:                 routeName2,
 						Port:                 configSchema.Routes[1].Port,
 						RegistrationInterval: registrationInterval1,
 						URIs:                 configSchema.Routes[1].URIs,
@@ -93,20 +103,6 @@ var _ = Describe("Config", func() {
 		})
 
 		Describe("Routes", func() {
-			Context("when the config input includes name", func() {
-				BeforeEach(func() {
-					configSchema.Routes[0].Name = "route1"
-					configSchema.Routes[1].Name = "route2"
-				})
-
-				It("includes them in the config", func() {
-					c, err := configSchema.Validate()
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(c.Routes[0].Name).Should(Equal(configSchema.Routes[0].Name))
-					Expect(c.Routes[1].Name).Should(Equal(configSchema.Routes[1].Name))
-				})
-			})
 
 			Context("when the config input includes tags", func() {
 				BeforeEach(func() {
@@ -120,6 +116,19 @@ var _ = Describe("Config", func() {
 
 					Expect(c.Routes[0].Tags).Should(Equal(configSchema.Routes[0].Tags))
 					Expect(c.Routes[1].Tags).Should(Equal(configSchema.Routes[1].Tags))
+				})
+			})
+
+			Context("when the config input does not include a name", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].Name = ""
+				})
+
+				It("includes them in the config", func() {
+					c, err := configSchema.Validate()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(Equal("name for route must be provided"))
 				})
 			})
 

@@ -94,6 +94,10 @@ func routesFromSchema(routeSchemas []RouteSchema) ([]Route, error) {
 			return nil, fmt.Errorf("registration_interval not provided")
 		}
 
+		if r.Name == "" {
+			return nil, fmt.Errorf("name for route must be provided")
+		}
+
 		registrationInterval, err := time.ParseDuration(r.RegistrationInterval)
 		if err != nil {
 			return nil, fmt.Errorf("Invalid registration_interval: %s", err.Error())
