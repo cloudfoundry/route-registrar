@@ -69,9 +69,14 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 		return nil, err
 	}
 
-	routes, err := routesFromSchema(c.Routes)
-	if err != nil {
-		return nil, err
+	routes := []Route{}
+	for _, r := range c.Routes {
+		route, err := routeFromSchema(r)
+		if err != nil {
+			return nil, err
+		}
+
+		routes = append(routes, *route)
 	}
 
 	config := Config{
@@ -83,60 +88,65 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 	return &config, nil
 }
 
-func routesFromSchema(routeSchemas []RouteSchema) ([]Route, error) {
-	routes := []Route{}
-	for _, r := range routeSchemas {
-		if r.RegistrationInterval == "" {
-			return nil, fmt.Errorf("registration_interval not provided")
-		}
-
-		if r.Name == "" {
-			return nil, fmt.Errorf("name for route must be provided")
-		}
-
-		registrationInterval, err := time.ParseDuration(r.RegistrationInterval)
-		if err != nil {
-			return nil, fmt.Errorf("Invalid registration_interval: %s", err.Error())
-		}
-
-		if registrationInterval <= 0 {
-			return nil, fmt.Errorf("Invalid registration_interval: %d", registrationInterval)
-		}
-
-		var healthCheck *HealthCheck
-
-		if r.HealthCheck != nil {
-			var healthCheckTimeout time.Duration
-			if r.HealthCheck.Timeout == "" {
-				healthCheckTimeout = registrationInterval / 2
-			} else {
-				healthCheckTimeout, err = time.ParseDuration(r.HealthCheck.Timeout)
-				if err != nil {
-					return nil, fmt.Errorf("Invalid healthcheck timeout: %s", err.Error())
-				}
-				if healthCheckTimeout <= 0 {
-					return nil, fmt.Errorf("Invalid healthcheck timeout: %d", healthCheckTimeout)
-				}
-			}
-
-			healthCheck = &HealthCheck{
-				Name:       r.HealthCheck.Name,
-				ScriptPath: r.HealthCheck.ScriptPath,
-				Timeout:    healthCheckTimeout,
-			}
-		}
-
-		route := Route{
-			Name:                 r.Name,
-			Port:                 r.Port,
-			Tags:                 r.Tags,
-			URIs:                 r.URIs,
-			RegistrationInterval: registrationInterval,
-			HealthCheck:          healthCheck,
-		}
-		routes = append(routes, route)
+func routeFromSchema(r RouteSchema) (*Route, error) {
+	if r.RegistrationInterval == "" {
+		return nil, fmt.Errorf("registration_interval not provided")
 	}
-	return routes, nil
+
+	if r.Name == "" {
+		return nil, fmt.Errorf("name for route must be provided")
+	}
+
+	registrationInterval, err := time.ParseDuration(r.RegistrationInterval)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid registration_interval: %s", err.Error())
+	}
+
+	if registrationInterval <= 0 {
+		return nil, fmt.Errorf("Invalid registration_interval: %d", registrationInterval)
+	}
+
+	var healthCheck *HealthCheck
+	if r.HealthCheck != nil {
+		healthCheck, err = healthCheckFromSchema(r.HealthCheck, registrationInterval)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	route := Route{
+		Name:                 r.Name,
+		Port:                 r.Port,
+		Tags:                 r.Tags,
+		URIs:                 r.URIs,
+		RegistrationInterval: registrationInterval,
+		HealthCheck:          healthCheck,
+	}
+	return &route, nil
+}
+
+func healthCheckFromSchema(healthCheckSchema *HealthCheckSchema, registrationInterval time.Duration) (*HealthCheck, error) {
+	healthCheck := &HealthCheck{
+		Name:       healthCheckSchema.Name,
+		ScriptPath: healthCheckSchema.ScriptPath,
+	}
+
+	if healthCheckSchema.Timeout == "" {
+		healthCheck.Timeout = registrationInterval / 2
+		return healthCheck, nil
+	}
+
+	var err error
+	healthCheck.Timeout, err = time.ParseDuration(healthCheckSchema.Timeout)
+	if err != nil {
+		return nil, fmt.Errorf("Invalid healthcheck timeout: %s", err.Error())
+	}
+
+	if healthCheck.Timeout <= 0 {
+		return nil, fmt.Errorf("Invalid healthcheck timeout: %d", healthCheck.Timeout)
+	}
+
+	return healthCheck, nil
 }
 
 func messageBusServersFromSchema(servers []MessageBusServerSchema) ([]MessageBusServer, error) {
