@@ -32,10 +32,6 @@ type RouteSchema struct {
 	HealthCheck          *HealthCheckSchema `yaml:"health_check,omitempty"`
 }
 
-func (cs ConfigSchema) ToConfig() Config {
-	return Config{}
-}
-
 type MessageBusServer struct {
 	Host     string
 	User     string
