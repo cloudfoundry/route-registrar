@@ -1,6 +1,8 @@
 package config_test
 
 import (
+	"time"
+
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 
 	. "github.com/onsi/ginkgo"
@@ -8,35 +10,126 @@ import (
 )
 
 var _ = Describe("Config", func() {
-	Describe("Validate", func() {
-		var (
-			c config.Config
-		)
+	var (
+		configSchema config.ConfigSchema
 
-		BeforeEach(func() {
-			registrationInterval := 20
-			c = config.Config{
-				Routes: []config.Route{
+		registrationInterval0String string
+		registrationInterval1String string
+
+		registrationInterval0 time.Duration
+		registrationInterval1 time.Duration
+	)
+
+	BeforeEach(func() {
+		registrationInterval0String = "20s"
+		registrationInterval1String = "10s"
+
+		registrationInterval0 = 20 * time.Second
+		registrationInterval1 = 10 * time.Second
+
+		configSchema = config.ConfigSchema{
+			MessageBusServers: []config.MessageBusServerSchema{
+				config.MessageBusServerSchema{
+					Host:     "some-host",
+					User:     "some-user",
+					Password: "some-password",
+				},
+				config.MessageBusServerSchema{
+					Host:     "another-host",
+					User:     "another-user",
+					Password: "another-password",
+				},
+			},
+			Routes: []config.RouteSchema{
+				{
+					Port:                 3000,
+					RegistrationInterval: registrationInterval0String,
+					URIs:                 []string{"my-app.my-domain.com"},
+				},
+				{
+					Port:                 3001,
+					RegistrationInterval: registrationInterval1String,
+					URIs:                 []string{"my-other-app.my-domain.com"},
+				},
+			},
+			Host: "127.0.0.1",
+		}
+	})
+
+	Describe("Validate", func() {
+		It("returns a Config object and no error", func() {
+			c, err := configSchema.Validate()
+			Expect(err).ToNot(HaveOccurred())
+
+			expectedC := &config.Config{
+				Host: configSchema.Host,
+				MessageBusServers: []config.MessageBusServer{
 					{
-						RegistrationInterval: &registrationInterval,
+						Host:     configSchema.MessageBusServers[0].Host,
+						User:     configSchema.MessageBusServers[0].User,
+						Password: configSchema.MessageBusServers[0].Password,
+					},
+					{
+						Host:     configSchema.MessageBusServers[1].Host,
+						User:     configSchema.MessageBusServers[1].User,
+						Password: configSchema.MessageBusServers[1].Password,
 					},
 				},
-				Host: "127.0.0.1",
+				Routes: []config.Route{
+					{
+						Port:                 configSchema.Routes[0].Port,
+						RegistrationInterval: registrationInterval0,
+						URIs:                 configSchema.Routes[0].URIs,
+					},
+					{
+						Port:                 configSchema.Routes[1].Port,
+						RegistrationInterval: registrationInterval1,
+						URIs:                 configSchema.Routes[1].URIs,
+					},
+				},
 			}
+
+			Expect(c).To(Equal(expectedC))
 		})
 
-		It("returns without error for all valid values", func() {
-			err := c.Validate()
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		Context("The registration interval is nil", func() {
+		Context("when the config input includes a name", func() {
 			BeforeEach(func() {
-				c.Routes[0].RegistrationInterval = nil
+				configSchema.Routes[0].Name = "route1"
+				configSchema.Routes[1].Name = "route2"
+			})
+
+			It("includes them in the config", func() {
+				c, err := configSchema.Validate()
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(c.Routes[0].Name).Should(Equal(configSchema.Routes[0].Name))
+				Expect(c.Routes[1].Name).Should(Equal(configSchema.Routes[1].Name))
+			})
+		})
+
+		Context("when the config input includes tags", func() {
+			BeforeEach(func() {
+				configSchema.Routes[0].Tags = map[string]string{"key": "value"}
+				configSchema.Routes[1].Tags = map[string]string{"key": "value2"}
+			})
+
+			It("includes them in the config", func() {
+				c, err := configSchema.Validate()
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(c.Routes[0].Tags).Should(Equal(configSchema.Routes[0].Tags))
+				Expect(c.Routes[1].Tags).Should(Equal(configSchema.Routes[1].Tags))
+			})
+		})
+
+		Context("The registration interval is empty", func() {
+			BeforeEach(func() {
+				configSchema.Routes[0].RegistrationInterval = ""
 			})
 
 			It("returns an error", func() {
-				err := c.Validate()
+				c, err := configSchema.Validate()
+				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("registration_interval not provided"))
 			})
@@ -44,11 +137,12 @@ var _ = Describe("Config", func() {
 
 		Context("The registration interval is zero", func() {
 			BeforeEach(func() {
-				*c.Routes[0].RegistrationInterval = 0
+				configSchema.Routes[0].RegistrationInterval = "0s"
 			})
 
 			It("returns an error", func() {
-				err := c.Validate()
+				c, err := configSchema.Validate()
+				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("Invalid registration_interval"))
 			})
@@ -56,49 +150,149 @@ var _ = Describe("Config", func() {
 
 		Context("The registration interval is negative", func() {
 			BeforeEach(func() {
-				*c.Routes[0].RegistrationInterval = -1
+				configSchema.Routes[0].RegistrationInterval = "-1s"
 			})
 
 			It("returns an error", func() {
-				err := c.Validate()
+				_, err := configSchema.Validate()
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("Invalid registration_interval: -1"))
 			})
 		})
 
-		Context("The host is empty", func() {
+		Context("When the registration interval has no units", func() {
 			BeforeEach(func() {
-				c.Host = ""
+				configSchema.Routes[0].RegistrationInterval = "1"
 			})
 
 			It("returns an error", func() {
-				err := c.Validate()
+				c, err := configSchema.Validate()
+				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Invalid host"))
+				Expect(err.Error()).To(ContainSubstring("Invalid registration_interval: time: missing unit in duration 1"))
+			})
+		})
+
+		Context("When the registration interval is not parsable", func() {
+			BeforeEach(func() {
+				configSchema.Routes[0].RegistrationInterval = "asdf"
+			})
+
+			It("returns an error", func() {
+				c, err := configSchema.Validate()
+				Expect(c).To(BeNil())
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Invalid registration_interval: time: invalid duration asdf"))
+			})
+		})
+
+		Context("The host is empty", func() {
+			BeforeEach(func() {
+				configSchema.Host = ""
+			})
+
+			It("returns an error", func() {
+				c, err := configSchema.Validate()
+				Expect(c).To(BeNil())
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Host required"))
 			})
 		})
 
 		Context("healthcheck is provided", func() {
 			BeforeEach(func() {
-				c.Routes[0].HealthCheck = &config.HealthCheck{
+				configSchema.Routes[0].HealthCheck = &config.HealthCheckSchema{
 					Name:       "my healthcheck",
 					ScriptPath: "/some/script/path",
 				}
 			})
 
-			Context("healthcheck timeout is not provided", func() {
+			It("defaults the healthcheck timeout to half the registration interval", func() {
+				c, err := configSchema.Validate()
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(c.Routes[0].HealthCheck.Timeout).To(Equal(registrationInterval0 / 2))
+			})
+
+			Context("The healthcheck timeout is empty", func() {
 				BeforeEach(func() {
-					c.Routes[0].HealthCheck.Timeout = nil
+					configSchema.Routes[0].HealthCheck.Timeout = ""
 				})
 
-				It("defaults to half of the registration interval", func() {
-					err := c.Validate()
+				It("defaults the healthcheck timeout to half the registration interval", func() {
+					c, err := configSchema.Validate()
 					Expect(err).NotTo(HaveOccurred())
 
-					expectedTimeout := *c.Routes[0].RegistrationInterval / 2
-					Expect(*c.Routes[0].HealthCheck.Timeout).To(Equal(expectedTimeout))
+					Expect(c.Routes[0].HealthCheck.Timeout).To(Equal(registrationInterval0 / 2))
+				})
+			})
+
+			Context("and the healthcheck timeout is provided", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.Timeout = "11s"
+				})
+
+				It("sets the healthcheck timeout on the config", func() {
+					c, err := configSchema.Validate()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(err).NotTo(HaveOccurred())
+					Expect(c.Routes[0].HealthCheck.Timeout).To(Equal(11 * time.Second))
+				})
+
+				Context("The healthcheck timeout is zero", func() {
+					BeforeEach(func() {
+						configSchema.Routes[0].HealthCheck.Timeout = "0s"
+					})
+
+					It("returns an error", func() {
+						c, err := configSchema.Validate()
+						Expect(c).To(BeNil())
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout"))
+					})
+				})
+
+				Context("The healthcheck timeout is negative", func() {
+					BeforeEach(func() {
+						configSchema.Routes[0].HealthCheck.Timeout = "-1s"
+					})
+
+					It("returns an error", func() {
+						_, err := configSchema.Validate()
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: -1"))
+					})
+				})
+
+				Context("When the healthcheck timeout has no units", func() {
+					BeforeEach(func() {
+						configSchema.Routes[0].HealthCheck.Timeout = "1"
+					})
+
+					It("returns an error", func() {
+						c, err := configSchema.Validate()
+						Expect(c).To(BeNil())
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: time: missing unit in duration 1"))
+					})
+				})
+
+				Context("When the healthcheck timeout is not parsable", func() {
+					BeforeEach(func() {
+						configSchema.Routes[0].HealthCheck.Timeout = "asdf"
+					})
+
+					It("returns an error", func() {
+						c, err := configSchema.Validate()
+						Expect(c).To(BeNil())
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: time: invalid duration asdf"))
+					})
 				})
 			})
 		})
+
+		// message bus server: need at least 1 and its field must be present
 	})
 })

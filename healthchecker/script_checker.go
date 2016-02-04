@@ -12,7 +12,7 @@ import (
 //go:generate counterfeiter . HealthChecker
 
 type HealthChecker interface {
-	Check(scriptPath string, timeout int) (bool, error)
+	Check(scriptPath string, timeout time.Duration) (bool, error)
 }
 
 type healthChecker struct {
@@ -25,7 +25,7 @@ func NewHealthChecker(logger lager.Logger) HealthChecker {
 	}
 }
 
-func (h healthChecker) Check(scriptPath string, timeout int) (bool, error) {
+func (h healthChecker) Check(scriptPath string, timeout time.Duration) (bool, error) {
 	cmd := exec.Command(scriptPath)
 	h.logger.Info(
 		"Executing script",
@@ -61,7 +61,7 @@ func (h healthChecker) Check(scriptPath string, timeout int) (bool, error) {
 	}
 
 	select {
-	case <-time.After(time.Duration(timeout) * time.Second):
+	case <-time.After(timeout):
 		h.logger.Info(
 			"Script failed to exit within timeout",
 			lager.Data{
@@ -71,7 +71,7 @@ func (h healthChecker) Check(scriptPath string, timeout int) (bool, error) {
 				"timeout": timeout,
 			},
 		)
-		return false, fmt.Errorf("Script failed to exit within %d seconds", timeout)
+		return false, fmt.Errorf("Script failed to exit within %v", timeout)
 
 	case err := <-cmdErrChan:
 		return h.handleOutput(scriptPath, err, outbuf, errbuf)

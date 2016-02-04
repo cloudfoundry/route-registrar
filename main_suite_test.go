@@ -22,7 +22,7 @@ var (
 	routeRegistrarBinPath string
 	pidFile               string
 	configFile            string
-	rootConfig            config.Config
+	rootConfig            config.ConfigSchema
 	natsPort              int
 
 	tempDir string

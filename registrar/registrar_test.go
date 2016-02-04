@@ -72,7 +72,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		signals = make(chan os.Signal, 1)
 		ready = make(chan struct{}, 1)
 
-		registrationInterval := 1
+		registrationInterval := 100 * time.Millisecond
 		rrConfig.Routes = []config.Route{
 			{
 				Name: "my route 1",
@@ -85,7 +85,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					"tag1.1": "value1.1",
 					"tag1.2": "value1.2",
 				},
-				RegistrationInterval: &registrationInterval,
+				RegistrationInterval: registrationInterval,
 			},
 			{
 				Name: "my route 2",
@@ -98,7 +98,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					"tag2.1": "value2.1",
 					"tag2.2": "value2.2",
 				},
-				RegistrationInterval: &registrationInterval,
+				RegistrationInterval: registrationInterval,
 			},
 		}
 
@@ -265,16 +265,16 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		BeforeEach(func() {
 			scriptPath = "/path/to/some/script/"
 
-			timeout := 1
+			timeout := 100 * time.Millisecond
 			rrConfig.Routes[0].HealthCheck = &config.HealthCheck{
 				Name:       "My Healthcheck process",
 				ScriptPath: scriptPath,
-				Timeout:    &timeout,
+				Timeout:    timeout,
 			}
 			rrConfig.Routes[1].HealthCheck = &config.HealthCheck{
 				Name:       "My Healthcheck process 2",
 				ScriptPath: scriptPath,
-				Timeout:    &timeout,
+				Timeout:    timeout,
 			}
 
 			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
@@ -492,7 +492,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		Context("when the healthcheck is in progress", func() {
 			BeforeEach(func() {
-				fakeHealthChecker.CheckStub = func(string, int) (bool, error) {
+				fakeHealthChecker.CheckStub = func(string, time.Duration) (bool, error) {
 					time.Sleep(10 * time.Second)
 					return true, nil
 				}

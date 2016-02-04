@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 	. "github.com/onsi/ginkgo"
@@ -19,7 +20,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 		logger     lager.Logger
 		tmpDir     string
 		scriptPath string
-		timeout    int
+		timeout    time.Duration
 
 		h healthchecker.HealthChecker
 	)
@@ -93,7 +94,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 
 	Context("when the timeout is positive", func() {
 		BeforeEach(func() {
-			timeout = 2 // in seconds
+			timeout = 2 * time.Second
 		})
 
 		Context("when the script exits within timeout", func() {

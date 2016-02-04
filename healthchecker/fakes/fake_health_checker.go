@@ -3,16 +3,17 @@ package fakes
 
 import (
 	"sync"
+	"time"
 
 	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 )
 
 type FakeHealthChecker struct {
-	CheckStub        func(scriptPath string, timeout int) (bool, error)
+	CheckStub        func(scriptPath string, timeout time.Duration) (bool, error)
 	checkMutex       sync.RWMutex
 	checkArgsForCall []struct {
 		scriptPath string
-		timeout    int
+		timeout    time.Duration
 	}
 	checkReturns struct {
 		result1 bool
@@ -20,11 +21,11 @@ type FakeHealthChecker struct {
 	}
 }
 
-func (fake *FakeHealthChecker) Check(scriptPath string, timeout int) (bool, error) {
+func (fake *FakeHealthChecker) Check(scriptPath string, timeout time.Duration) (bool, error) {
 	fake.checkMutex.Lock()
 	fake.checkArgsForCall = append(fake.checkArgsForCall, struct {
 		scriptPath string
-		timeout    int
+		timeout    time.Duration
 	}{scriptPath, timeout})
 	fake.checkMutex.Unlock()
 	if fake.CheckStub != nil {
@@ -40,7 +41,7 @@ func (fake *FakeHealthChecker) CheckCallCount() int {
 	return len(fake.checkArgsForCall)
 }
 
-func (fake *FakeHealthChecker) CheckArgsForCall(i int) (string, int) {
+func (fake *FakeHealthChecker) CheckArgsForCall(i int) (string, time.Duration) {
 	fake.checkMutex.RLock()
 	defer fake.checkMutex.RUnlock()
 	return fake.checkArgsForCall[i].scriptPath, fake.checkArgsForCall[i].timeout

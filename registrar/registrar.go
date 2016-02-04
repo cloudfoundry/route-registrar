@@ -126,9 +126,7 @@ func (r registrar) periodicallyDetermineHealth(
 	routeHealthChan chan<- routeHealth,
 	closeChan chan struct{},
 ) {
-	duration := time.Duration(*route.RegistrationInterval) * time.Second
-
-	ticker := time.NewTicker(duration)
+	ticker := time.NewTicker(route.RegistrationInterval)
 	defer ticker.Stop()
 
 	routeStatus := routeHealth{
@@ -142,7 +140,7 @@ func (r registrar) periodicallyDetermineHealth(
 				routeStatus.hasHealthcheck = false
 			} else {
 				routeStatus.hasHealthcheck = true
-				ok, err := r.healthChecker.Check(route.HealthCheck.ScriptPath, *route.HealthCheck.Timeout)
+				ok, err := r.healthChecker.Check(route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
 				routeStatus.healthy = ok
 				routeStatus.err = err
 			}

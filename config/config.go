@@ -1,55 +1,153 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
-type MessageBusServer struct {
+type MessageBusServerSchema struct {
 	Host     string `yaml:"host"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 }
 
-type HealthCheck struct {
+type HealthCheckSchema struct {
 	Name       string `yaml:"name"`
 	ScriptPath string `yaml:"script_path"`
-	Timeout    *int   `yaml:"timeout"`
+	Timeout    string `yaml:"timeout"`
+}
+
+type ConfigSchema struct {
+	MessageBusServers []MessageBusServerSchema `yaml:"message_bus_servers"`
+	Routes            []RouteSchema            `yaml:"routes"`
+	Host              string                   `yaml:"host"`
+}
+
+type RouteSchema struct {
+	Name                 string             `yaml:"name"`
+	Port                 int                `yaml:"port"`
+	Tags                 map[string]string  `yaml:"tags"`
+	URIs                 []string           `yaml:"uris"`
+	RegistrationInterval string             `yaml:"registration_interval,omitempty"`
+	HealthCheck          *HealthCheckSchema `yaml:"health_check,omitempty"`
+}
+
+func (cs ConfigSchema) ToConfig() Config {
+	return Config{}
+}
+
+type MessageBusServer struct {
+	Host     string
+	User     string
+	Password string
+}
+
+type HealthCheck struct {
+	Name       string
+	ScriptPath string
+	Timeout    time.Duration
 }
 
 type Config struct {
-	MessageBusServers []MessageBusServer `yaml:"message_bus_servers"`
-	Routes            []Route            `yaml:"routes"`
-	Host              string             `yaml:"host"`
+	MessageBusServers []MessageBusServer
+	Routes            []Route
+	Host              string
 }
 
 type Route struct {
-	Name                 string            `yaml:"name"`
-	Port                 int               `yaml:"port"`
-	Tags                 map[string]string `yaml:"tags"`
-	URIs                 []string          `yaml:"uris"`
-	RegistrationInterval *int              `yaml:"registration_interval,omitempty"`
-	HealthCheck          *HealthCheck      `yaml:"health_check,omitempty"`
+	Name                 string
+	Port                 int
+	Tags                 map[string]string
+	URIs                 []string
+	RegistrationInterval time.Duration
+	HealthCheck          *HealthCheck
 }
 
-func (c Config) Validate() error {
-	for _, r := range c.Routes {
-		if r.RegistrationInterval == nil {
-			return fmt.Errorf("registration_interval not provided")
+func (c ConfigSchema) Validate() (*Config, error) {
+	if c.Host == "" {
+		return nil, fmt.Errorf("Host required")
+	}
+
+	messageBusServers := messageBusServersFromSchema(c.MessageBusServers)
+	routes, err := routesFromSchema(c.Routes)
+	if err != nil {
+		return nil, err
+	}
+
+	config := Config{
+		Host:              c.Host,
+		MessageBusServers: messageBusServers,
+		Routes:            routes,
+	}
+
+	return &config, nil
+}
+
+func routesFromSchema(routeSchemas []RouteSchema) ([]Route, error) {
+	routes := []Route{}
+	for _, r := range routeSchemas {
+		if r.RegistrationInterval == "" {
+			return nil, fmt.Errorf("registration_interval not provided")
 		}
 
-		if *r.RegistrationInterval <= 0 {
-			return fmt.Errorf("Invalid registration_interval: %d", *r.RegistrationInterval)
+		registrationInterval, err := time.ParseDuration(r.RegistrationInterval)
+		if err != nil {
+			return nil, fmt.Errorf("Invalid registration_interval: %s", err.Error())
 		}
+
+		if registrationInterval <= 0 {
+			return nil, fmt.Errorf("Invalid registration_interval: %d", registrationInterval)
+		}
+
+		var healthCheck *HealthCheck
 
 		if r.HealthCheck != nil {
-			if r.HealthCheck.Timeout == nil {
-				defaultTimeout := *r.RegistrationInterval / 2
-				r.HealthCheck.Timeout = &defaultTimeout
+			var healthCheckTimeout time.Duration
+			if r.HealthCheck.Timeout == "" {
+				healthCheckTimeout = registrationInterval / 2
+			} else {
+				healthCheckTimeout, err = time.ParseDuration(r.HealthCheck.Timeout)
+				if err != nil {
+					return nil, fmt.Errorf("Invalid healthcheck timeout: %s", err.Error())
+				}
+				if healthCheckTimeout <= 0 {
+					return nil, fmt.Errorf("Invalid healthcheck timeout: %d", healthCheckTimeout)
+				}
+
+			}
+
+			healthCheck = &HealthCheck{
+				Name:       r.HealthCheck.Name,
+				ScriptPath: r.HealthCheck.ScriptPath,
+				Timeout:    healthCheckTimeout,
 			}
 		}
+
+		route := Route{
+			Name:                 r.Name,
+			Port:                 r.Port,
+			Tags:                 r.Tags,
+			URIs:                 r.URIs,
+			RegistrationInterval: registrationInterval,
+			HealthCheck:          healthCheck,
+		}
+		routes = append(routes, route)
+	}
+	return routes, nil
+}
+
+func messageBusServersFromSchema(servers []MessageBusServerSchema) []MessageBusServer {
+	messageBusServers := []MessageBusServer{}
+	for _, m := range servers {
+		messageBusServers = append(
+			messageBusServers,
+			MessageBusServer{
+				Host:     m.Host,
+				User:     m.User,
+				Password: m.Password,
+			},
+		)
 	}
 
-	if c.Host == "" {
-		return fmt.Errorf("Invalid host: %s", c.Host)
-	}
-
-	return nil
+	return messageBusServers
 }

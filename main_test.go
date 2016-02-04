@@ -177,7 +177,7 @@ var _ = Describe("Main", func() {
 
 	Context("When the config validatation fails", func() {
 		BeforeEach(func() {
-			rootConfig.Routes[0].RegistrationInterval = nil
+			rootConfig.Routes[0].RegistrationInterval = "asdf"
 			writeConfig()
 		})
 
@@ -190,7 +190,7 @@ var _ = Describe("Main", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			Eventually(session.Out).Should(gbytes.Say("Initializing"))
-			Eventually(session.Err).Should(gbytes.Say("registration_interval not provided"))
+			Eventually(session.Err).Should(gbytes.Say("Invalid registration_interval"))
 
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).ToNot(BeZero())
@@ -199,7 +199,7 @@ var _ = Describe("Main", func() {
 
 	Context("When the config has a missing value for registration interval", func() {
 		BeforeEach(func() {
-			rootConfig.Routes[0].RegistrationInterval = nil
+			rootConfig.Routes[0].RegistrationInterval = ""
 			rrConfig := `---
 message_bus_servers:
 - host: "127.0.0.1:12345"
@@ -241,27 +241,27 @@ host: "127.0.0.1"
 func initConfig() {
 	natsPort = 42222 + GinkgoParallelNode()
 
-	registrationInterval := 1
+	registrationInterval := "1s"
 
-	messageBusServers := []config.MessageBusServer{
-		config.MessageBusServer{
+	messageBusServers := []config.MessageBusServerSchema{
+		config.MessageBusServerSchema{
 			Host:     fmt.Sprintf("127.0.0.1:%d", natsPort),
 			User:     "nats",
 			Password: "nats",
 		},
 	}
 
-	routes := []config.Route{
+	routes := []config.RouteSchema{
 		{
 			Name:                 "My route",
 			Port:                 12345,
 			URIs:                 []string{"uri-1", "uri-2"},
 			Tags:                 map[string]string{"tag1": "val1", "tag2": "val2"},
-			RegistrationInterval: &registrationInterval,
+			RegistrationInterval: registrationInterval,
 		},
 	}
 
-	rootConfig = config.Config{
+	rootConfig = config.ConfigSchema{
 		MessageBusServers: messageBusServers,
 		Host:              "127.0.0.1",
 		Routes:            routes,

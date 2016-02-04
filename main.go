@@ -35,13 +35,13 @@ func main() {
 
 	logger.Info("Initializing")
 
-	var registrarConfig config.Config
-	err := serviceConfig.Read(&registrarConfig)
+	var configSchema config.ConfigSchema
+	err := serviceConfig.Read(&configSchema)
 	if err != nil {
 		logger.Fatal("error parsing file: %s\n", err)
 	}
 
-	err = registrarConfig.Validate()
+	c, err := configSchema.Validate()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -51,7 +51,7 @@ func main() {
 	logger.Info("creating nats connection")
 	messageBus := messagebus.NewMessageBus(logger)
 
-	r := registrar.NewRegistrar(registrarConfig, hc, logger, messageBus)
+	r := registrar.NewRegistrar(*c, hc, logger, messageBus)
 
 	if *pidfile != "" {
 		pid := strconv.Itoa(os.Getpid())
@@ -63,20 +63,21 @@ func main() {
 				err,
 				lager.Data{
 					"pid":     pid,
-					"pidfile": *pidfile},
+					"pidfile": *pidfile,
+				},
 			)
 		}
 	}
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
 	logger.Info("Running")
 
 	process := ifrit.Invoke(r)
 	for {
 		select {
-		case s := <-c:
+		case s := <-sigChan:
 			logger.Info("Caught signal", lager.Data{"signal": s})
 			process.Signal(s)
 		case err := <-process.Wait():
