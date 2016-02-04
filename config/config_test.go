@@ -64,9 +64,9 @@ var _ = Describe("Config", func() {
 		}
 	})
 
-	Describe("Validate", func() {
+	Describe("ToConfig", func() {
 		It("returns a Config object and no error", func() {
-			c, err := configSchema.Validate()
+			c, err := configSchema.ToConfig()
 			Expect(err).ToNot(HaveOccurred())
 
 			expectedC := &config.Config{
@@ -111,7 +111,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("includes them in the config", func() {
-					c, err := configSchema.Validate()
+					c, err := configSchema.ToConfig()
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(c.Routes[0].Tags).Should(Equal(configSchema.Routes[0].Tags))
@@ -125,7 +125,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("includes them in the config", func() {
-					c, err := configSchema.Validate()
+					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(Equal("name for route must be provided"))
@@ -138,7 +138,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.Validate()
+					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("registration_interval not provided"))
@@ -151,7 +151,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.Validate()
+					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("Invalid registration_interval"))
@@ -164,7 +164,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					_, err := configSchema.Validate()
+					_, err := configSchema.ToConfig()
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("Invalid registration_interval: -1"))
 				})
@@ -176,7 +176,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.Validate()
+					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("Invalid registration_interval: time: missing unit in duration 1"))
@@ -189,7 +189,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.Validate()
+					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("Invalid registration_interval: time: invalid duration asdf"))
@@ -210,7 +210,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("defaults the healthcheck timeout to half the registration interval", func() {
-						c, err := configSchema.Validate()
+						c, err := configSchema.ToConfig()
 						Expect(err).NotTo(HaveOccurred())
 
 						Expect(c.Routes[0].HealthCheck.Timeout).To(Equal(registrationInterval0 / 2))
@@ -223,7 +223,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("sets the healthcheck timeout on the config", func() {
-						c, err := configSchema.Validate()
+						c, err := configSchema.ToConfig()
 						Expect(err).NotTo(HaveOccurred())
 
 						Expect(err).NotTo(HaveOccurred())
@@ -236,7 +236,7 @@ var _ = Describe("Config", func() {
 						})
 
 						It("returns an error", func() {
-							c, err := configSchema.Validate()
+							c, err := configSchema.ToConfig()
 							Expect(c).To(BeNil())
 							Expect(err).To(HaveOccurred())
 							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout"))
@@ -249,7 +249,7 @@ var _ = Describe("Config", func() {
 						})
 
 						It("returns an error", func() {
-							_, err := configSchema.Validate()
+							_, err := configSchema.ToConfig()
 							Expect(err).To(HaveOccurred())
 							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: -1"))
 						})
@@ -261,7 +261,7 @@ var _ = Describe("Config", func() {
 						})
 
 						It("returns an error", func() {
-							c, err := configSchema.Validate()
+							c, err := configSchema.ToConfig()
 							Expect(c).To(BeNil())
 							Expect(err).To(HaveOccurred())
 							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: time: missing unit in duration 1"))
@@ -274,7 +274,7 @@ var _ = Describe("Config", func() {
 						})
 
 						It("returns an error", func() {
-							c, err := configSchema.Validate()
+							c, err := configSchema.ToConfig()
 							Expect(c).To(BeNil())
 							Expect(err).To(HaveOccurred())
 							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: time: invalid duration asdf"))
@@ -290,7 +290,7 @@ var _ = Describe("Config", func() {
 			})
 
 			It("returns an error", func() {
-				c, err := configSchema.Validate()
+				c, err := configSchema.ToConfig()
 				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("Host required"))
@@ -303,7 +303,7 @@ var _ = Describe("Config", func() {
 			})
 
 			It("returns an error", func() {
-				c, err := configSchema.Validate()
+				c, err := configSchema.ToConfig()
 				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("message_bus_servers must have at least one entry"))

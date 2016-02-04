@@ -59,7 +59,7 @@ type Route struct {
 	HealthCheck          *HealthCheck
 }
 
-func (c ConfigSchema) Validate() (*Config, error) {
+func (c ConfigSchema) ToConfig() (*Config, error) {
 	if c.Host == "" {
 		return nil, fmt.Errorf("Host required")
 	}

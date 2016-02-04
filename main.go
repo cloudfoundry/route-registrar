@@ -41,7 +41,7 @@ func main() {
 		logger.Fatal("error parsing file: %s\n", err)
 	}
 
-	c, err := configSchema.Validate()
+	c, err := configSchema.ToConfig()
 	if err != nil {
 		log.Fatalln(err)
 	}
