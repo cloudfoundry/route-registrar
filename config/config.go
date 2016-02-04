@@ -68,7 +68,11 @@ func (c ConfigSchema) Validate() (*Config, error) {
 		return nil, fmt.Errorf("Host required")
 	}
 
-	messageBusServers := messageBusServersFromSchema(c.MessageBusServers)
+	messageBusServers, err := messageBusServersFromSchema(c.MessageBusServers)
+	if err != nil {
+		return nil, err
+	}
+
 	routes, err := routesFromSchema(c.Routes)
 	if err != nil {
 		return nil, err
@@ -113,7 +117,6 @@ func routesFromSchema(routeSchemas []RouteSchema) ([]Route, error) {
 				if healthCheckTimeout <= 0 {
 					return nil, fmt.Errorf("Invalid healthcheck timeout: %d", healthCheckTimeout)
 				}
-
 			}
 
 			healthCheck = &HealthCheck{
@@ -136,8 +139,12 @@ func routesFromSchema(routeSchemas []RouteSchema) ([]Route, error) {
 	return routes, nil
 }
 
-func messageBusServersFromSchema(servers []MessageBusServerSchema) []MessageBusServer {
+func messageBusServersFromSchema(servers []MessageBusServerSchema) ([]MessageBusServer, error) {
 	messageBusServers := []MessageBusServer{}
+	if len(servers) < 1 {
+		return nil, fmt.Errorf("message_bus_servers must have at least one entry")
+	}
+
 	for _, m := range servers {
 		messageBusServers = append(
 			messageBusServers,
@@ -149,5 +156,5 @@ func messageBusServersFromSchema(servers []MessageBusServerSchema) []MessageBusS
 		)
 	}
 
-	return messageBusServers
+	return messageBusServers, nil
 }
