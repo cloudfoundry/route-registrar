@@ -48,16 +48,17 @@ Tests are triggered on new commits to master by our
     uris:
     - some_uri_for_the_router_should_listen_on
     - some_other_uri_for_the_router_to_listen_on
-    registration_interval: REGISTRATION_INTERVAL_IN_SECONDS
+    registration_interval: REGISTRATION_INTERVAL
     health_check: # optional
       name: my-healthcheck
       script_path: /path/to/check/script/
       timeout: 1 # optional
   ```
 
-  - `registration_interval` must be provided and be an `int` greater than zero
+  - `registration_interval` must be provided and be a string with units (e.g. "20s")
   - `health_check.timeout` is optional; if it not provided it defaults to half
   of the value of `registration_interval`
+  If provided, it must be a string with units (e.g. "10s")
 
 1. Run route-registrar binaries using the following command
   ```
