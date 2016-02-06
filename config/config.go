@@ -143,9 +143,16 @@ func healthCheckFromSchema(healthCheckSchema *HealthCheckSchema, registrationInt
 	}
 
 	if healthCheck.Timeout <= 0 {
-		return nil, fmt.Errorf("Invalid healthcheck timeout: %d", healthCheck.Timeout)
+		return nil, fmt.Errorf("Invalid healthcheck timeout: %s", healthCheck.Timeout)
 	}
 
+	if healthCheck.Timeout >= registrationInterval {
+		return nil, fmt.Errorf(
+			"Invalid healthcheck timeout: %v must be less than registration interval: %v",
+			healthCheck.Timeout,
+			registrationInterval,
+		)
+	}
 	return healthCheck, nil
 }
 

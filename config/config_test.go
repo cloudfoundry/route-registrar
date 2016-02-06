@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
@@ -251,7 +252,7 @@ var _ = Describe("Config", func() {
 						It("returns an error", func() {
 							_, err := configSchema.ToConfig()
 							Expect(err).To(HaveOccurred())
-							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: -1"))
+							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: -1s"))
 						})
 					})
 
@@ -265,6 +266,44 @@ var _ = Describe("Config", func() {
 							Expect(c).To(BeNil())
 							Expect(err).To(HaveOccurred())
 							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: time: missing unit in duration 1"))
+						})
+					})
+
+					Context("When the healthcheck is equal to the registration interval", func() {
+						BeforeEach(func() {
+							configSchema.Routes[0].HealthCheck.Timeout = configSchema.Routes[0].RegistrationInterval
+						})
+
+						It("returns an error", func() {
+							c, err := configSchema.ToConfig()
+							Expect(err).To(HaveOccurred())
+							Expect(c).To(BeNil())
+							Expect(err.Error()).To(ContainSubstring(
+								fmt.Sprintf(
+									"Invalid healthcheck timeout: %s must be less than registration interval: %s",
+									configSchema.Routes[0].HealthCheck.Timeout,
+									configSchema.Routes[0].RegistrationInterval,
+								),
+							))
+						})
+					})
+
+					Context("When the healthcheck is greater than the registration interval", func() {
+						BeforeEach(func() {
+							configSchema.Routes[0].HealthCheck.Timeout = "59s"
+						})
+
+						It("returns an error", func() {
+							c, err := configSchema.ToConfig()
+							Expect(err).To(HaveOccurred())
+							Expect(c).To(BeNil())
+							Expect(err.Error()).To(ContainSubstring(
+								fmt.Sprintf(
+									"Invalid healthcheck timeout: %s must be less than registration interval: %s",
+									configSchema.Routes[0].HealthCheck.Timeout,
+									configSchema.Routes[0].RegistrationInterval,
+								),
+							))
 						})
 					})
 
