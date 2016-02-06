@@ -55,10 +55,12 @@ Tests are triggered on new commits to master by our
       timeout: 1 # optional
   ```
 
-  - `registration_interval` must be provided and be a string with units (e.g. "20s")
+  - `registration_interval` must be provided and be a string with units (e.g. "20s").
+  It must parse to a positive time duration i.e. "-5s" is not permitted.
   - `health_check.timeout` is optional; if it not provided it defaults to half
   of the value of `registration_interval`
-  If provided, it must be a string with units (e.g. "10s")
+  If provided, it must be a string with units (e.g. "10s").
+  It must parse to a positive time duration i.e. "-5s" is not permitted.
 
 1. Run route-registrar binaries using the following command
   ```
