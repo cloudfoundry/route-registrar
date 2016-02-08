@@ -120,83 +120,6 @@ var _ = Describe("Config", func() {
 				})
 			})
 
-			Context("when the config input does not include a name", func() {
-				BeforeEach(func() {
-					configSchema.Routes[0].Name = ""
-				})
-
-				It("includes them in the config", func() {
-					c, err := configSchema.ToConfig()
-					Expect(c).To(BeNil())
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(Equal("name for route must be provided"))
-				})
-			})
-
-			Context("The registration interval is empty", func() {
-				BeforeEach(func() {
-					configSchema.Routes[0].RegistrationInterval = ""
-				})
-
-				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
-					Expect(c).To(BeNil())
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("registration_interval not provided"))
-				})
-			})
-
-			Context("The registration interval is zero", func() {
-				BeforeEach(func() {
-					configSchema.Routes[0].RegistrationInterval = "0s"
-				})
-
-				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
-					Expect(c).To(BeNil())
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Invalid registration_interval"))
-				})
-			})
-
-			Context("The registration interval is negative", func() {
-				BeforeEach(func() {
-					configSchema.Routes[0].RegistrationInterval = "-1s"
-				})
-
-				It("returns an error", func() {
-					_, err := configSchema.ToConfig()
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Invalid registration_interval: -1"))
-				})
-			})
-
-			Context("When the registration interval has no units", func() {
-				BeforeEach(func() {
-					configSchema.Routes[0].RegistrationInterval = "1"
-				})
-
-				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
-					Expect(c).To(BeNil())
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Invalid registration_interval: time: missing unit in duration 1"))
-				})
-			})
-
-			Context("When the registration interval is not parsable", func() {
-				BeforeEach(func() {
-					configSchema.Routes[0].RegistrationInterval = "asdf"
-				})
-
-				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
-					Expect(c).To(BeNil())
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("Invalid registration_interval: time: invalid duration asdf"))
-				})
-			})
-
 			Context("healthcheck is provided", func() {
 				BeforeEach(func() {
 					configSchema.Routes[0].HealthCheck = &config.HealthCheckSchema{
@@ -230,122 +153,256 @@ var _ = Describe("Config", func() {
 						Expect(err).NotTo(HaveOccurred())
 						Expect(c.Routes[0].HealthCheck.Timeout).To(Equal(11 * time.Second))
 					})
+				})
+			})
+		})
+	})
 
-					Context("The healthcheck timeout is zero", func() {
-						BeforeEach(func() {
-							configSchema.Routes[0].HealthCheck.Timeout = "0s"
-						})
+	Describe("Handling errors", func() {
+		Describe("on the registration interval", func() {
+			Context("The registration interval is empty", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].RegistrationInterval = ""
+				})
 
-						It("returns an error", func() {
-							c, err := configSchema.ToConfig()
-							Expect(c).To(BeNil())
-							Expect(err).To(HaveOccurred())
-							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout"))
-						})
-					})
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("registration_interval not provided"))
+				})
+			})
 
-					Context("The healthcheck timeout is negative", func() {
-						BeforeEach(func() {
-							configSchema.Routes[0].HealthCheck.Timeout = "-1s"
-						})
+			Context("The registration interval is zero", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].RegistrationInterval = "0s"
+				})
 
-						It("returns an error", func() {
-							_, err := configSchema.ToConfig()
-							Expect(err).To(HaveOccurred())
-							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: -1s"))
-						})
-					})
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("route 0 has invalid registration_interval: interval must be greater than 0"))
+				})
+			})
 
-					Context("When the healthcheck timeout has no units", func() {
-						BeforeEach(func() {
-							configSchema.Routes[0].HealthCheck.Timeout = "1"
-						})
+			Context("The registration interval is negative", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].RegistrationInterval = "-1s"
+				})
 
-						It("returns an error", func() {
-							c, err := configSchema.ToConfig()
-							Expect(c).To(BeNil())
-							Expect(err).To(HaveOccurred())
-							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: time: missing unit in duration 1"))
-						})
-					})
+				It("returns an error", func() {
+					_, err := configSchema.ToConfig()
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("route 0 has invalid registration_interval: interval must be greater than 0"))
+				})
+			})
 
-					Context("When the healthcheck is equal to the registration interval", func() {
-						BeforeEach(func() {
-							configSchema.Routes[0].HealthCheck.Timeout = configSchema.Routes[0].RegistrationInterval
-						})
+			Context("When the registration interval has no units", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].RegistrationInterval = "1"
+				})
 
-						It("returns an error", func() {
-							c, err := configSchema.ToConfig()
-							Expect(err).To(HaveOccurred())
-							Expect(c).To(BeNil())
-							Expect(err.Error()).To(ContainSubstring(
-								fmt.Sprintf(
-									"Invalid healthcheck timeout: %s must be less than registration interval: %s",
-									configSchema.Routes[0].HealthCheck.Timeout,
-									configSchema.Routes[0].RegistrationInterval,
-								),
-							))
-						})
-					})
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("route 0 has invalid registration_interval: time: missing unit in duration 1"))
+				})
+			})
 
-					Context("When the healthcheck is greater than the registration interval", func() {
-						BeforeEach(func() {
-							configSchema.Routes[0].HealthCheck.Timeout = "59s"
-						})
+			Context("When the registration interval is not parsable", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].RegistrationInterval = "asdf"
+				})
 
-						It("returns an error", func() {
-							c, err := configSchema.ToConfig()
-							Expect(err).To(HaveOccurred())
-							Expect(c).To(BeNil())
-							Expect(err.Error()).To(ContainSubstring(
-								fmt.Sprintf(
-									"Invalid healthcheck timeout: %s must be less than registration interval: %s",
-									configSchema.Routes[0].HealthCheck.Timeout,
-									configSchema.Routes[0].RegistrationInterval,
-								),
-							))
-						})
-					})
-
-					Context("When the healthcheck timeout is not parsable", func() {
-						BeforeEach(func() {
-							configSchema.Routes[0].HealthCheck.Timeout = "asdf"
-						})
-
-						It("returns an error", func() {
-							c, err := configSchema.ToConfig()
-							Expect(c).To(BeNil())
-							Expect(err).To(HaveOccurred())
-							Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: time: invalid duration asdf"))
-						})
-					})
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("route 0 has invalid registration_interval: time: invalid duration asdf"))
 				})
 			})
 		})
 
-		Context("The host is empty", func() {
-			BeforeEach(func() {
-				configSchema.Host = ""
-			})
+		Describe("on route names", func() {
+			Context("when the config input does not include a name", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].Name = ""
+				})
 
-			It("returns an error", func() {
-				c, err := configSchema.ToConfig()
-				Expect(c).To(BeNil())
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Host required"))
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("name must be provided for route 0"))
+				})
 			})
 		})
 
-		Context("when message bus servers are empty", func() {
+		Describe("on the healthcheck timeout, assuming healthcheck is provided", func() {
 			BeforeEach(func() {
-				configSchema.MessageBusServers = []config.MessageBusServerSchema{}
+				configSchema.Routes[0].HealthCheck = &config.HealthCheckSchema{
+					Name:       "my healthcheck",
+					ScriptPath: "/some/script/path",
+				}
 			})
 
-			It("returns an error", func() {
+			Context("The healthcheck timeout is zero", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.Timeout = "0s"
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout"))
+				})
+			})
+
+			Context("The healthcheck timeout is negative", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.Timeout = "-1s"
+				})
+
+				It("returns an error", func() {
+					_, err := configSchema.ToConfig()
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: -1s"))
+				})
+			})
+
+			Context("When the healthcheck timeout has no units", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.Timeout = "1"
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: time: missing unit in duration 1"))
+				})
+			})
+
+			Context("When the healthcheck is equal to the registration interval", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.Timeout = configSchema.Routes[0].RegistrationInterval
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(err).To(HaveOccurred())
+					Expect(c).To(BeNil())
+					Expect(err.Error()).To(ContainSubstring(
+						fmt.Sprintf(
+							"Invalid healthcheck timeout: %s must be less than registration interval: %s",
+							configSchema.Routes[0].HealthCheck.Timeout,
+							configSchema.Routes[0].RegistrationInterval,
+						),
+					))
+				})
+			})
+
+			Context("When the healthcheck is greater than the registration interval", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.Timeout = "59s"
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(err).To(HaveOccurred())
+					Expect(c).To(BeNil())
+					Expect(err.Error()).To(ContainSubstring(
+						fmt.Sprintf(
+							"Invalid healthcheck timeout: %s must be less than registration interval: %s",
+							configSchema.Routes[0].HealthCheck.Timeout,
+							configSchema.Routes[0].RegistrationInterval,
+						),
+					))
+				})
+			})
+
+			Context("When the healthcheck timeout is not parsable", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.Timeout = "asdf"
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("Invalid healthcheck timeout: time: invalid duration asdf"))
+				})
+			})
+		})
+
+		Describe("on the host", func() {
+			Context("when the host is empty", func() {
+				BeforeEach(func() {
+					configSchema.Host = ""
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("host required"))
+				})
+			})
+		})
+
+		Describe("on the message bus servers", func() {
+			Context("when message bus servers are empty", func() {
+				BeforeEach(func() {
+					configSchema.MessageBusServers = []config.MessageBusServerSchema{}
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("message_bus_servers must have at least one entry"))
+				})
+			})
+		})
+
+		Context("when there are many errors", func() {
+			BeforeEach(func() {
+				configSchema.Host = ""
+				configSchema.MessageBusServers = []config.MessageBusServerSchema{}
+				configSchema.Routes[0].RegistrationInterval = ""
+				configSchema.Routes[0].Name = ""
+				configSchema.Routes[1].RegistrationInterval = "asdf"
+				configSchema.Routes[1].Name = ""
+
+				configSchema.Routes = append(configSchema.Routes, config.RouteSchema{
+					RegistrationInterval: "10",
+					Name:                 "",
+				})
+
+				configSchema.Routes = append(configSchema.Routes, config.RouteSchema{
+					RegistrationInterval: "-10s",
+					Name:                 "",
+				})
+			})
+
+			It("aggregates the errors (except on the healthcheck)", func() {
 				c, err := configSchema.ToConfig()
 				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("host required"))
 				Expect(err.Error()).To(ContainSubstring("message_bus_servers must have at least one entry"))
+				Expect(err.Error()).To(ContainSubstring("registration_interval not provided for route 0"))
+				Expect(err.Error()).To(ContainSubstring("name must be provided for route 0"))
+				Expect(err.Error()).To(ContainSubstring("route 1 has invalid registration_interval: time: invalid duration asdf"))
+				Expect(err.Error()).To(ContainSubstring("name must be provided for route 1"))
+				Expect(err.Error()).To(ContainSubstring("route 2 has invalid registration_interval: time: missing unit in duration 10"))
+				Expect(err.Error()).To(ContainSubstring("route 3 has invalid registration_interval: interval must be greater than 0"))
+
+				Expect(err.Error()).NotTo(ContainSubstring("route 0 has invalid registration_interval: time: invalid duration"))
+				Expect(err.Error()).NotTo(ContainSubstring("route 2 has invalid registration_interval: interval must be greater than 0"))
 			})
 		})
 	})

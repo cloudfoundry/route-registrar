@@ -59,24 +59,56 @@ type Route struct {
 	HealthCheck          *HealthCheck
 }
 
+type multiError struct {
+	errors []error
+}
+
+func (e multiError) Error() string {
+	var errStr string
+	for _, err := range e.errors {
+		errStr = fmt.Sprintf("%s%s\n", errStr, err.Error())
+	}
+	return errStr
+}
+
+func (e *multiError) add(err error) {
+	errors, ok := err.(multiError)
+	if ok {
+		e.errors = append(e.errors, errors.errors...)
+	} else {
+		e.errors = append(e.errors, err)
+	}
+}
+
+func (e multiError) hasAny() bool {
+	return len(e.errors) > 0
+}
+
 func (c ConfigSchema) ToConfig() (*Config, error) {
+	errors := multiError{}
+
 	if c.Host == "" {
-		return nil, fmt.Errorf("Host required")
+		errors.add(fmt.Errorf("host required"))
 	}
 
 	messageBusServers, err := messageBusServersFromSchema(c.MessageBusServers)
 	if err != nil {
-		return nil, err
+		errors.add(err)
 	}
 
 	routes := []Route{}
-	for _, r := range c.Routes {
-		route, err := routeFromSchema(r)
+	for index, r := range c.Routes {
+		route, err := routeFromSchema(r, index)
 		if err != nil {
-			return nil, err
+			errors.add(err)
+			continue
 		}
 
 		routes = append(routes, *route)
+	}
+
+	if errors.hasAny() {
+		return nil, errors
 	}
 
 	config := Config{
@@ -88,22 +120,40 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 	return &config, nil
 }
 
-func routeFromSchema(r RouteSchema) (*Route, error) {
-	if r.RegistrationInterval == "" {
-		return nil, fmt.Errorf("registration_interval not provided")
+func parseRegistrationInterval(registrationInterval string, index int) (time.Duration, error) {
+	var duration time.Duration
+
+	if registrationInterval == "" {
+		return duration, fmt.Errorf("registration_interval not provided for route %d", index)
 	}
+
+	var err error
+	duration, err = time.ParseDuration(registrationInterval)
+	if err != nil {
+		return duration, fmt.Errorf("route %d has invalid registration_interval: %s", index, err.Error())
+	}
+
+	if duration <= 0 {
+		return duration, fmt.Errorf("route %d has invalid registration_interval: interval must be greater than 0", index)
+	}
+
+	return duration, nil
+}
+
+func routeFromSchema(r RouteSchema, index int) (*Route, error) {
+	errors := multiError{}
 
 	if r.Name == "" {
-		return nil, fmt.Errorf("name for route must be provided")
+		errors.add(fmt.Errorf("name must be provided for route %d", index))
 	}
 
-	registrationInterval, err := time.ParseDuration(r.RegistrationInterval)
+	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval, index)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid registration_interval: %s", err.Error())
+		errors.add(err)
 	}
 
-	if registrationInterval <= 0 {
-		return nil, fmt.Errorf("Invalid registration_interval: %d", registrationInterval)
+	if errors.hasAny() {
+		return nil, errors
 	}
 
 	var healthCheck *HealthCheck
