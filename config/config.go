@@ -152,16 +152,16 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		errors.add(err)
 	}
 
-	if errors.hasAny() {
-		return nil, errors
-	}
-
 	var healthCheck *HealthCheck
 	if r.HealthCheck != nil {
-		healthCheck, err = healthCheckFromSchema(r.HealthCheck, registrationInterval)
+		healthCheck, err = healthCheckFromSchema(r.HealthCheck, registrationInterval, index)
 		if err != nil {
-			return nil, err
+			errors.add(err)
 		}
+	}
+
+	if errors.hasAny() {
+		return nil, errors
 	}
 
 	route := Route{
@@ -175,30 +175,40 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 	return &route, nil
 }
 
-func healthCheckFromSchema(healthCheckSchema *HealthCheckSchema, registrationInterval time.Duration) (*HealthCheck, error) {
+func healthCheckFromSchema(
+	healthCheckSchema *HealthCheckSchema,
+	registrationInterval time.Duration,
+	routeIndex int,
+) (*HealthCheck, error) {
+	//TODO we should add a test for the mandatory script path
 	healthCheck := &HealthCheck{
 		Name:       healthCheckSchema.Name,
 		ScriptPath: healthCheckSchema.ScriptPath,
 	}
 
-	if healthCheckSchema.Timeout == "" {
+	// This code depends on the registration interval being good
+	if healthCheckSchema.Timeout == "" && registrationInterval > 0 {
 		healthCheck.Timeout = registrationInterval / 2
 		return healthCheck, nil
 	}
 
+	// This can still be validated even if the registration interval has errors
 	var err error
 	healthCheck.Timeout, err = time.ParseDuration(healthCheckSchema.Timeout)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid healthcheck timeout: %s", err.Error())
+		return nil, fmt.Errorf("route %d has invalid healthcheck timeout: %s", routeIndex, err.Error())
 	}
 
+	// This can still ba validated even if the registration interval has errors
 	if healthCheck.Timeout <= 0 {
-		return nil, fmt.Errorf("Invalid healthcheck timeout: %s", healthCheck.Timeout)
+		return nil, fmt.Errorf("route %d has invalid healthcheck timeout: %s", routeIndex, healthCheck.Timeout)
 	}
 
-	if healthCheck.Timeout >= registrationInterval {
+	// This depends on the registration interval being good
+	if healthCheck.Timeout >= registrationInterval && registrationInterval > 0 {
 		return nil, fmt.Errorf(
-			"Invalid healthcheck timeout: %v must be less than registration interval: %v",
+			"route %d has invalid healthcheck timeout: %v must be less than the registration interval: %v",
+			routeIndex,
 			healthCheck.Timeout,
 			registrationInterval,
 		)
