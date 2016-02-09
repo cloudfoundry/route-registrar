@@ -254,12 +254,31 @@ var _ = Describe("Config", func() {
 			})
 		})
 
-		Describe("on the healthcheck timeout, assuming healthcheck is provided", func() {
+		Describe("on the healthcheck, assuming healthcheck is provided", func() {
 			BeforeEach(func() {
 				configSchema.Routes[0].HealthCheck = &config.HealthCheckSchema{
 					Name:       "my healthcheck",
 					ScriptPath: "/some/script/path",
 				}
+			})
+
+			Context("when the healthcheck has multiple errors", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.Name = ""
+					configSchema.Routes[0].HealthCheck.ScriptPath = ""
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring(
+						"route 0 has a healthcheck with no name",
+					))
+					Expect(err.Error()).To(ContainSubstring(
+						"route 0 has a healthcheck with no script_path",
+					))
+				})
 			})
 
 			Context("The healthcheck timeout is zero", func() {

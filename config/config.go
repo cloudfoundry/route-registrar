@@ -201,33 +201,48 @@ func healthCheckFromSchema(
 	healthCheckSchema *HealthCheckSchema,
 	registrationInterval time.Duration,
 ) (*HealthCheck, error) {
-	//TODO we should add a test for the mandatory script path
+	errors := multiError{}
+
 	healthCheck := &HealthCheck{
 		Name:       healthCheckSchema.Name,
 		ScriptPath: healthCheckSchema.ScriptPath,
 	}
 
+	if healthCheck.Name == "" {
+		errors.add(fmt.Errorf("a healthcheck with no name"))
+	}
+
+	if healthCheck.ScriptPath == "" {
+		errors.add(fmt.Errorf("a healthcheck with no script_path"))
+	}
+
 	if healthCheckSchema.Timeout == "" && registrationInterval > 0 {
 		healthCheck.Timeout = registrationInterval / 2
+		if errors.hasAny() {
+			return healthCheck, errors
+		}
 		return healthCheck, nil
 	}
 
 	var err error
 	healthCheck.Timeout, err = time.ParseDuration(healthCheckSchema.Timeout)
 	if err != nil {
-		return nil, fmt.Errorf("invalid healthcheck timeout: %s", err.Error())
+		errors.add(fmt.Errorf("invalid healthcheck timeout: %s", err.Error()))
+		return nil, errors
 	}
 
 	if healthCheck.Timeout <= 0 {
-		return nil, fmt.Errorf("invalid healthcheck timeout: %s", healthCheck.Timeout)
+		errors.add(fmt.Errorf("invalid healthcheck timeout: %s", healthCheck.Timeout))
+		return nil, errors
 	}
 
 	if healthCheck.Timeout >= registrationInterval && registrationInterval > 0 {
-		return nil, fmt.Errorf(
+		errors.add(fmt.Errorf(
 			"invalid healthcheck timeout: %v must be less than the registration interval: %v",
 			healthCheck.Timeout,
 			registrationInterval,
-		)
+		))
+		return nil, errors
 	}
 	return healthCheck, nil
 }
