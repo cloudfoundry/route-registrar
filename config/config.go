@@ -124,6 +124,11 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 	}
 
 	if errors.hasAny() {
+		if len(errors.errors) == 1 {
+			errors.add(fmt.Errorf("encountered 1 error during config validation"))
+		} else {
+			errors.add(fmt.Errorf("encountered %d errors during config validation", len(errors.errors)))
+		}
 		return nil, errors
 	}
 

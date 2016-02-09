@@ -392,6 +392,13 @@ var _ = Describe("Config", func() {
 				configSchema.Routes[1].Name = ""
 			})
 
+			It("displays a count of the errors", func() {
+				c, err := configSchema.ToConfig()
+				Expect(c).To(BeNil())
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("encountered 6 errors during config validation"))
+			})
+
 			It("aggregates the errors", func() {
 				c, err := configSchema.ToConfig()
 				Expect(c).To(BeNil())
