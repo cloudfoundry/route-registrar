@@ -71,6 +71,16 @@ func (e multiError) Error() string {
 	return errStr
 }
 
+func (e *multiError) addWithPrefix(err error, prefix string) {
+	errors, ok := err.(multiError)
+	if ok {
+		errors.prefixAll(prefix)
+		e.errors = append(e.errors, errors.errors...)
+	} else {
+		e.errors = append(e.errors, fmt.Errorf("%s%s", prefix, err.Error()))
+	}
+}
+
 func (e *multiError) add(err error) {
 	errors, ok := err.(multiError)
 	if ok {
@@ -80,8 +90,14 @@ func (e *multiError) add(err error) {
 	}
 }
 
-func (e multiError) hasAny() bool {
+func (e *multiError) hasAny() bool {
 	return len(e.errors) > 0
+}
+
+func (e *multiError) prefixAll(prefix string) {
+	for i, err := range e.errors {
+		e.errors[i] = fmt.Errorf("%s%s", prefix, err.Error())
+	}
 }
 
 func (c ConfigSchema) ToConfig() (*Config, error) {
@@ -98,9 +114,9 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 
 	routes := []Route{}
 	for index, r := range c.Routes {
-		route, err := routeFromSchema(r, index)
+		route, err := routeFromSchema(r)
 		if err != nil {
-			errors.add(err)
+			errors.addWithPrefix(err, fmt.Sprintf("route %d has ", index))
 			continue
 		}
 
@@ -120,41 +136,41 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 	return &config, nil
 }
 
-func parseRegistrationInterval(registrationInterval string, index int) (time.Duration, error) {
+func parseRegistrationInterval(registrationInterval string) (time.Duration, error) {
 	var duration time.Duration
 
 	if registrationInterval == "" {
-		return duration, fmt.Errorf("registration_interval not provided for route %d", index)
+		return duration, fmt.Errorf("no registration_interval")
 	}
 
 	var err error
 	duration, err = time.ParseDuration(registrationInterval)
 	if err != nil {
-		return duration, fmt.Errorf("route %d has invalid registration_interval: %s", index, err.Error())
+		return duration, fmt.Errorf("invalid registration_interval: %s", err.Error())
 	}
 
 	if duration <= 0 {
-		return duration, fmt.Errorf("route %d has invalid registration_interval: interval must be greater than 0", index)
+		return duration, fmt.Errorf("invalid registration_interval: interval must be greater than 0")
 	}
 
 	return duration, nil
 }
 
-func routeFromSchema(r RouteSchema, index int) (*Route, error) {
+func routeFromSchema(r RouteSchema) (*Route, error) {
 	errors := multiError{}
 
 	if r.Name == "" {
-		errors.add(fmt.Errorf("name must be provided for route %d", index))
+		errors.add(fmt.Errorf("no name"))
 	}
 
-	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval, index)
+	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval)
 	if err != nil {
 		errors.add(err)
 	}
 
 	var healthCheck *HealthCheck
 	if r.HealthCheck != nil {
-		healthCheck, err = healthCheckFromSchema(r.HealthCheck, registrationInterval, index)
+		healthCheck, err = healthCheckFromSchema(r.HealthCheck, registrationInterval)
 		if err != nil {
 			errors.add(err)
 		}
@@ -178,7 +194,6 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 func healthCheckFromSchema(
 	healthCheckSchema *HealthCheckSchema,
 	registrationInterval time.Duration,
-	routeIndex int,
 ) (*HealthCheck, error) {
 	//TODO we should add a test for the mandatory script path
 	healthCheck := &HealthCheck{
@@ -196,19 +211,18 @@ func healthCheckFromSchema(
 	var err error
 	healthCheck.Timeout, err = time.ParseDuration(healthCheckSchema.Timeout)
 	if err != nil {
-		return nil, fmt.Errorf("route %d has invalid healthcheck timeout: %s", routeIndex, err.Error())
+		return nil, fmt.Errorf("invalid healthcheck timeout: %s", err.Error())
 	}
 
 	// This can still ba validated even if the registration interval has errors
 	if healthCheck.Timeout <= 0 {
-		return nil, fmt.Errorf("route %d has invalid healthcheck timeout: %s", routeIndex, healthCheck.Timeout)
+		return nil, fmt.Errorf("invalid healthcheck timeout: %s", healthCheck.Timeout)
 	}
 
 	// This depends on the registration interval being good
 	if healthCheck.Timeout >= registrationInterval && registrationInterval > 0 {
 		return nil, fmt.Errorf(
-			"route %d has invalid healthcheck timeout: %v must be less than the registration interval: %v",
-			routeIndex,
+			"invalid healthcheck timeout: %v must be less than the registration interval: %v",
 			healthCheck.Timeout,
 			registrationInterval,
 		)

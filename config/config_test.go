@@ -169,7 +169,7 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("registration_interval not provided"))
+					Expect(err.Error()).To(ContainSubstring("route 0 has no registration_interval"))
 				})
 			})
 
@@ -243,7 +243,7 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("name must be provided for route 0"))
+					Expect(err.Error()).To(ContainSubstring("route 0 has no name"))
 				})
 			})
 		})
@@ -398,10 +398,10 @@ var _ = Describe("Config", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("host required"))
 				Expect(err.Error()).To(ContainSubstring("message_bus_servers must have at least one entry"))
-				Expect(err.Error()).To(ContainSubstring("registration_interval not provided for route 0"))
-				Expect(err.Error()).To(ContainSubstring("name must be provided for route 0"))
-				Expect(err.Error()).To(ContainSubstring("registration_interval not provided for route 1"))
-				Expect(err.Error()).To(ContainSubstring("name must be provided for route 1"))
+				Expect(err.Error()).To(ContainSubstring("route 0 has no registration_interval"))
+				Expect(err.Error()).To(ContainSubstring("route 0 has no name"))
+				Expect(err.Error()).To(ContainSubstring("route 1 has no registration_interval"))
+				Expect(err.Error()).To(ContainSubstring("route 1 has no name"))
 			})
 
 			Context("when a registration interval is unparseable", func() {
