@@ -104,7 +104,6 @@ var _ = Describe("Config", func() {
 		})
 
 		Describe("Routes", func() {
-
 			Context("when the config input includes tags", func() {
 				BeforeEach(func() {
 					configSchema.Routes[0].Tags = map[string]string{"key": "value"}
@@ -126,6 +125,13 @@ var _ = Describe("Config", func() {
 						Name:       "my healthcheck",
 						ScriptPath: "/some/script/path",
 					}
+				})
+
+				It("sets the healthcheck for the route", func() {
+					c, err := configSchema.ToConfig()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(c.Routes[0].HealthCheck.Name).To(Equal("my healthcheck"))
+					Expect(c.Routes[0].HealthCheck.ScriptPath).To(Equal("/some/script/path"))
 				})
 
 				Context("The healthcheck timeout is empty", func() {
