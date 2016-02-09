@@ -44,13 +44,6 @@ func NewRegistrar(
 	}
 }
 
-type routeHealth struct {
-	route          config.Route
-	hasHealthcheck bool
-	healthy        bool
-	err            error
-}
-
 func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	var err error
 
@@ -64,44 +57,57 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 	close(ready)
 
-	routeHealthChan := make(chan routeHealth, len(r.config.Routes))
+	nohealthcheckChan := make(chan config.Route, len(r.config.Routes))
+	errChan := make(chan config.Route, len(r.config.Routes))
+	healthyChan := make(chan config.Route, len(r.config.Routes))
+	unhealthyChan := make(chan config.Route, len(r.config.Routes))
+
 	periodicHealthcheckCloseChans := make([]chan struct{}, len(r.config.Routes))
+
 	for i := range periodicHealthcheckCloseChans {
 		periodicHealthcheckCloseChans[i] = make(chan struct{}, len(r.config.Routes))
 	}
 
 	for i, route := range r.config.Routes {
-		go r.periodicallyDetermineHealth(route, routeHealthChan, periodicHealthcheckCloseChans[i])
+		go r.periodicallyDetermineHealth(
+			route,
+			nohealthcheckChan,
+			errChan,
+			healthyChan,
+			unhealthyChan,
+			periodicHealthcheckCloseChans[i],
+		)
 	}
 
 	for {
 		select {
-		case s := <-routeHealthChan:
-			if !s.hasHealthcheck {
-				r.logger.Info("no healthchecker found for route", lager.Data{"route": s.route})
+		case route := <-nohealthcheckChan:
+			r.logger.Info("no healthchecker found for route", lager.Data{"route": route})
 
-				err := r.registerRoutes(s.route)
-				if err != nil {
-					return err
-				}
-			} else if s.err != nil {
-				r.logger.Info("healthchecker errored for route", lager.Data{"route": s.route})
-				err := r.unregisterRoutes(s.route)
-				if err != nil {
-					return err
-				}
-			} else if s.healthy {
-				r.logger.Info("healthchecker returned healthy for route", lager.Data{"route": s.route})
-				err := r.registerRoutes(s.route)
-				if err != nil {
-					return err
-				}
-			} else {
-				r.logger.Info("healthchecker returned unhealthy for route", lager.Data{"route": s.route})
-				err := r.unregisterRoutes(s.route)
-				if err != nil {
-					return err
-				}
+			err := r.registerRoutes(route)
+			if err != nil {
+				return err
+			}
+		case route := <-errChan:
+			r.logger.Info("healthchecker errored for route", lager.Data{"route": route})
+
+			err := r.unregisterRoutes(route)
+			if err != nil {
+				return err
+			}
+		case route := <-healthyChan:
+			r.logger.Info("healthchecker returned healthy for route", lager.Data{"route": route})
+
+			err := r.registerRoutes(route)
+			if err != nil {
+				return err
+			}
+		case route := <-unhealthyChan:
+			r.logger.Info("healthchecker returned unhealthy for route", lager.Data{"route": route})
+
+			err := r.unregisterRoutes(route)
+			if err != nil {
+				return err
 			}
 		case <-signals:
 			r.logger.Info("Received signal; shutting down")
@@ -123,28 +129,30 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 func (r registrar) periodicallyDetermineHealth(
 	route config.Route,
-	routeHealthChan chan<- routeHealth,
+	nohealthcheckChan chan<- config.Route,
+	errChan chan<- config.Route,
+	healthyChan chan<- config.Route,
+	unhealthyChan chan<- config.Route,
 	closeChan chan struct{},
 ) {
 	ticker := time.NewTicker(route.RegistrationInterval)
 	defer ticker.Stop()
 
-	routeStatus := routeHealth{
-		route: route,
-	}
-
 	for {
 		select {
 		case <-ticker.C:
 			if route.HealthCheck == nil || route.HealthCheck.ScriptPath == "" {
-				routeStatus.hasHealthcheck = false
+				nohealthcheckChan <- route
 			} else {
-				routeStatus.hasHealthcheck = true
-				ok, err := r.healthChecker.Check(route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
-				routeStatus.healthy = ok
-				routeStatus.err = err
+				healthy, err := r.healthChecker.Check(route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
+				if err != nil {
+					errChan <- route
+				} else if healthy {
+					healthyChan <- route
+				} else {
+					unhealthyChan <- route
+				}
 			}
-			routeHealthChan <- routeStatus
 		case <-closeChan:
 			return
 		}
