@@ -65,6 +65,12 @@ type multiError struct {
 
 func (e multiError) Error() string {
 	var errStr string
+	if len(e.errors) == 1 {
+		errStr = "encountered 1 error during config validation:\n"
+	} else {
+		errStr = fmt.Sprintf("encountered %d errors during config validation:\n", len(e.errors))
+	}
+
 	for _, err := range e.errors {
 		errStr = fmt.Sprintf("%s%s\n", errStr, err.Error())
 	}
@@ -124,11 +130,6 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 	}
 
 	if errors.hasAny() {
-		if len(errors.errors) == 1 {
-			errors.add(fmt.Errorf("encountered 1 error during config validation"))
-		} else {
-			errors.add(fmt.Errorf("encountered %d errors during config validation", len(errors.errors)))
-		}
 		return nil, errors
 	}
 
@@ -206,25 +207,21 @@ func healthCheckFromSchema(
 		ScriptPath: healthCheckSchema.ScriptPath,
 	}
 
-	// This code depends on the registration interval being good
 	if healthCheckSchema.Timeout == "" && registrationInterval > 0 {
 		healthCheck.Timeout = registrationInterval / 2
 		return healthCheck, nil
 	}
 
-	// This can still be validated even if the registration interval has errors
 	var err error
 	healthCheck.Timeout, err = time.ParseDuration(healthCheckSchema.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("invalid healthcheck timeout: %s", err.Error())
 	}
 
-	// This can still ba validated even if the registration interval has errors
 	if healthCheck.Timeout <= 0 {
 		return nil, fmt.Errorf("invalid healthcheck timeout: %s", healthCheck.Timeout)
 	}
 
-	// This depends on the registration interval being good
 	if healthCheck.Timeout >= registrationInterval && registrationInterval > 0 {
 		return nil, fmt.Errorf(
 			"invalid healthcheck timeout: %v must be less than the registration interval: %v",

@@ -396,7 +396,7 @@ var _ = Describe("Config", func() {
 				c, err := configSchema.ToConfig()
 				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("encountered 6 errors during config validation"))
+				Expect(err.Error()).To(HavePrefix("encountered 6 errors during config validation"))
 			})
 
 			It("aggregates the errors", func() {
