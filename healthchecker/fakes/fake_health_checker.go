@@ -5,13 +5,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
 	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 )
 
 type FakeHealthChecker struct {
-	CheckStub        func(scriptPath string, timeout time.Duration) (bool, error)
+	CheckStub        func(runner commandrunner.Runner, scriptPath string, timeout time.Duration) (bool, error)
 	checkMutex       sync.RWMutex
 	checkArgsForCall []struct {
+		runner     commandrunner.Runner
 		scriptPath string
 		timeout    time.Duration
 	}
@@ -21,15 +23,16 @@ type FakeHealthChecker struct {
 	}
 }
 
-func (fake *FakeHealthChecker) Check(scriptPath string, timeout time.Duration) (bool, error) {
+func (fake *FakeHealthChecker) Check(runner commandrunner.Runner, scriptPath string, timeout time.Duration) (bool, error) {
 	fake.checkMutex.Lock()
 	fake.checkArgsForCall = append(fake.checkArgsForCall, struct {
+		runner     commandrunner.Runner
 		scriptPath string
 		timeout    time.Duration
-	}{scriptPath, timeout})
+	}{runner, scriptPath, timeout})
 	fake.checkMutex.Unlock()
 	if fake.CheckStub != nil {
-		return fake.CheckStub(scriptPath, timeout)
+		return fake.CheckStub(runner, scriptPath, timeout)
 	} else {
 		return fake.checkReturns.result1, fake.checkReturns.result2
 	}
@@ -41,10 +44,10 @@ func (fake *FakeHealthChecker) CheckCallCount() int {
 	return len(fake.checkArgsForCall)
 }
 
-func (fake *FakeHealthChecker) CheckArgsForCall(i int) (string, time.Duration) {
+func (fake *FakeHealthChecker) CheckArgsForCall(i int) (commandrunner.Runner, string, time.Duration) {
 	fake.checkMutex.RLock()
 	defer fake.checkMutex.RUnlock()
-	return fake.checkArgsForCall[i].scriptPath, fake.checkArgsForCall[i].timeout
+	return fake.checkArgsForCall[i].runner, fake.checkArgsForCall[i].scriptPath, fake.checkArgsForCall[i].timeout
 }
 
 func (fake *FakeHealthChecker) CheckReturns(result1 bool, result2 error) {

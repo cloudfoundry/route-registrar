@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	healthchecker_fakes "github.com/cloudfoundry-incubator/route-registrar/healthchecker/fakes"
 	messagebus_fakes "github.com/cloudfoundry-incubator/route-registrar/messagebus/fakes"
@@ -492,7 +493,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		Context("when the healthcheck is in progress", func() {
 			BeforeEach(func() {
-				fakeHealthChecker.CheckStub = func(string, time.Duration) (bool, error) {
+				fakeHealthChecker.CheckStub = func(commandrunner.Runner, string, time.Duration) (bool, error) {
 					time.Sleep(10 * time.Second)
 					return true, nil
 				}

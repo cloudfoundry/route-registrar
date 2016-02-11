@@ -1,11 +1,15 @@
 package healthchecker_test
 
 import (
+	"bytes"
+	"errors"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
+	"github.com/cloudfoundry-incubator/route-registrar/commandrunner/fakes"
 	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,6 +22,7 @@ import (
 var _ = Describe("ScriptHealthChecker", func() {
 	var (
 		logger     lager.Logger
+		runner     *fakes.FakeRunner
 		tmpDir     string
 		scriptPath string
 		timeout    time.Duration
@@ -34,60 +39,62 @@ var _ = Describe("ScriptHealthChecker", func() {
 
 		logger = lagertest.NewTestLogger("Script healthchecker test")
 
+		runner = new(fakes.FakeRunner) //commandrunner.NewRunner(scriptPath)
+		runner.RunStub = func(outbuf, errbuf *bytes.Buffer) error {
+			outbuf.WriteString("my-stdout")
+			errbuf.WriteString("my-stderr")
+			return nil
+		}
+
+		runner.CommandErrorChannelStub = func() chan error {
+			errChan := make(chan error, 1)
+			errChan <- nil
+			return errChan
+		}
+
 		h = healthchecker.NewHealthChecker(logger)
 	})
 
-	AfterEach(func() {
-		// os.RemoveAll(tmpDir)
+	It("logs stdout and stderr from the runner", func() {
+		_, _ = h.Check(runner, scriptPath, timeout)
+
+		Expect(logger).Should(gbytes.Say("stderr\":\"my-stderr"))
+		Expect(logger).Should(gbytes.Say("stdout\":\"my-stdout"))
 	})
 
-	Context("When the writes to stdout and stderr", func() {
-		BeforeEach(func() {
-			scriptText := "#!/bin/bash\necho 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
-			ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
-		})
-
-		It("writes stdout and stderr to the logs", func() {
-			_, _ = h.Check(scriptPath, timeout)
-
-			Expect(logger).Should(gbytes.Say("stderr\":\"my-stderr"))
-			Expect(logger).Should(gbytes.Say("stdout\":\"my-stdout"))
-		})
-	})
-
-	Context("When the script exits 0", func() {
-		BeforeEach(func() {
-			scriptText := "#!/bin/bash\nexit 0\n"
-			ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
-		})
-
+	Context("When the runner returns no errors", func() {
 		It("returns true without error", func() {
-			result, err := h.Check(scriptPath, timeout)
+			result, err := h.Check(runner, scriptPath, timeout)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(result).To(BeTrue())
 		})
 	})
 
-	Context("When the script exits non-zero", func() {
+	Context("When the runner returns an error on the execution channel", func() {
 		BeforeEach(func() {
-			scriptText := "#!/bin/bash\nexit 127"
-			ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
+			runner.CommandErrorChannelStub = func() chan error {
+				errChan := make(chan error, 1)
+				errChan <- &exec.ExitError{}
+				return errChan
+			}
 		})
 
 		It("returns false without error", func() {
-			result, err := h.Check(scriptPath, timeout)
+			result, err := h.Check(runner, scriptPath, timeout)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(result).To(BeFalse())
 		})
 	})
 
-	Context("when the script fails to start", func() {
+	Context("when the runner returns an immediate error", func() {
 		BeforeEach(func() {
-			ioutil.WriteFile(scriptPath, []byte(""), 0666)
+			runner.RunStub = func(outbuf, errbuf *bytes.Buffer) error {
+				return errors.New("BOO")
+			}
 		})
 
 		It("returns error", func() {
-			_, err := h.Check(scriptPath, timeout)
+			_, err := h.Check(runner, scriptPath, timeout)
 			Expect(err).Should(HaveOccurred())
 		})
 	})
@@ -97,28 +104,44 @@ var _ = Describe("ScriptHealthChecker", func() {
 			timeout = 2 * time.Second
 		})
 
-		Context("when the script exits within timeout", func() {
+		Context("when the runner exits within timeout", func() {
 			BeforeEach(func() {
-				scriptText := "#!/bin/bash\nsleep 1"
-				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
+				runner.CommandErrorChannelStub = func() chan error {
+					errChan := make(chan error, 1)
+					go func() {
+						time.Sleep(1 * time.Second)
+						errChan <- nil
+					}()
+					return errChan
+				}
 			})
 
 			It("returns true without error", func() {
-				result, err := h.Check(scriptPath, timeout)
+				result, err := h.Check(runner, scriptPath, timeout)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(result).To(BeTrue())
 			})
 		})
 
-		Context("when the script does not exit within the timeout", func() {
+		Context("when the runner does not exit within the timeout", func() {
 			BeforeEach(func() {
-				scriptText := "#!/bin/bash\nsleep 5"
-				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
+				runner.CommandErrorChannelStub = func() chan error {
+					errChan := make(chan error, 1)
+					go func() {
+						time.Sleep(5 * time.Second)
+						errChan <- nil
+					}()
+					return errChan
+				}
 			})
 
 			It("returns error", func() {
-				_, err := h.Check(scriptPath, timeout)
+				_, err := h.Check(runner, scriptPath, timeout)
 				Expect(err).Should(HaveOccurred())
+			})
+
+			It("kills the healthcheck process", func() {
+
 			})
 		})
 	})

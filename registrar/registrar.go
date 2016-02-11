@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
 	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 	"github.com/nu7hatch/gouuid"
 
@@ -144,7 +145,8 @@ func (r registrar) periodicallyDetermineHealth(
 			if route.HealthCheck == nil || route.HealthCheck.ScriptPath == "" {
 				nohealthcheckChan <- route
 			} else {
-				healthy, err := r.healthChecker.Check(route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
+				runner := commandrunner.NewRunner(route.HealthCheck.ScriptPath)
+				healthy, err := r.healthChecker.Check(runner, route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
 				if err != nil {
 					errChan <- route
 				} else if healthy {

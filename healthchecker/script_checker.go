@@ -6,13 +6,14 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
 	"github.com/pivotal-golang/lager"
 )
 
 //go:generate counterfeiter . HealthChecker
 
 type HealthChecker interface {
-	Check(scriptPath string, timeout time.Duration) (bool, error)
+	Check(runner commandrunner.Runner, scriptPath string, timeout time.Duration) (bool, error)
 }
 
 type healthChecker struct {
@@ -25,18 +26,14 @@ func NewHealthChecker(logger lager.Logger) HealthChecker {
 	}
 }
 
-func (h healthChecker) Check(scriptPath string, timeout time.Duration) (bool, error) {
-	cmd := exec.Command(scriptPath)
+func (h healthChecker) Check(runner commandrunner.Runner, scriptPath string, timeout time.Duration) (bool, error) {
 	h.logger.Info(
 		"Executing script",
 		lager.Data{"scriptPath": scriptPath},
 	)
 
 	var outbuf, errbuf bytes.Buffer
-	cmd.Stdout = &outbuf
-	cmd.Stderr = &errbuf
-
-	err := cmd.Start()
+	err := runner.Run(&outbuf, &errbuf)
 	if err != nil {
 		h.logger.Info(
 			"Error starting script",
@@ -50,13 +47,8 @@ func (h healthChecker) Check(scriptPath string, timeout time.Duration) (bool, er
 		return false, err
 	}
 
-	cmdErrChan := make(chan error)
-	go func() {
-		cmdErrChan <- cmd.Wait()
-	}()
-
 	if timeout <= 0 {
-		err := <-cmdErrChan
+		err := <-runner.CommandErrorChannel()
 		return h.handleOutput(scriptPath, err, outbuf, errbuf)
 	}
 
@@ -73,7 +65,7 @@ func (h healthChecker) Check(scriptPath string, timeout time.Duration) (bool, er
 		)
 		return false, fmt.Errorf("Script failed to exit within %v", timeout)
 
-	case err := <-cmdErrChan:
+	case err := <-runner.CommandErrorChannel():
 		return h.handleOutput(scriptPath, err, outbuf, errbuf)
 	}
 }
