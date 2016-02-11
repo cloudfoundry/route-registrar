@@ -141,7 +141,8 @@ var _ = Describe("ScriptHealthChecker", func() {
 			})
 
 			It("kills the healthcheck process", func() {
-
+				h.Check(runner, scriptPath, timeout)
+				Expect(runner.KillCallCount()).To(Equal(1))
 			})
 		})
 	})

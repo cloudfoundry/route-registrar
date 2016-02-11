@@ -24,6 +24,12 @@ type FakeRunner struct {
 	commandErrorChannelReturns     struct {
 		result1 chan error
 	}
+	KillStub        func() error
+	killMutex       sync.RWMutex
+	killArgsForCall []struct{}
+	killReturns     struct {
+		result1 error
+	}
 }
 
 func (fake *FakeRunner) Run(outbuf *bytes.Buffer, errbuff *bytes.Buffer) error {
@@ -80,6 +86,30 @@ func (fake *FakeRunner) CommandErrorChannelReturns(result1 chan error) {
 	fake.CommandErrorChannelStub = nil
 	fake.commandErrorChannelReturns = struct {
 		result1 chan error
+	}{result1}
+}
+
+func (fake *FakeRunner) Kill() error {
+	fake.killMutex.Lock()
+	fake.killArgsForCall = append(fake.killArgsForCall, struct{}{})
+	fake.killMutex.Unlock()
+	if fake.KillStub != nil {
+		return fake.KillStub()
+	} else {
+		return fake.killReturns.result1
+	}
+}
+
+func (fake *FakeRunner) KillCallCount() int {
+	fake.killMutex.RLock()
+	defer fake.killMutex.RUnlock()
+	return len(fake.killArgsForCall)
+}
+
+func (fake *FakeRunner) KillReturns(result1 error) {
+	fake.KillStub = nil
+	fake.killReturns = struct {
+		result1 error
 	}{result1}
 }
 

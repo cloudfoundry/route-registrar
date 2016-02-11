@@ -63,6 +63,7 @@ func (h healthChecker) Check(runner commandrunner.Runner, scriptPath string, tim
 				"timeout": timeout,
 			},
 		)
+		runner.Kill()
 		return false, fmt.Errorf("Script failed to exit within %v", timeout)
 
 	case err := <-runner.CommandErrorChannel():

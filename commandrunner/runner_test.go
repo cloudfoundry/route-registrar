@@ -2,6 +2,7 @@ package commandrunner_test
 
 import (
 	"bytes"
+	"time"
 
 	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
 	. "github.com/onsi/ginkgo"
@@ -77,6 +78,42 @@ var _ = Describe("CommandRunner", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(r.CommandErrorChannel()).Should(Receive(HaveOccurred()))
+			})
+		})
+	})
+
+	Describe("Kill", func() {
+		BeforeEach(func() {
+		})
+
+		Context("when the kill succeeds", func() {
+			BeforeEach(func() {
+				scriptText := "#!/bin/bash\nsleep 10; exit 0\n"
+				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
+
+				var outbuf, errbuf bytes.Buffer
+				r.Run(&outbuf, &errbuf)
+			})
+
+			It("returns no error", func() {
+				err := r.Kill()
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when the kill does not succeed", func() {
+			BeforeEach(func() {
+				scriptText := "#!/bin/bash\nexit 0\n"
+				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
+
+				var outbuf, errbuf bytes.Buffer
+				r.Run(&outbuf, &errbuf)
+			})
+
+			It("places an error on the errChan", func() {
+				time.Sleep(10 * time.Millisecond) // Give the script time to complete so `kill` returns an error
+				err := r.Kill()
+				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
