@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tedsuo/ifrit"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/tedsuo/ifrit"
 )
 
 type httpServer struct {

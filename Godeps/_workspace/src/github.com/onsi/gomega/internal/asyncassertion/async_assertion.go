@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/onsi/gomega/types"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/gomega/types"
 )
 
 type AsyncAssertionType uint

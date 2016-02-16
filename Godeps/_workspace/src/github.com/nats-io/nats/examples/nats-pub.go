@@ -8,7 +8,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/nats-io/nats"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/nats-io/nats"
 )
 
 func usage() {

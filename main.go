@@ -9,14 +9,14 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/cloudfoundry-incubator/cf-lager"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/cloudfoundry-incubator/cf-lager"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/pivotal-cf-experimental/service-config"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/pivotal-golang/lager"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/tedsuo/ifrit"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 	"github.com/cloudfoundry-incubator/route-registrar/registrar"
-	"github.com/pivotal-cf-experimental/service-config"
-	"github.com/pivotal-golang/lager"
-	"github.com/tedsuo/ifrit"
 )
 
 func main() {

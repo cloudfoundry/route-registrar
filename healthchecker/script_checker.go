@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/pivotal-golang/lager"
 	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
-	"github.com/pivotal-golang/lager"
 )
 
 //go:generate counterfeiter . HealthChecker

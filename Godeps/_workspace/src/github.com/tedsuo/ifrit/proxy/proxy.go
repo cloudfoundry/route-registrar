@@ -3,7 +3,7 @@ package proxy
 import (
 	"os"
 
-	"github.com/tedsuo/ifrit"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/tedsuo/ifrit"
 )
 
 func New(proxySignals <-chan os.Signal, runner ifrit.Runner) ifrit.Runner {

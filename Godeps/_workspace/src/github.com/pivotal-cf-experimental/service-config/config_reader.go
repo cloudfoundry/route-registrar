@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"gopkg.in/yaml.v2"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/gopkg.in/yaml.v2"
 
-	"github.com/imdario/mergo"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/imdario/mergo"
 )
 
 type Reader struct {

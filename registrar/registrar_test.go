@@ -6,17 +6,17 @@ import (
 	"os"
 	"time"
 
-	"github.com/nats-io/nats"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/nats-io/nats"
+	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/ginkgo"
+	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/gomega"
 
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/pivotal-golang/lager"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/pivotal-golang/lager/lagertest"
 	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	healthchecker_fakes "github.com/cloudfoundry-incubator/route-registrar/healthchecker/fakes"
 	messagebus_fakes "github.com/cloudfoundry-incubator/route-registrar/messagebus/fakes"
 	"github.com/cloudfoundry-incubator/route-registrar/registrar"
-	"github.com/pivotal-golang/lager"
-	"github.com/pivotal-golang/lager/lagertest"
 )
 
 var _ = Describe("Registrar.RegisterRoutes", func() {

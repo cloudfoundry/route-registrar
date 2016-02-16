@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/pivotal-cf-experimental/service-config"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/pivotal-cf-experimental/service-config"
 
 	"flag"
 	"fmt"

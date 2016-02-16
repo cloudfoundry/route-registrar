@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/onsi/ginkgo/types"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/ginkgo/types"
 )
 
 type benchmarker struct {

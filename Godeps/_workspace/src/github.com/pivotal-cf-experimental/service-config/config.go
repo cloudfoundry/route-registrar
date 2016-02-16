@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gopkg.in/yaml.v2"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/gopkg.in/yaml.v2"
 )
 
 const (

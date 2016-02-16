@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/nats-io/nats"
 	"github.com/nats-io/gnatsd/server"
-	"github.com/nats-io/nats"
 
 	gnatsd "github.com/nats-io/gnatsd/test"
 )

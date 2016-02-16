@@ -5,8 +5,8 @@ package protobuf
 import (
 	"errors"
 
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/nats-io/nats"
 	"github.com/golang/protobuf/proto"
-	"github.com/nats-io/nats"
 )
 
 const (

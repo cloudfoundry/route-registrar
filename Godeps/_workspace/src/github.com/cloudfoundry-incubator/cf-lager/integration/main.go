@@ -4,8 +4,8 @@ import (
 	"errors"
 	"flag"
 
-	"github.com/cloudfoundry-incubator/cf-lager"
-	"github.com/pivotal-golang/lager"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/cloudfoundry-incubator/cf-lager"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/pivotal-golang/lager"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/tedsuo/ifrit"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/tedsuo/ifrit"
 )
 
 /*

@@ -5,7 +5,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/tedsuo/ifrit"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/tedsuo/ifrit"
 )
 
 // PingChan stops when you send it a single Ping

@@ -9,7 +9,7 @@ import (
 	"errors"
 	"os"
 
-	"github.com/tedsuo/ifrit"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/tedsuo/ifrit"
 )
 
 // ErrNoLoadCallback is returned by Restarter if it is Invoked without a Load function.

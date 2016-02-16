@@ -5,11 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
+	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/ginkgo"
+	gconfig "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/ginkgo/config"
+	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/gomega"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/gomega/gexec"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
-	. "github.com/onsi/ginkgo"
-	gconfig "github.com/onsi/ginkgo/config"
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 
 	"testing"
 )

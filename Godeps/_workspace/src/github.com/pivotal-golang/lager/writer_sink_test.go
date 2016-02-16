@@ -4,10 +4,10 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/pivotal-golang/lager"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/pivotal-golang/lager"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/ginkgo"
+	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/gomega"
 )
 
 var _ = Describe("WriterSink", func() {
@@ -31,7 +31,7 @@ var _ = Describe("WriterSink", func() {
 		})
 
 		It("writes to the given writer", func() {
-			Ω(writer.Copy()).Should(Equal([]byte("hello world\n")))
+			Expect(writer.Copy()).To(Equal([]byte("hello world\n")))
 		})
 	})
 
@@ -41,7 +41,7 @@ var _ = Describe("WriterSink", func() {
 		})
 
 		It("does not write to the given writer", func() {
-			Ω(writer.Copy()).Should(Equal([]byte{}))
+			Expect(writer.Copy()).To(Equal([]byte{}))
 		})
 	})
 
@@ -66,7 +66,7 @@ var _ = Describe("WriterSink", func() {
 				expectedBytes = append(expectedBytes, []byte(content)...)
 				expectedBytes = append(expectedBytes, []byte("\n")...)
 			}
-			Ω(writer.Copy()).Should(Equal(expectedBytes))
+			Expect(writer.Copy()).To(Equal(expectedBytes))
 		})
 	})
 })

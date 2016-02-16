@@ -1,6 +1,6 @@
 package restart
 
-import "github.com/tedsuo/ifrit"
+import "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/tedsuo/ifrit"
 
 /*
 OnError is a restart strategy for Safely Restartable Runners.  It will restart the

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/onsi/ginkgo/ginkgo/nodot"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/ginkgo/ginkgo/nodot"
 )
 
 func BuildBootstrapCommand() *Command {
