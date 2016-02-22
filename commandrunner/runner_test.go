@@ -37,7 +37,7 @@ var _ = Describe("CommandRunner", func() {
 
 	Describe("Run", func() {
 		BeforeEach(func() {
-			scriptText := "#!/bin/bash\necho 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
+			scriptText := "echo 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
 			ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
 		})
 
@@ -56,20 +56,9 @@ var _ = Describe("CommandRunner", func() {
 			Eventually(r.CommandErrorChannel()).Should(Receive())
 		})
 
-		Context("when the script fails to start", func() {
-			BeforeEach(func() {
-				ioutil.WriteFile(scriptPath, []byte(""), 0666)
-			})
-
-			It("returns error", func() {
-				err := r.Run(&outbuf, &errbuf)
-				Expect(err).Should(HaveOccurred())
-			})
-		})
-
 		Context("when the script exits with a non-zero code", func() {
 			BeforeEach(func() {
-				scriptText := "#!/bin/bash\n exit 1\n"
+				scriptText := " exit 1\n"
 				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
 			})
 
@@ -88,7 +77,7 @@ var _ = Describe("CommandRunner", func() {
 
 		Context("when the kill succeeds", func() {
 			BeforeEach(func() {
-				scriptText := "#!/bin/bash\nsleep 10; exit 0\n"
+				scriptText := "sleep 10; exit 0\n"
 				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
 
 				var outbuf, errbuf bytes.Buffer
@@ -103,7 +92,7 @@ var _ = Describe("CommandRunner", func() {
 
 		Context("when the kill does not succeed", func() {
 			BeforeEach(func() {
-				scriptText := "#!/bin/bash\nexit 0\n"
+				scriptText := "exit 0\n"
 				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
 
 				var outbuf, errbuf bytes.Buffer

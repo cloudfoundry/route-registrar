@@ -31,12 +31,13 @@ func (r *runner) CommandErrorChannel() chan error {
 }
 
 func (r *runner) Run(outbuf, errbuf *bytes.Buffer) error {
-	r.cmd = exec.Command(r.scriptPath)
+	r.cmd = exec.Command("/bin/sh", "-c", r.scriptPath)
 
 	r.cmd.Stdout = outbuf
 	r.cmd.Stderr = errbuf
 
 	err := r.cmd.Start()
+	// Untested because we can't force sh to fail in test
 	if err != nil {
 		return err
 	}
