@@ -2,43 +2,78 @@ package commandrunner_test
 
 import (
 	"bytes"
+	"strings"
 	"time"
 
 	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/ginkgo"
 	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/gomega"
 	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
+	"github.com/onsi/gomega/gexec"
 
 	"io/ioutil"
 	"os"
 	"path/filepath"
 )
 
+const (
+	golangExecutable = `
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello from a binary")
+}`
+)
+
 var _ = Describe("CommandRunner", func() {
 	var (
-		scriptPath string
-		tmpDir     string
-		outbuf     bytes.Buffer
-		errbuf     bytes.Buffer
-		r          commandrunner.Runner
+		executable   string
+		tmpDir       string
+		tmpGoPkg     string
+		tmpGoPkgPath string
+		outbuf       bytes.Buffer
+		errbuf       bytes.Buffer
+		r            commandrunner.Runner
 	)
 
 	BeforeEach(func() {
 		var err error
-		tmpDir, err = ioutil.TempDir(os.TempDir(), "healthchecker-test")
-		Expect(err).ToNot(HaveOccurred())
+		tmpDir, err = ioutil.TempDir("", "healthchecker-test")
+		Expect(err).NotTo(HaveOccurred())
 
-		scriptPath = filepath.Join(tmpDir, "healthchecker.sh")
+		gopathEnv := os.Getenv("GOPATH")
+		gopathArray := strings.SplitN(gopathEnv, ":", 1)
+		gopath := gopathArray[0]
+		Expect(gopath).NotTo(BeEmpty())
+
+		tmpGoPkg = "tmp-foo"
+		tmpGoPkgPath = filepath.Join(gopath, "src", tmpGoPkg)
+		err = os.MkdirAll(tmpGoPkgPath, os.ModePerm)
+		Expect(err).NotTo(HaveOccurred())
+
+		executable = filepath.Join(tmpDir, "healthchecker.sh")
 
 		outbuf = bytes.Buffer{}
 		errbuf = bytes.Buffer{}
+	})
 
-		r = commandrunner.NewRunner(scriptPath)
+	AfterEach(func() {
+		err := os.RemoveAll(tmpDir)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		// err = os.RemoveAll(tmpGoPkg)
+		// Expect(err).ShouldNot(HaveOccurred())
 	})
 
 	Describe("Run", func() {
+		JustBeforeEach(func() {
+			r = commandrunner.NewRunner(executable)
+		})
+
 		BeforeEach(func() {
 			scriptText := "echo 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
-			ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
+			ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
 		})
 
 		It("captures stdout and stderr", func() {
@@ -59,7 +94,7 @@ var _ = Describe("CommandRunner", func() {
 		Context("when the script exits with a non-zero code", func() {
 			BeforeEach(func() {
 				scriptText := "exit 1\n"
-				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
+				ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
 			})
 
 			It("places the error on the error chan", func() {
@@ -69,16 +104,37 @@ var _ = Describe("CommandRunner", func() {
 				Eventually(r.CommandErrorChannel()).Should(Receive(HaveOccurred()))
 			})
 		})
+
+		Describe("running a binary", func() {
+			BeforeEach(func() {
+				executableFilepath := filepath.Join(tmpGoPkgPath, "main.go")
+				err := ioutil.WriteFile(executableFilepath, []byte(golangExecutable), os.ModePerm)
+				Expect(err).NotTo(HaveOccurred())
+
+				executable, err = gexec.Build(tmpGoPkg)
+				Expect(err).ShouldNot(HaveOccurred())
+			})
+
+			It("runs a binary without error", func() {
+				err := r.Run(&outbuf, &errbuf)
+				Expect(err).NotTo(HaveOccurred())
+
+				var received error
+				Eventually(r.CommandErrorChannel()).Should(Receive(&received))
+
+				Expect(received).To(BeNil())
+			})
+		})
 	})
 
 	Describe("Kill", func() {
 		BeforeEach(func() {
+			r = commandrunner.NewRunner(executable)
 		})
-
 		Context("when the kill succeeds", func() {
 			BeforeEach(func() {
 				scriptText := "sleep 10; exit 0\n"
-				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
+				ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
 
 				var outbuf, errbuf bytes.Buffer
 				r.Run(&outbuf, &errbuf)
@@ -93,7 +149,7 @@ var _ = Describe("CommandRunner", func() {
 		Context("when the kill does not succeed", func() {
 			BeforeEach(func() {
 				scriptText := "exit 0\n"
-				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
+				ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
 
 				var outbuf, errbuf bytes.Buffer
 				r.Run(&outbuf, &errbuf)

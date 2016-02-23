@@ -30,6 +30,7 @@ func (r *runner) CommandErrorChannel() chan error {
 	return r.cmdErrChan
 }
 
+// Run is non-blocking. Users should call CommandErrorChannel to get the result.
 func (r *runner) Run(outbuf, errbuf *bytes.Buffer) error {
 	r.cmd = exec.Command("/bin/sh", "-c", r.scriptPath)
 
