@@ -58,7 +58,7 @@ var _ = Describe("CommandRunner", func() {
 
 		Context("when the script exits with a non-zero code", func() {
 			BeforeEach(func() {
-				scriptText := " exit 1\n"
+				scriptText := "exit 1\n"
 				ioutil.WriteFile(scriptPath, []byte(scriptText), os.ModePerm)
 			})
 

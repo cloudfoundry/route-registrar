@@ -1,13 +1,14 @@
 {
 	"ImportPath": "github.com/cloudfoundry-incubator/route-registrar",
 	"GoVersion": "go1.5.1",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/cf-lager",
 			"Rev": "7178833173e7124dab16158273f7708ed73b81ff"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/multierror",
+			"Rev": "c06e9144d63ebffcad7e95c7f60ff705f409fce4"
 		},
 		{
 			"ImportPath": "github.com/fraenkel/candiedyaml",

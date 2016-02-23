@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"time"
+
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/cloudfoundry/multierror"
 )
 
 type MessageBusServerSchema struct {
@@ -59,77 +61,30 @@ type Route struct {
 	HealthCheck          *HealthCheck
 }
 
-type multiError struct {
-	errors []error
-}
-
-func (e multiError) Error() string {
-	var errStr string
-	if len(e.errors) == 1 {
-		errStr = "encountered 1 error during config validation:\n"
-	} else {
-		errStr = fmt.Sprintf("encountered %d errors during config validation:\n", len(e.errors))
-	}
-
-	for _, err := range e.errors {
-		errStr = fmt.Sprintf("%s%s\n", errStr, err.Error())
-	}
-	return errStr
-}
-
-func (e *multiError) addWithPrefix(err error, prefix string) {
-	errors, ok := err.(multiError)
-	if ok {
-		errors.prefixAll(prefix)
-		e.errors = append(e.errors, errors.errors...)
-	} else {
-		e.errors = append(e.errors, fmt.Errorf("%s%s", prefix, err.Error()))
-	}
-}
-
-func (e *multiError) add(err error) {
-	errors, ok := err.(multiError)
-	if ok {
-		e.errors = append(e.errors, errors.errors...)
-	} else {
-		e.errors = append(e.errors, err)
-	}
-}
-
-func (e *multiError) hasAny() bool {
-	return len(e.errors) > 0
-}
-
-func (e *multiError) prefixAll(prefix string) {
-	for i, err := range e.errors {
-		e.errors[i] = fmt.Errorf("%s%s", prefix, err.Error())
-	}
-}
-
 func (c ConfigSchema) ToConfig() (*Config, error) {
-	errors := multiError{}
+	errors := multierror.MultiError{}
 
 	if c.Host == "" {
-		errors.add(fmt.Errorf("host required"))
+		errors.Add(fmt.Errorf("host required"))
 	}
 
 	messageBusServers, err := messageBusServersFromSchema(c.MessageBusServers)
 	if err != nil {
-		errors.add(err)
+		errors.Add(err)
 	}
 
 	routes := []Route{}
 	for index, r := range c.Routes {
 		route, err := routeFromSchema(r)
 		if err != nil {
-			errors.addWithPrefix(err, fmt.Sprintf("route %d has ", index))
+			errors.AddWithPrefix(err, fmt.Sprintf("route %d has ", index))
 			continue
 		}
 
 		routes = append(routes, *route)
 	}
 
-	if errors.hasAny() {
+	if errors.HasAny() {
 		return nil, errors
 	}
 
@@ -163,26 +118,26 @@ func parseRegistrationInterval(registrationInterval string) (time.Duration, erro
 }
 
 func routeFromSchema(r RouteSchema) (*Route, error) {
-	errors := multiError{}
+	errors := multierror.MultiError{}
 
 	if r.Name == "" {
-		errors.add(fmt.Errorf("no name"))
+		errors.Add(fmt.Errorf("no name"))
 	}
 
 	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval)
 	if err != nil {
-		errors.add(err)
+		errors.Add(err)
 	}
 
 	var healthCheck *HealthCheck
 	if r.HealthCheck != nil {
 		healthCheck, err = healthCheckFromSchema(r.HealthCheck, registrationInterval)
 		if err != nil {
-			errors.add(err)
+			errors.Add(err)
 		}
 	}
 
-	if errors.hasAny() {
+	if errors.HasAny() {
 		return nil, errors
 	}
 
@@ -201,7 +156,7 @@ func healthCheckFromSchema(
 	healthCheckSchema *HealthCheckSchema,
 	registrationInterval time.Duration,
 ) (*HealthCheck, error) {
-	errors := multiError{}
+	errors := multierror.MultiError{}
 
 	healthCheck := &HealthCheck{
 		Name:       healthCheckSchema.Name,
@@ -209,16 +164,16 @@ func healthCheckFromSchema(
 	}
 
 	if healthCheck.Name == "" {
-		errors.add(fmt.Errorf("a healthcheck with no name"))
+		errors.Add(fmt.Errorf("a healthcheck with no name"))
 	}
 
 	if healthCheck.ScriptPath == "" {
-		errors.add(fmt.Errorf("a healthcheck with no script_path"))
+		errors.Add(fmt.Errorf("a healthcheck with no script_path"))
 	}
 
 	if healthCheckSchema.Timeout == "" && registrationInterval > 0 {
 		healthCheck.Timeout = registrationInterval / 2
-		if errors.hasAny() {
+		if errors.HasAny() {
 			return healthCheck, errors
 		}
 		return healthCheck, nil
@@ -227,17 +182,17 @@ func healthCheckFromSchema(
 	var err error
 	healthCheck.Timeout, err = time.ParseDuration(healthCheckSchema.Timeout)
 	if err != nil {
-		errors.add(fmt.Errorf("invalid healthcheck timeout: %s", err.Error()))
+		errors.Add(fmt.Errorf("invalid healthcheck timeout: %s", err.Error()))
 		return nil, errors
 	}
 
 	if healthCheck.Timeout <= 0 {
-		errors.add(fmt.Errorf("invalid healthcheck timeout: %s", healthCheck.Timeout))
+		errors.Add(fmt.Errorf("invalid healthcheck timeout: %s", healthCheck.Timeout))
 		return nil, errors
 	}
 
 	if healthCheck.Timeout >= registrationInterval && registrationInterval > 0 {
-		errors.add(fmt.Errorf(
+		errors.Add(fmt.Errorf(
 			"invalid healthcheck timeout: %v must be less than the registration interval: %v",
 			healthCheck.Timeout,
 			registrationInterval,

@@ -230,7 +230,7 @@ host: "127.0.0.1"
 			Expect(err).ShouldNot(HaveOccurred())
 
 			Eventually(session.Out).Should(gbytes.Say("Initializing"))
-			Eventually(session.Err).Should(gbytes.Say("encountered 1 error during config validation"))
+			Eventually(session.Err).Should(gbytes.Say("encountered 1 error during validation"))
 
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).ToNot(BeZero())
