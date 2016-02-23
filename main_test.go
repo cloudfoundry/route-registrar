@@ -190,7 +190,7 @@ var _ = Describe("Main", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			Eventually(session.Out).Should(gbytes.Say("Initializing"))
-			Eventually(session.Err).Should(gbytes.Say("route 0 has invalid registration_interval: time: invalid duration asdf"))
+			Eventually(session.Err).Should(gbytes.Say("route 'My route' has invalid registration_interval: time: invalid duration asdf"))
 
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).ToNot(BeZero())

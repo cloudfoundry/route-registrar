@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/cloudfoundry/multierror"
@@ -77,7 +78,10 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 	for index, r := range c.Routes {
 		route, err := routeFromSchema(r)
 		if err != nil {
-			errors.AddWithPrefix(err, fmt.Sprintf("route %d has ", index))
+			errors.AddWithPrefix(
+				err,
+				fmt.Sprintf("route %s has ", nameOrIndex(r, index)),
+			)
 			continue
 		}
 
@@ -95,6 +99,14 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func nameOrIndex(r RouteSchema, index int) string {
+	if r.Name != "" {
+		return fmt.Sprintf("'%s'", r.Name)
+	}
+
+	return strconv.Itoa(index)
 }
 
 func parseRegistrationInterval(registrationInterval string) (time.Duration, error) {
