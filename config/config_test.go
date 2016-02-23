@@ -288,7 +288,7 @@ var _ = Describe("Config", func() {
 				})
 			})
 
-			Context("when the port value negative", func() {
+			Context("when the port value is negative", func() {
 				BeforeEach(func() {
 					negativeValue := -1
 					configSchema.Routes[0].Port = &negativeValue
@@ -299,6 +299,47 @@ var _ = Describe("Config", func() {
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("route 'route-0' has invalid port: -1"))
+				})
+			})
+		})
+
+		Describe("on route URIs", func() {
+			Context("when the URIs are not provided", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].URIs = nil
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("route 'route-0' has no URIs"))
+				})
+			})
+
+			Context("when the URIs are empty", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].URIs = []string{}
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("route 'route-0' has no URIs"))
+				})
+			})
+
+			Context("when the URIs contain empty strings", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].URIs = []string{"", "valid-uri", ""}
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("route 'route-0' has empty URIs"))
 				})
 			})
 		})

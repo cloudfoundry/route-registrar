@@ -142,6 +142,17 @@ func routeFromSchema(r RouteSchema) (*Route, error) {
 		errors.Add(fmt.Errorf("invalid port: %d", *r.Port))
 	}
 
+	if len(r.URIs) == 0 {
+		errors.Add(fmt.Errorf("no URIs"))
+	}
+
+	for _, u := range r.URIs {
+		if u == "" {
+			errors.Add(fmt.Errorf("empty URIs"))
+			break
+		}
+	}
+
 	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval)
 	if err != nil {
 		errors.Add(err)
