@@ -241,6 +241,8 @@ host: "127.0.0.1"
 func initConfig() {
 	natsPort = 42222 + GinkgoParallelNode()
 
+	aPort := 12345
+
 	registrationInterval := "1s"
 
 	messageBusServers := []config.MessageBusServerSchema{
@@ -254,7 +256,7 @@ func initConfig() {
 	routes := []config.RouteSchema{
 		{
 			Name:                 "My route",
-			Port:                 12345,
+			Port:                 &aPort,
 			URIs:                 []string{"uri-1", "uri-2"},
 			Tags:                 map[string]string{"tag1": "val1", "tag2": "val2"},
 			RegistrationInterval: registrationInterval,

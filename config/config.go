@@ -28,7 +28,7 @@ type ConfigSchema struct {
 
 type RouteSchema struct {
 	Name                 string             `yaml:"name"`
-	Port                 int                `yaml:"port"`
+	Port                 *int               `yaml:"port"`
 	Tags                 map[string]string  `yaml:"tags"`
 	URIs                 []string           `yaml:"uris"`
 	RegistrationInterval string             `yaml:"registration_interval,omitempty"`
@@ -136,6 +136,12 @@ func routeFromSchema(r RouteSchema) (*Route, error) {
 		errors.Add(fmt.Errorf("no name"))
 	}
 
+	if r.Port == nil {
+		errors.Add(fmt.Errorf("no port"))
+	} else if *r.Port <= 0 {
+		errors.Add(fmt.Errorf("invalid port: %d", *r.Port))
+	}
+
 	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval)
 	if err != nil {
 		errors.Add(err)
@@ -155,7 +161,7 @@ func routeFromSchema(r RouteSchema) (*Route, error) {
 
 	route := Route{
 		Name:                 r.Name,
-		Port:                 r.Port,
+		Port:                 *r.Port,
 		Tags:                 r.Tags,
 		URIs:                 r.URIs,
 		RegistrationInterval: registrationInterval,

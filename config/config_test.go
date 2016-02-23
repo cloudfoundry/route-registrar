@@ -22,6 +22,9 @@ var _ = Describe("Config", func() {
 
 		routeName0 string
 		routeName1 string
+
+		port0 int
+		port1 int
 	)
 
 	BeforeEach(func() {
@@ -33,6 +36,9 @@ var _ = Describe("Config", func() {
 
 		routeName0 = "route-0"
 		routeName1 = "route-1"
+
+		port0 = 3000
+		port1 = 3001
 
 		configSchema = config.ConfigSchema{
 			MessageBusServers: []config.MessageBusServerSchema{
@@ -50,13 +56,13 @@ var _ = Describe("Config", func() {
 			Routes: []config.RouteSchema{
 				{
 					Name:                 routeName0,
-					Port:                 3000,
+					Port:                 &port0,
 					RegistrationInterval: registrationInterval0String,
 					URIs:                 []string{"my-app.my-domain.com"},
 				},
 				{
 					Name:                 routeName1,
-					Port:                 3001,
+					Port:                 &port1,
 					RegistrationInterval: registrationInterval1String,
 					URIs:                 []string{"my-other-app.my-domain.com"},
 				},
@@ -87,13 +93,13 @@ var _ = Describe("Config", func() {
 				Routes: []config.Route{
 					{
 						Name:                 routeName0,
-						Port:                 configSchema.Routes[0].Port,
+						Port:                 port0,
 						RegistrationInterval: registrationInterval0,
 						URIs:                 configSchema.Routes[0].URIs,
 					},
 					{
 						Name:                 routeName1,
-						Port:                 configSchema.Routes[1].Port,
+						Port:                 port1,
 						RegistrationInterval: registrationInterval1,
 						URIs:                 configSchema.Routes[1].URIs,
 					},
@@ -250,6 +256,49 @@ var _ = Describe("Config", func() {
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("route 0 has no name"))
+				})
+			})
+		})
+
+		Describe("on route ports", func() {
+			Context("when the port value is not provided", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].Port = nil
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("route 'route-0' has no port"))
+				})
+			})
+
+			Context("when the port value is 0", func() {
+				BeforeEach(func() {
+					zero := 0
+					configSchema.Routes[0].Port = &zero
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("route 'route-0' has invalid port: 0"))
+				})
+			})
+
+			Context("when the port value negative", func() {
+				BeforeEach(func() {
+					negativeValue := -1
+					configSchema.Routes[0].Port = &negativeValue
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("route 'route-0' has invalid port: -1"))
 				})
 			})
 		})
