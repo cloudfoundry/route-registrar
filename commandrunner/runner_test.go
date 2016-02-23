@@ -54,7 +54,9 @@ var _ = Describe("CommandRunner", func() {
 
 		executable = filepath.Join(tmpDir, "healthchecker.sh")
 		scriptText := "echo 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
-		ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
+
+		err = ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
+		Expect(err).NotTo(HaveOccurred())
 
 		outbuf = bytes.Buffer{}
 		errbuf = bytes.Buffer{}
@@ -120,6 +122,28 @@ var _ = Describe("CommandRunner", func() {
 
 				err = r.Wait()
 				Expect(err).NotTo(HaveOccurred())
+
+				Expect(outbuf.String()).To(Equal("Hello from a binary\n"))
+			})
+		})
+
+		Describe("running a script with a shebang", func() {
+			BeforeEach(func() {
+				executable = filepath.Join(tmpDir, "healthchecker.sh")
+				scriptText := "#!/bin/sh\necho 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
+
+				err := ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("runs the script without error", func() {
+				err := r.Run(&outbuf, &errbuf)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = r.Wait()
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(outbuf.String()).To(Equal("my-stdout\n"))
 			})
 		})
 	})
