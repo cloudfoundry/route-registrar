@@ -46,10 +46,8 @@ var _ = Describe("ScriptHealthChecker", func() {
 			return nil
 		}
 
-		runner.CommandErrorChannelStub = func() chan error {
-			errChan := make(chan error, 1)
-			errChan <- nil
-			return errChan
+		runner.WaitStub = func() error {
+			return nil
 		}
 
 		h = healthchecker.NewHealthChecker(logger)
@@ -72,10 +70,8 @@ var _ = Describe("ScriptHealthChecker", func() {
 
 	Context("When the runner returns an error on the execution channel", func() {
 		BeforeEach(func() {
-			runner.CommandErrorChannelStub = func() chan error {
-				errChan := make(chan error, 1)
-				errChan <- &exec.ExitError{}
-				return errChan
+			runner.WaitStub = func() error {
+				return &exec.ExitError{}
 			}
 		})
 
@@ -101,18 +97,14 @@ var _ = Describe("ScriptHealthChecker", func() {
 
 	Context("when the timeout is positive", func() {
 		BeforeEach(func() {
-			timeout = 2 * time.Second
+			timeout = 50 * time.Millisecond
 		})
 
 		Context("when the runner exits within timeout", func() {
 			BeforeEach(func() {
-				runner.CommandErrorChannelStub = func() chan error {
-					errChan := make(chan error, 1)
-					go func() {
-						time.Sleep(1 * time.Second)
-						errChan <- nil
-					}()
-					return errChan
+				runner.WaitStub = func() error {
+					time.Sleep(20 * time.Millisecond)
+					return nil
 				}
 			})
 
@@ -125,13 +117,9 @@ var _ = Describe("ScriptHealthChecker", func() {
 
 		Context("when the runner does not exit within the timeout", func() {
 			BeforeEach(func() {
-				runner.CommandErrorChannelStub = func() chan error {
-					errChan := make(chan error, 1)
-					go func() {
-						time.Sleep(5 * time.Second)
-						errChan <- nil
-					}()
-					return errChan
+				runner.WaitStub = func() error {
+					time.Sleep(5 * time.Second)
+					return nil
 				}
 			})
 

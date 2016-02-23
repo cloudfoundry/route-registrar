@@ -9,7 +9,7 @@ import (
 
 type Runner interface {
 	Run(outbuf, errbuff *bytes.Buffer) error
-	CommandErrorChannel() chan error
+	Wait() error
 	Kill() error
 }
 
@@ -26,11 +26,12 @@ func NewRunner(scriptPath string) Runner {
 	}
 }
 
-func (r *runner) CommandErrorChannel() chan error {
-	return r.cmdErrChan
+// Wait blocks on the result of the command. It should be called after Run().
+func (r *runner) Wait() error {
+	return <-r.cmdErrChan
 }
 
-// Run is non-blocking. Users should call CommandErrorChannel to get the result.
+// Run is non-blocking. Users should call Wait to get the result.
 func (r *runner) Run(outbuf, errbuf *bytes.Buffer) error {
 	r.cmd = exec.Command("/bin/sh", "-c", r.scriptPath)
 

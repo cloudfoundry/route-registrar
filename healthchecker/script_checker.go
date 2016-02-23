@@ -48,9 +48,14 @@ func (h healthChecker) Check(runner commandrunner.Runner, scriptPath string, tim
 	}
 
 	if timeout <= 0 {
-		err := <-runner.CommandErrorChannel()
+		err := runner.Wait()
 		return h.handleOutput(scriptPath, err, outbuf, errbuf)
 	}
+
+	commandErrChan := make(chan error)
+	go func() {
+		commandErrChan <- runner.Wait()
+	}()
 
 	select {
 	case <-time.After(timeout):
@@ -66,7 +71,7 @@ func (h healthChecker) Check(runner commandrunner.Runner, scriptPath string, tim
 		runner.Kill()
 		return false, fmt.Errorf("Script failed to exit within %v", timeout)
 
-	case err := <-runner.CommandErrorChannel():
+	case err := <-commandErrChan:
 		return h.handleOutput(scriptPath, err, outbuf, errbuf)
 	}
 }

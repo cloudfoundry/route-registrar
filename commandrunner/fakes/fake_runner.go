@@ -18,16 +18,16 @@ type FakeRunner struct {
 	runReturns struct {
 		result1 error
 	}
-	CommandErrorChannelStub        func() chan error
-	commandErrorChannelMutex       sync.RWMutex
-	commandErrorChannelArgsForCall []struct{}
-	commandErrorChannelReturns     struct {
-		result1 chan error
+	WaitStub        func() error
+	waitMutex       sync.RWMutex
+	waitArgsForCall []struct{}
+	waitReturns struct {
+		result1 error
 	}
 	KillStub        func() error
 	killMutex       sync.RWMutex
 	killArgsForCall []struct{}
-	killReturns     struct {
+	killReturns struct {
 		result1 error
 	}
 }
@@ -65,27 +65,27 @@ func (fake *FakeRunner) RunReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeRunner) CommandErrorChannel() chan error {
-	fake.commandErrorChannelMutex.Lock()
-	fake.commandErrorChannelArgsForCall = append(fake.commandErrorChannelArgsForCall, struct{}{})
-	fake.commandErrorChannelMutex.Unlock()
-	if fake.CommandErrorChannelStub != nil {
-		return fake.CommandErrorChannelStub()
+func (fake *FakeRunner) Wait() error {
+	fake.waitMutex.Lock()
+	fake.waitArgsForCall = append(fake.waitArgsForCall, struct{}{})
+	fake.waitMutex.Unlock()
+	if fake.WaitStub != nil {
+		return fake.WaitStub()
 	} else {
-		return fake.commandErrorChannelReturns.result1
+		return fake.waitReturns.result1
 	}
 }
 
-func (fake *FakeRunner) CommandErrorChannelCallCount() int {
-	fake.commandErrorChannelMutex.RLock()
-	defer fake.commandErrorChannelMutex.RUnlock()
-	return len(fake.commandErrorChannelArgsForCall)
+func (fake *FakeRunner) WaitCallCount() int {
+	fake.waitMutex.RLock()
+	defer fake.waitMutex.RUnlock()
+	return len(fake.waitArgsForCall)
 }
 
-func (fake *FakeRunner) CommandErrorChannelReturns(result1 chan error) {
-	fake.CommandErrorChannelStub = nil
-	fake.commandErrorChannelReturns = struct {
-		result1 chan error
+func (fake *FakeRunner) WaitReturns(result1 error) {
+	fake.WaitStub = nil
+	fake.waitReturns = struct {
+		result1 error
 	}{result1}
 }
 

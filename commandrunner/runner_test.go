@@ -53,6 +53,8 @@ var _ = Describe("CommandRunner", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		executable = filepath.Join(tmpDir, "healthchecker.sh")
+		scriptText := "echo 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
+		ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
 
 		outbuf = bytes.Buffer{}
 		errbuf = bytes.Buffer{}
@@ -62,18 +64,13 @@ var _ = Describe("CommandRunner", func() {
 		err := os.RemoveAll(tmpDir)
 		Expect(err).ShouldNot(HaveOccurred())
 
-		// err = os.RemoveAll(tmpGoPkg)
-		// Expect(err).ShouldNot(HaveOccurred())
+		err = os.RemoveAll(tmpGoPkg)
+		Expect(err).ShouldNot(HaveOccurred())
 	})
 
 	Describe("Run", func() {
 		JustBeforeEach(func() {
 			r = commandrunner.NewRunner(executable)
-		})
-
-		BeforeEach(func() {
-			scriptText := "echo 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
-			ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
 		})
 
 		It("captures stdout and stderr", func() {
@@ -88,7 +85,8 @@ var _ = Describe("CommandRunner", func() {
 			err := r.Run(&outbuf, &errbuf)
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(r.CommandErrorChannel()).Should(Receive())
+			err = r.Wait()
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("when the script exits with a non-zero code", func() {
@@ -101,7 +99,8 @@ var _ = Describe("CommandRunner", func() {
 				err := r.Run(&outbuf, &errbuf)
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(r.CommandErrorChannel()).Should(Receive(HaveOccurred()))
+				err = r.Wait()
+				Expect(err).To(HaveOccurred())
 			})
 		})
 
@@ -119,10 +118,8 @@ var _ = Describe("CommandRunner", func() {
 				err := r.Run(&outbuf, &errbuf)
 				Expect(err).NotTo(HaveOccurred())
 
-				var received error
-				Eventually(r.CommandErrorChannel()).Should(Receive(&received))
-
-				Expect(received).To(BeNil())
+				err = r.Wait()
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 	})
