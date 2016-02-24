@@ -69,3 +69,15 @@ Tests are triggered on new commits to master by our
   ```
   ./bin/route-registrar -configPath=FILE_PATH_TO_CONFIG_YML --pidFile=PATH_TO_PIDFILE
   ```
+
+
+### Health check
+
+If the `health_check` is not configured for a route, the route is continually
+registered.
+
+If the `health_check` is configured, the script is invoked and the following applies:
+- if the script exits with success, the route is registered.
+- if the script exits with error, the route is unregistered.
+- if a timeout is configured, the script must exit within the timeout,
+  otherwise it is terminated (with `SIGKILL`) and the route is unregistered.
