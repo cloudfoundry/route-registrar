@@ -54,7 +54,9 @@ Tests are triggered on new commits to master by our
       script_path: /path/to/check/script/
       timeout: 1 # optional
   ```
-
+  - routes `name` must be provided and be a string
+  - routes `port` must be provided and must be a positive integer > 1
+  - routes `uris` must be provided and be a non empty array of strings
   - `registration_interval` must be provided and be a string with units (e.g. "20s").
   It must parse to a positive time duration i.e. "-5s" is not permitted.
   - `health_check.timeout` is optional; if it not provided it defaults to half
