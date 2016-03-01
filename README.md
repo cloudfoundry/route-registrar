@@ -7,25 +7,6 @@ This uses [nats-io/nats](https://github.com/nats-io/nats) for connecting to the 
 
 ## Usage
 
-### BOSH release
-
-You can colocate `route-registrar` into any BOSH deployment using https://github.com/cloudfoundry-community/route-registrar-boshrelease BOSH release.
-
-### Executing tests
-
-Tests are triggered on new commits to master by our
-[concourse](https://mega.ci.cf-app.com/pipelines/route-registrar).
-
-1. Install the ginkgo binary with `go get`:
-  ```
-  go get github.com/onsi/ginkgo/ginkgo
-  ```
-
-1. Run tests, by running the following command from root of this reposirtory
-  ```
-  bin/test
-  ```
-
 ### Installation
 1. Run the following command to install route-registrar
   ```
@@ -51,7 +32,7 @@ Tests are triggered on new commits to master by our
     registration_interval: REGISTRATION_INTERVAL
     health_check: # optional
       name: my-healthcheck
-      script_path: /path/to/check/script/
+      script_path: /path/to/check/executable
       timeout: 1 # optional
   ```
   - routes `name` must be provided and be a string
@@ -70,14 +51,59 @@ Tests are triggered on new commits to master by our
   ./bin/route-registrar -configPath=FILE_PATH_TO_CONFIG_YML --pidFile=PATH_TO_PIDFILE
   ```
 
-
 ### Health check
 
 If the `health_check` is not configured for a route, the route is continually
 registered.
 
-If the `health_check` is configured, the script is invoked and the following applies:
-- if the script exits with success, the route is registered.
-- if the script exits with error, the route is unregistered.
-- if a timeout is configured, the script must exit within the timeout,
+If the `health_check` is configured, the executable is invoked and the following applies:
+- if the executable exits with success, the route is registered.
+- if the executable exits with error, the route is unregistered.
+- if a timeout is configured, the executable must exit within the timeout,
   otherwise it is terminated (with `SIGKILL`) and the route is unregistered.
+
+### BOSH release
+
+As this is a job and a package in the [cf-release](https://github.com/cloudfoundry/cf-release)
+BOSH release, it can be colocated with the following manifest changes:
+
+```yaml
+releases:
+- name: cf
+- name: my-release
+
+jobs:
+- name: myJob
+  templates:
+  - name: my-job
+    release: my-release
+  - name: route_registrar
+    release: cf
+  properties:
+    route_registrar:
+      # ...
+      # [ see bosh job spec ]
+
+```
+
+## Development
+
+### Dependencies
+
+Dependencies are saved using [Godep](https://github.com/tools/godep) with `godep save -r` (import path re-writing).
+Just clone the repo to your `GOPATH` and the dependencies should be available.
+
+### Running tests
+
+Tests are triggered on new commits to master by our
+[concourse](https://runtime.ci.cf-app.com/pipelines/route-registrar).
+
+1. Install the ginkgo binary with `go get`:
+  ```
+  go get github.com/onsi/ginkgo/ginkgo
+  ```
+
+1. Run tests, by running the following command from root of this repository
+  ```
+  bin/test
+  ```
