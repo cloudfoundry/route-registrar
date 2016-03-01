@@ -7,8 +7,8 @@ import (
 
 	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/ginkgo"
 	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/gomega"
+	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/gomega/gexec"
 	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
-	"github.com/onsi/gomega/gexec"
 
 	"io/ioutil"
 	"os"
