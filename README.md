@@ -1,13 +1,12 @@
 route-registrar
 ===============
 
-A standalone executable written in golang that continuously broadcasts a route using NATS to the CF router.
+A standalone executable written in golang that continuously broadcasts a routes to the [gorouter](https://github.com/cloudfoundry/gorouter).  This is designed to be a general purpose solution, packaged as a BOSH job to be colocated with components that need to broadcast their routes to the gorouter, so that those components don't need to maintain logic for route registration.
 
-This uses [nats-io/nats](https://github.com/nats-io/nats) for connecting to the NATS bus.
+* CI: [Concourse](https://runtime.ci.cf-app.com/pipelines/route-registrar)
 
 ## Usage
 
-### Installation
 1. Run the following command to install route-registrar
   ```
   go get github.com/cloudfoundry-incubator/route-registrar
@@ -16,35 +15,32 @@ This uses [nats-io/nats](https://github.com/nats-io/nats) for connecting to the 
 1. The route-registrar expects a configuration YAML file like the one below:
   ```yaml
   message_bus_servers:
-  - host: REPLACE_WITH_NATS_URL
-    user: REPLACE_WITH_NATS_USERNAME
-    password: REPLACE_WITH_NATS_PASSWORD
+  - host: NATS_SERVER_HOST
+    user: NATS_SERVER_USERNAME
+    password: NATS_SERVER_PASSWORD
   host: HOSTNAME_OR_IP_OF_ROUTE_DESTINATION
   routes:
   - name: SOME_ROUTE_NAME
-    port: REPLACE_WITH_VM_PORT
+    port: PORT_OF_ROUTE_DESTINATION
     tags:
       optional_tag_field: some_tag_value
       another_tag_field: some_other_value
     uris:
-    - some_uri_for_the_router_should_listen_on
-    - some_other_uri_for_the_router_to_listen_on
-    registration_interval: REGISTRATION_INTERVAL
+    - some_source_uri_for_the_router_to_map_to_the_destination
+    - some_other_source_uri_for_the_router_to_map_to_the_destination
+    registration_interval: REGISTRATION_INTERVAL # required
     health_check: # optional
-      name: my-healthcheck
+      name: HEALTH_CHECK_NAME
       script_path: /path/to/check/executable
-      timeout: 1 # optional
+      timeout: HEALTH_CHECK_TIMEOUT # optional
   ```
-  - routes `name` must be provided and be a string
-  - routes `port` must be provided and must be a positive integer > 1
-  - routes `uris` must be provided and be a non empty array of strings
-  - `registration_interval` must be provided and be a string with units (e.g. "20s").
-  It must parse to a positive time duration i.e. "-5s" is not permitted.
-  - `health_check.timeout` is optional; if it not provided it defaults to half
-  of the value of `registration_interval`
-  If provided, it must be a string with units (e.g. "10s") and be less than
-  the registration interval.
-  It must parse to a positive time duration i.e. "-5s" is not permitted.
+  - `message_bus_servers` is an array of data with location and credentials for the NATS servers; route-registrar currently registers and deregisters routes via NATS messages.
+  - `host` is the destination hostname or IP for the routes being registered.
+  - for each route collection, `name` must be provided and be a string.
+  - for each route collection, `port` must be provided and must be a positive integer > 1.
+  - for each route collection, `uris` must be provided and be a non empty array of strings.  All URIs in a given route collection will be mapped to the same host and port.
+  - for each route collection, `registration_interval` must be provided and be a string with units (e.g. "20s"). It must parse to a positive time duration e.g. "-5s" is not permitted.
+  - for each route collection, `health_check` is optional and explained in more detail below.
 
 1. Run route-registrar binaries using the following command
   ```
@@ -53,18 +49,19 @@ This uses [nats-io/nats](https://github.com/nats-io/nats) for connecting to the 
 
 ### Health check
 
-If the `health_check` is not configured for a route, the route is continually
-registered.
+If the `health_check` is not configured for a route collection, the routes are continually registered according to the `registration_interval`.
 
-If the `health_check` is configured, the executable is invoked and the following applies:
-- if the executable exits with success, the route is registered.
-- if the executable exits with error, the route is unregistered.
+If the `health_check` is configured, the executable provided at `health_check.script_path` is invoked and the following applies:
+- if the executable exits with success, the routes are registered.
+- if the executable exits with error, the routes are deregistered.
 - if a timeout is configured, the executable must exit within the timeout,
-  otherwise it is terminated (with `SIGKILL`) and the route is unregistered.
+  otherwise it is terminated (with `SIGKILL`) and the routes are deregistered.
+- if a timeout is not configured, the executable must exit within half the `registration_interval`,
+  otherwise it is terminated (with `SIGKILL`) and the routes are deregistered.
 
-### BOSH release
+## BOSH release
 
-As this is a job and a package in the [cf-release](https://github.com/cloudfoundry/cf-release)
+This program is packaged as a [job](https://github.com/cloudfoundry/cf-release/tree/master/jobs/route_registrar) and a [package](https://github.com/cloudfoundry/cf-release/tree/master/packages/route_registrar) in the [cf-release](https://github.com/cloudfoundry/cf-release)
 BOSH release, it can be colocated with the following manifest changes:
 
 ```yaml
@@ -94,9 +91,6 @@ Dependencies are saved using [Godep](https://github.com/tools/godep) with `godep
 Just clone the repo to your `GOPATH` and the dependencies should be available.
 
 ### Running tests
-
-Tests are triggered on new commits to master by our
-[concourse](https://runtime.ci.cf-app.com/pipelines/route-registrar).
 
 1. Install the ginkgo binary with `go get`:
   ```
