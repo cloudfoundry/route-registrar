@@ -54,10 +54,8 @@ If the `health_check` is not configured for a route collection, the routes are c
 If the `health_check` is configured, the executable provided at `health_check.script_path` is invoked and the following applies:
 - if the executable exits with success, the routes are registered.
 - if the executable exits with error, the routes are deregistered.
-- if a timeout is configured, the executable must exit within the timeout,
-  otherwise it is terminated (with `SIGKILL`) and the routes are deregistered.
-- if a timeout is not configured, the executable must exit within half the `registration_interval`,
-  otherwise it is terminated (with `SIGKILL`) and the routes are deregistered.
+- if `health_check.timeout` is configured, it must parse to a positive time duration (similar to `registration_interval`), and the executable must exit within the timeout. If the executable does not terminate within the timeout, it is forcibly terminated (with `SIGKILL`) and the routes are deregistered.
+- if `health_check.timeout` is not configured, the executable must exit within half the `registration_interval`. If the executable does not terminate within the timeout, it is forcibly terminated (with `SIGKILL`) and the routes are deregistered.
 
 ## BOSH release
 
