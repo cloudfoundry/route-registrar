@@ -3,7 +3,6 @@ package commandrunner_test
 import (
 	"bytes"
 	"strings"
-	"time"
 
 	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/ginkgo"
 	. "github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/onsi/gomega"
@@ -174,10 +173,12 @@ var _ = Describe("CommandRunner", func() {
 
 				var outbuf, errbuf bytes.Buffer
 				r.Run(&outbuf, &errbuf)
+
+				err := r.Wait()
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("places an error on the errChan", func() {
-				time.Sleep(10 * time.Millisecond) // Give the script time to complete so `kill` returns an error
 				err := r.Kill()
 				Expect(err).To(HaveOccurred())
 			})
