@@ -228,6 +228,11 @@ func healthCheckFromSchema(
 		))
 		return nil, errors
 	}
+
+	if errors.HasAny() {
+		return nil, errors
+	}
+
 	return healthCheck, nil
 }
 

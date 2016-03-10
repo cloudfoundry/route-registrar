@@ -369,6 +369,24 @@ var _ = Describe("Config", func() {
 						"route 'route-0' has a healthcheck with no script_path",
 					))
 				})
+
+				Context("and there is a valid timeout", func() {
+					BeforeEach(func() {
+						configSchema.Routes[0].HealthCheck.Timeout = "1s"
+					})
+
+					It("returns an error", func() {
+						c, err := configSchema.ToConfig()
+						Expect(c).To(BeNil())
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring(
+							"route 'route-0' has a healthcheck with no name",
+						))
+						Expect(err.Error()).To(ContainSubstring(
+							"route 'route-0' has a healthcheck with no script_path",
+						))
+					})
+				})
 			})
 
 			Context("The healthcheck timeout is zero", func() {
