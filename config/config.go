@@ -201,10 +201,11 @@ func healthCheckFromSchema(
 	}
 
 	if healthCheckSchema.Timeout == "" && registrationInterval > 0 {
-		healthCheck.Timeout = registrationInterval / 2
 		if errors.HasAny() {
-			return healthCheck, errors
+			return nil, errors
 		}
+
+		healthCheck.Timeout = registrationInterval / 2
 		return healthCheck, nil
 	}
 

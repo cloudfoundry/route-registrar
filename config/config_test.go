@@ -352,6 +352,52 @@ var _ = Describe("Config", func() {
 				}
 			})
 
+			Context("when there is an error with either name or script path and timeout is valid", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.Name = ""
+					configSchema.Routes[0].HealthCheck.Timeout = "1s"
+				})
+
+				It("still returns the error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring(
+						"route 'route-0' has a healthcheck with no name",
+					))
+				})
+			})
+
+			Context("when the name is empty", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.Name = ""
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring(
+						"route 'route-0' has a healthcheck with no name",
+					))
+				})
+			})
+
+			Context("when the script path is empty", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].HealthCheck.ScriptPath = ""
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring(
+						"route 'route-0' has a healthcheck with no script_path",
+					))
+				})
+			})
+
 			Context("when the healthcheck has multiple errors", func() {
 				BeforeEach(func() {
 					configSchema.Routes[0].HealthCheck.Name = ""
@@ -368,24 +414,6 @@ var _ = Describe("Config", func() {
 					Expect(err.Error()).To(ContainSubstring(
 						"route 'route-0' has a healthcheck with no script_path",
 					))
-				})
-
-				Context("and there is a valid timeout", func() {
-					BeforeEach(func() {
-						configSchema.Routes[0].HealthCheck.Timeout = "1s"
-					})
-
-					It("returns an error", func() {
-						c, err := configSchema.ToConfig()
-						Expect(c).To(BeNil())
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring(
-							"route 'route-0' has a healthcheck with no name",
-						))
-						Expect(err.Error()).To(ContainSubstring(
-							"route 'route-0' has a healthcheck with no script_path",
-						))
-					})
 				})
 			})
 
