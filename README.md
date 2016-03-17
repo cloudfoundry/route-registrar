@@ -3,7 +3,7 @@ route-registrar
 
 A standalone executable written in golang that continuously broadcasts a routes to the [gorouter](https://github.com/cloudfoundry/gorouter).  This is designed to be a general purpose solution, packaged as a BOSH job to be colocated with components that need to broadcast their routes to the gorouter, so that those components don't need to maintain logic for route registration.
 
-* CI: [Concourse](https://runtime.ci.cf-app.com/pipelines/route-registrar)
+* CI: [Concourse](https://cf-routing.ci.cf-app.com/pipelines/route-registrar)
 
 ## Usage
 
