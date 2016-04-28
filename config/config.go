@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -31,6 +32,7 @@ type RouteSchema struct {
 	Port                 *int               `yaml:"port"`
 	Tags                 map[string]string  `yaml:"tags"`
 	URIs                 []string           `yaml:"uris"`
+	RouteServiceUrl      string             `yaml:"route_service_url"`
 	RegistrationInterval string             `yaml:"registration_interval,omitempty"`
 	HealthCheck          *HealthCheckSchema `yaml:"health_check,omitempty"`
 }
@@ -58,6 +60,7 @@ type Route struct {
 	Port                 int
 	Tags                 map[string]string
 	URIs                 []string
+	RouteServiceUrl      string
 	RegistrationInterval time.Duration
 	HealthCheck          *HealthCheck
 }
@@ -153,6 +156,11 @@ func routeFromSchema(r RouteSchema) (*Route, error) {
 		}
 	}
 
+	_, err := url.Parse(r.RouteServiceUrl)
+	if err != nil {
+		errors.Add(err)
+	}
+
 	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval)
 	if err != nil {
 		errors.Add(err)
@@ -175,6 +183,7 @@ func routeFromSchema(r RouteSchema) (*Route, error) {
 		Port:                 *r.Port,
 		Tags:                 r.Tags,
 		URIs:                 r.URIs,
+		RouteServiceUrl:      r.RouteServiceUrl,
 		RegistrationInterval: registrationInterval,
 		HealthCheck:          healthCheck,
 	}

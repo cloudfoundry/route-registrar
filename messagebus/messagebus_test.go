@@ -109,10 +109,11 @@ var _ = Describe("Messagebus test Suite", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			route = config.Route{
-				Name: "some_name",
-				Port: 12345,
-				URIs: []string{"uri1", "uri2"},
-				Tags: map[string]string{"tag1": "val1", "tag2": "val2"},
+				Name:            "some_name",
+				Port:            12345,
+				URIs:            []string{"uri1", "uri2"},
+				RouteServiceUrl: "https://rs.example.com",
+				Tags:            map[string]string{"tag1": "val1", "tag2": "val2"},
 			}
 		})
 
@@ -135,10 +136,11 @@ var _ = Describe("Messagebus test Suite", func() {
 			Eventually(registered).Should(Receive(&receivedMessage))
 
 			expectedRegistryMessage := messagebus.Message{
-				URIs: route.URIs,
-				Host: host,
-				Port: route.Port,
-				Tags: route.Tags,
+				URIs:            route.URIs,
+				Host:            host,
+				Port:            route.Port,
+				RouteServiceUrl: route.RouteServiceUrl,
+				Tags:            route.Tags,
 			}
 
 			var registryMessage messagebus.Message
@@ -147,6 +149,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 			Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
 			Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
+			Expect(registryMessage.RouteServiceUrl).To(Equal(expectedRegistryMessage.RouteServiceUrl))
 			Expect(registryMessage.Tags).To(Equal(expectedRegistryMessage.Tags))
 		})
 

@@ -27,6 +27,7 @@ type Message struct {
 	Host              string            `json:"host"`
 	Port              int               `json:"port"`
 	Tags              map[string]string `json:"tags"`
+	RouteServiceUrl   string            `json:"route_service_url,omitempty"`
 	PrivateInstanceId string            `json:"private_instance_id"`
 }
 
@@ -73,6 +74,7 @@ func (m msgBus) SendMessage(subject string, host string, route config.Route, pri
 		Host:              host,
 		Port:              route.Port,
 		Tags:              route.Tags,
+		RouteServiceUrl:   route.RouteServiceUrl,
 		PrivateInstanceId: privateInstanceId,
 	}
 

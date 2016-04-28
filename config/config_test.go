@@ -110,6 +110,32 @@ var _ = Describe("Config", func() {
 		})
 
 		Describe("Routes", func() {
+			Context("when config input includes route_service_url", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].RouteServiceUrl = "https://rs.example.com"
+					configSchema.Routes[1].RouteServiceUrl = "https://rs.example.com"
+				})
+
+				It("includes them in the config", func() {
+					c, err := configSchema.ToConfig()
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(c.Routes[0].RouteServiceUrl).Should(Equal(configSchema.Routes[0].RouteServiceUrl))
+					Expect(c.Routes[1].RouteServiceUrl).Should(Equal(configSchema.Routes[1].RouteServiceUrl))
+				})
+
+				Context("and the route_service_url is not a valid URI", func() {
+					BeforeEach(func() {
+						configSchema.Routes[0].RouteServiceUrl = "ht%tp://rs.example.com"
+					})
+
+					It("returns an error", func() {
+						_, err := configSchema.ToConfig()
+						Expect(err).To(HaveOccurred())
+					})
+				})
+			})
+
 			Context("when the config input includes tags", func() {
 				BeforeEach(func() {
 					configSchema.Routes[0].Tags = map[string]string{"key": "value"}
