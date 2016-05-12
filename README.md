@@ -28,6 +28,7 @@ A standalone executable written in golang that continuously broadcasts a routes 
     uris:
     - some_source_uri_for_the_router_to_map_to_the_destination
     - some_other_source_uri_for_the_router_to_map_to_the_destination
+    route_service_url: https://route-service.example.com
     registration_interval: REGISTRATION_INTERVAL # required
     health_check: # optional
       name: HEALTH_CHECK_NAME
@@ -40,6 +41,7 @@ A standalone executable written in golang that continuously broadcasts a routes 
   - for each route collection, `port` must be provided and must be a positive integer > 1.
   - for each route collection, `uris` must be provided and be a non empty array of strings.  All URIs in a given route collection will be mapped to the same host and port.
   - for each route collection, `registration_interval` must be provided and be a string with units (e.g. "20s"). It must parse to a positive time duration e.g. "-5s" is not permitted.
+  - for each route collection, `route_service_url` is optional and enables the component to register a route service for that route.  
   - for each route collection, `health_check` is optional and explained in more detail below.
 
 1. Run route-registrar binaries using the following command
