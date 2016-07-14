@@ -3,6 +3,7 @@ package messagebus
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/nats-io/nats"
 	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/pivotal-golang/lager"
@@ -54,7 +55,7 @@ func (m *msgBus) Connect(servers []config.MessageBusServer) error {
 
 	opts := nats.DefaultOptions
 	opts.Servers = natsServers
-
+	opts.PingInterval = 30 * time.Second
 	natsConn, err := opts.Connect()
 
 	if err != nil {
