@@ -4,14 +4,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/nu7hatch/gouuid"
+	"github.com/nu7hatch/gouuid"
 	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
 	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 
-	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/pivotal-golang/lager"
+	"github.com/pivotal-golang/lager"
 )
 
 type Registrar interface {

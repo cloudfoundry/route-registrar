@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cloudfoundry-incubator/route-registrar/Godeps/_workspace/src/github.com/cloudfoundry/multierror"
+	"github.com/cloudfoundry/multierror"
 )
 
 type MessageBusServerSchema struct {
