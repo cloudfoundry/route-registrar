@@ -94,8 +94,8 @@ jobs:
 
 ### Dependencies
 
-Dependencies are saved using [Godep](https://github.com/tools/godep) with `godep save -r` (import path re-writing).
-Just clone the repo to your `GOPATH` and the dependencies should be available.
+Dependencies are saved using the [routing-release](https://github.com/cloudfoundry-incubator/routing-release).
+Just clone the repo and set the `GOPATH` to the routing release directory.
 
 ### Running tests
 
