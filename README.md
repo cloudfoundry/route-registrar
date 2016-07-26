@@ -7,8 +7,15 @@ A standalone executable written in golang that continuously broadcasts a routes 
 
 ## Usage
 
-1. Run the following command to install route-registrar
+1. Clone the [routing-release repository](https://github.com/cloudfoundry-incubator/routing-release)
   ```
+  git clone git@github.com:cloudfoundry-incubator/routing-release.git
+  ```
+
+1. Build the route-registrar binary
+  ```
+  cd routing-release
+  source .envrc # or direnv allow
   go get github.com/cloudfoundry-incubator/route-registrar
   ```
 
@@ -41,7 +48,7 @@ A standalone executable written in golang that continuously broadcasts a routes 
   - for each route collection, `port` must be provided and must be a positive integer > 1.
   - for each route collection, `uris` must be provided and be a non empty array of strings.  All URIs in a given route collection will be mapped to the same host and port.
   - for each route collection, `registration_interval` must be provided and be a string with units (e.g. "20s"). It must parse to a positive time duration e.g. "-5s" is not permitted.
-  - for each route collection, `route_service_url` is optional and enables the component to register a route service for that route.  
+  - for each route collection, `route_service_url` is optional and enables the component to register a route service for that route.
   - for each route collection, `health_check` is optional and explained in more detail below.
 
 1. Run route-registrar binaries using the following command
@@ -61,12 +68,12 @@ If the `health_check` is configured, the executable provided at `health_check.sc
 
 ## BOSH release
 
-This program is packaged as a [job](https://github.com/cloudfoundry/cf-release/tree/master/jobs/route_registrar) and a [package](https://github.com/cloudfoundry/cf-release/tree/master/packages/route_registrar) in the [cf-release](https://github.com/cloudfoundry/cf-release)
+This program is packaged as a [job](https://github.com/cloudfoundry-incubator/routing-release/tree/master/jobs/route_registrar) and a [package](https://github.com/cloudfoundry-incubator/routing-release/tree/master/packages/route_registrar) in the [routing-release](https://github.com/cloudfoundry-incubator/routing-release)
 BOSH release, it can be colocated with the following manifest changes:
 
 ```yaml
 releases:
-- name: cf
+- name: routing
 - name: my-release
 
 jobs:
@@ -75,7 +82,7 @@ jobs:
   - name: my-job
     release: my-release
   - name: route_registrar
-    release: cf
+    release: routing
   properties:
     route_registrar:
       # ...
