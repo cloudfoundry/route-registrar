@@ -2,6 +2,8 @@ package config_test
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/cloudfoundry-incubator/route-registrar/config"
@@ -69,6 +71,49 @@ var _ = Describe("Config", func() {
 			},
 			Host: "127.0.0.1",
 		}
+	})
+
+	Describe("NewConfigSchemaFromFile", func() {
+		It("returns a valid config", func() {
+			cfg_file := "../example_config/example.yml"
+			cfg, err := config.NewConfigSchemaFromFile(cfg_file)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg).To(Equal(configSchema))
+		})
+
+		Context("when the file does not exists", func() {
+			It("returns an error", func() {
+				cfg_file := "notexist"
+				_, err := config.NewConfigSchemaFromFile(cfg_file)
+
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when the config is invalid", func() {
+			var (
+				configFile *os.File
+			)
+
+			BeforeEach(func() {
+				var err error
+				configFile, err = ioutil.TempFile("", "route-registrar-config")
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = configFile.Write([]byte("invalid yaml %^&#"))
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				os.Remove(configFile.Name())
+			})
+
+			It("returns an error", func() {
+				_, err := config.NewConfigSchemaFromFile(configFile.Name())
+				Expect(err).To(HaveOccurred())
+			})
+		})
 	})
 
 	Describe("ToConfig", func() {

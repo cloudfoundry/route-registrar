@@ -10,23 +10,22 @@ import (
 	"syscall"
 
 	"github.com/cloudfoundry-incubator/cf-lager"
-	"github.com/pivotal-cf-experimental/service-config"
-	"github.com/pivotal-golang/lager"
-	"github.com/tedsuo/ifrit"
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 	"github.com/cloudfoundry-incubator/route-registrar/registrar"
+	"github.com/pivotal-golang/lager"
+	"github.com/tedsuo/ifrit"
 )
 
 func main() {
+	var configPath string
 	flags := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 	pidfile := flags.String("pidfile", "", "Path to pid file")
 	cf_lager.AddFlags(flags)
 
-	serviceConfig := service_config.New()
-	serviceConfig.AddFlags(flags)
+	flags.StringVar(&configPath, "configPath", "", "path to configuration file with json encoded content")
 	flags.Set("configPath", "registrar_settings.yml")
 
 	flags.Parse(os.Args[1:])
@@ -35,8 +34,7 @@ func main() {
 
 	logger.Info("Initializing")
 
-	var configSchema config.ConfigSchema
-	err := serviceConfig.Read(&configSchema)
+	configSchema, err := config.NewConfigSchemaFromFile(configPath)
 	if err != nil {
 		logger.Fatal("error parsing file: %s\n", err)
 	}

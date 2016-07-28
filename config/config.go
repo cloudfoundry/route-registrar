@@ -2,9 +2,12 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"strconv"
 	"time"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/cloudfoundry/multierror"
 )
@@ -63,6 +66,22 @@ type Route struct {
 	RouteServiceUrl      string
 	RegistrationInterval time.Duration
 	HealthCheck          *HealthCheck
+}
+
+func NewConfigSchemaFromFile(configFile string) (ConfigSchema, error) {
+	var config ConfigSchema
+
+	c, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return ConfigSchema{}, err
+	}
+
+	err = yaml.Unmarshal(c, &config)
+	if err != nil {
+		return ConfigSchema{}, err
+	}
+
+	return config, nil
 }
 
 func (c ConfigSchema) ToConfig() (*Config, error) {
