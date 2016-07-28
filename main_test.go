@@ -10,7 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cloudfoundry-incubator/candiedyaml"
+	"gopkg.in/yaml.v2"
+
 	"github.com/cloudfoundry-incubator/route-registrar/config"
 	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 	"github.com/nats-io/nats"
@@ -274,7 +275,9 @@ func writeConfig() {
 	fileToWrite, err := os.Create(configFile)
 	Expect(err).ShouldNot(HaveOccurred())
 
-	encoder := candiedyaml.NewEncoder(fileToWrite)
-	err = encoder.Encode(rootConfig)
+	data, err := yaml.Marshal(rootConfig)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	_, err = fileToWrite.Write(data)
 	Expect(err).ShouldNot(HaveOccurred())
 }
