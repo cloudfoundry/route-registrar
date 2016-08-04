@@ -3,6 +3,8 @@ route-registrar
 
 A standalone executable written in golang that continuously broadcasts a routes to the [gorouter](https://github.com/cloudfoundry/gorouter).  This is designed to be a general purpose solution, packaged as a BOSH job to be colocated with components that need to broadcast their routes to the gorouter, so that those components don't need to maintain logic for route registration.
 
+**Note**: This repository should be imported as `code.cloudfoundry.org/route-registrar`.
+
 * CI: [Concourse](https://cf-routing.ci.cf-app.com/pipelines/route-registrar)
 
 ## Usage
@@ -16,7 +18,7 @@ A standalone executable written in golang that continuously broadcasts a routes 
   ```
   cd routing-release
   source .envrc # or direnv allow
-  go get github.com/cloudfoundry-incubator/route-registrar
+  go get code.cloudfoundry.org/route-registrar
   ```
 
 1. The route-registrar expects a configuration YAML file like the one below:
