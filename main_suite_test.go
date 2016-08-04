@@ -5,17 +5,17 @@ import (
 	"os"
 	"path/filepath"
 
+	"code.cloudfoundry.org/route-registrar/config"
 	. "github.com/onsi/ginkgo"
 	gconfig "github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	"github.com/cloudfoundry-incubator/route-registrar/config"
 
 	"testing"
 )
 
 const (
-	routeRegistrarPackage = "github.com/cloudfoundry-incubator/route-registrar/"
+	routeRegistrarPackage = "code.cloudfoundry.org/route-registrar/"
 )
 
 var (

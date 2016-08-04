@@ -11,11 +11,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"code.cloudfoundry.org/route-registrar/config"
+	"code.cloudfoundry.org/route-registrar/messagebus"
 	"github.com/nats-io/nats"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
-	"github.com/cloudfoundry-incubator/route-registrar/config"
-	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 )
 
 var _ = Describe("Messagebus test Suite", func() {

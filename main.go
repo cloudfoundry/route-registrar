@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"syscall"
 
+	"code.cloudfoundry.org/route-registrar/config"
+	"code.cloudfoundry.org/route-registrar/healthchecker"
+	"code.cloudfoundry.org/route-registrar/messagebus"
+	"code.cloudfoundry.org/route-registrar/registrar"
 	"github.com/cloudfoundry-incubator/cf-lager"
-	"github.com/cloudfoundry-incubator/route-registrar/config"
-	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
-	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
-	"github.com/cloudfoundry-incubator/route-registrar/registrar"
 	"github.com/pivotal-golang/lager"
 	"github.com/tedsuo/ifrit"
 )

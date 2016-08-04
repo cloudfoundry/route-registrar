@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"code.cloudfoundry.org/route-registrar/config"
 	"github.com/nats-io/nats"
 	"github.com/pivotal-golang/lager"
-	"github.com/cloudfoundry-incubator/route-registrar/config"
 )
 
 //go:generate counterfeiter . MessageBus

@@ -4,12 +4,12 @@ import (
 	"os"
 	"time"
 
+	"code.cloudfoundry.org/route-registrar/commandrunner"
+	"code.cloudfoundry.org/route-registrar/messagebus"
 	"github.com/nu7hatch/gouuid"
-	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
-	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
 
-	"github.com/cloudfoundry-incubator/route-registrar/config"
-	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
+	"code.cloudfoundry.org/route-registrar/config"
+	"code.cloudfoundry.org/route-registrar/healthchecker"
 
 	"github.com/pivotal-golang/lager"
 )

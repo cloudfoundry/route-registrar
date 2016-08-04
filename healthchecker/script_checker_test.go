@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"code.cloudfoundry.org/route-registrar/commandrunner/fakes"
+	"code.cloudfoundry.org/route-registrar/healthchecker"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"github.com/cloudfoundry-incubator/route-registrar/commandrunner/fakes"
-	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
 
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"

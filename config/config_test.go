@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/cloudfoundry-incubator/route-registrar/config"
+	"code.cloudfoundry.org/route-registrar/config"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

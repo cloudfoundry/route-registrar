@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"sync"
 
-	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
+	"code.cloudfoundry.org/route-registrar/commandrunner"
 )
 
 type FakeRunner struct {
@@ -21,13 +21,13 @@ type FakeRunner struct {
 	WaitStub        func() error
 	waitMutex       sync.RWMutex
 	waitArgsForCall []struct{}
-	waitReturns struct {
+	waitReturns     struct {
 		result1 error
 	}
 	KillStub        func() error
 	killMutex       sync.RWMutex
 	killArgsForCall []struct{}
-	killReturns struct {
+	killReturns     struct {
 		result1 error
 	}
 }

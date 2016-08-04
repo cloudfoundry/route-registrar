@@ -10,13 +10,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"code.cloudfoundry.org/route-registrar/commandrunner"
+	"code.cloudfoundry.org/route-registrar/config"
+	healthchecker_fakes "code.cloudfoundry.org/route-registrar/healthchecker/fakes"
+	messagebus_fakes "code.cloudfoundry.org/route-registrar/messagebus/fakes"
+	"code.cloudfoundry.org/route-registrar/registrar"
 	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
-	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
-	"github.com/cloudfoundry-incubator/route-registrar/config"
-	healthchecker_fakes "github.com/cloudfoundry-incubator/route-registrar/healthchecker/fakes"
-	messagebus_fakes "github.com/cloudfoundry-incubator/route-registrar/messagebus/fakes"
-	"github.com/cloudfoundry-incubator/route-registrar/registrar"
 )
 
 var _ = Describe("Registrar.RegisterRoutes", func() {

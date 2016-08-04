@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
-	"github.com/cloudfoundry-incubator/route-registrar/healthchecker"
+	"code.cloudfoundry.org/route-registrar/commandrunner"
+	"code.cloudfoundry.org/route-registrar/healthchecker"
 )
 
 type FakeHealthChecker struct {

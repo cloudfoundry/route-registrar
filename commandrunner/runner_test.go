@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"strings"
 
+	"code.cloudfoundry.org/route-registrar/commandrunner"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
-	"github.com/cloudfoundry-incubator/route-registrar/commandrunner"
 
 	"io/ioutil"
 	"os"

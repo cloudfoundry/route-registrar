@@ -4,8 +4,8 @@ package fakes
 import (
 	"sync"
 
-	"github.com/cloudfoundry-incubator/route-registrar/config"
-	"github.com/cloudfoundry-incubator/route-registrar/messagebus"
+	"code.cloudfoundry.org/route-registrar/config"
+	"code.cloudfoundry.org/route-registrar/messagebus"
 )
 
 type FakeMessageBus struct {
