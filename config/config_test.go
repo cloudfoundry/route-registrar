@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("Config", func() {
@@ -252,7 +253,9 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 'route-0' has no registration_interval"))
+					buf := gbytes.BufferWithBytes([]byte(err.Error()))
+					Expect(buf).To(gbytes.Say(`error with 'route "route-0"'`))
+					Expect(buf).To(gbytes.Say("no registration_interval"))
 				})
 			})
 
@@ -265,9 +268,9 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has invalid registration_interval: interval must be greater than 0",
-					))
+					buf := gbytes.BufferWithBytes([]byte(err.Error()))
+					Expect(buf).To(gbytes.Say(`error with 'route "route-0"'`))
+					Expect(buf).To(gbytes.Say("invalid registration_interval: interval must be greater than 0"))
 				})
 			})
 
@@ -279,9 +282,9 @@ var _ = Describe("Config", func() {
 				It("returns an error", func() {
 					_, err := configSchema.ToConfig()
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has invalid registration_interval: interval must be greater than 0",
-					))
+					buf := gbytes.BufferWithBytes([]byte(err.Error()))
+					Expect(buf).To(gbytes.Say(`error with 'route "route-0"'`))
+					Expect(buf).To(gbytes.Say("invalid registration_interval: interval must be greater than 0"))
 				})
 			})
 
@@ -294,9 +297,8 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has invalid registration_interval: time: missing unit in duration 1",
-					))
+					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
+					Expect(err.Error()).To(ContainSubstring("registration_interval: time: missing unit in duration 1"))
 				})
 			})
 
@@ -309,9 +311,8 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has invalid registration_interval: time: invalid duration asdf",
-					))
+					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
+					Expect(err.Error()).To(ContainSubstring("invalid registration_interval: time: invalid duration asdf"))
 				})
 			})
 		})
@@ -326,7 +327,8 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 0 has no name"))
+					Expect(err.Error()).To(ContainSubstring("route 0"))
+					Expect(err.Error()).To(ContainSubstring("no name"))
 				})
 			})
 		})
@@ -341,7 +343,8 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 'route-0' has no port"))
+					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
+					Expect(err.Error()).To(ContainSubstring("no port"))
 				})
 			})
 
@@ -355,7 +358,8 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 'route-0' has invalid port: 0"))
+					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
+					Expect(err.Error()).To(ContainSubstring("invalid port: 0"))
 				})
 			})
 
@@ -369,7 +373,8 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 'route-0' has invalid port: -1"))
+					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
+					Expect(err.Error()).To(ContainSubstring("invalid port: -1"))
 				})
 			})
 		})
@@ -384,7 +389,8 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 'route-0' has no URIs"))
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("* no URIs"))
 				})
 			})
 
@@ -397,7 +403,8 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 'route-0' has no URIs"))
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("* no URIs"))
 				})
 			})
 
@@ -410,7 +417,8 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 'route-0' has empty URIs"))
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("* empty URIs"))
 				})
 			})
 		})
@@ -433,9 +441,9 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has a healthcheck with no name",
-					))
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("error with 'healthcheck'"))
+					Expect(err.Error()).To(ContainSubstring("* no name"))
 				})
 			})
 
@@ -448,9 +456,9 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has a healthcheck with no name",
-					))
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("error with 'healthcheck'"))
+					Expect(err.Error()).To(ContainSubstring("* no name"))
 				})
 			})
 
@@ -463,9 +471,9 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has a healthcheck with no script_path",
-					))
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("error with 'healthcheck'"))
+					Expect(err.Error()).To(ContainSubstring("* no script_path"))
 				})
 			})
 
@@ -479,12 +487,10 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has a healthcheck with no name",
-					))
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has a healthcheck with no script_path",
-					))
+					Expect(err.Error()).To(ContainSubstring(`2 errors with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("2 errors with 'healthcheck'"))
+					Expect(err.Error()).To(ContainSubstring("* no name"))
+					Expect(err.Error()).To(ContainSubstring("* no script_path"))
 				})
 			})
 
@@ -497,9 +503,9 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has invalid healthcheck timeout",
-					))
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("error with 'healthcheck'"))
+					Expect(err.Error()).To(ContainSubstring("invalid healthcheck timeout"))
 				})
 			})
 
@@ -511,9 +517,9 @@ var _ = Describe("Config", func() {
 				It("returns an error", func() {
 					_, err := configSchema.ToConfig()
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has invalid healthcheck timeout: -1s",
-					))
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("error with 'healthcheck'"))
+					Expect(err.Error()).To(ContainSubstring("invalid healthcheck timeout: -1s"))
 				})
 			})
 
@@ -526,9 +532,9 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(
-						"route 'route-0' has invalid healthcheck timeout: time: missing unit in duration 1",
-					))
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("error with 'healthcheck'"))
+					Expect(err.Error()).To(ContainSubstring("invalid healthcheck timeout: time: missing unit"))
 				})
 			})
 
@@ -541,9 +547,11 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(err).To(HaveOccurred())
 					Expect(c).To(BeNil())
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("error with 'healthcheck'"))
 					Expect(err.Error()).To(ContainSubstring(
 						fmt.Sprintf(
-							"route 'route-0' has invalid healthcheck timeout: %s must be less than the registration interval: %s",
+							"invalid healthcheck timeout: %s must be less than the registration interval: %s",
 							configSchema.Routes[0].HealthCheck.Timeout,
 							configSchema.Routes[0].RegistrationInterval,
 						),
@@ -560,9 +568,11 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(err).To(HaveOccurred())
 					Expect(c).To(BeNil())
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("error with 'healthcheck'"))
 					Expect(err.Error()).To(ContainSubstring(
 						fmt.Sprintf(
-							"route 'route-0' has invalid healthcheck timeout: %s must be less than the registration interval: %s",
+							"invalid healthcheck timeout: %s must be less than the registration interval: %s",
 							configSchema.Routes[0].HealthCheck.Timeout,
 							configSchema.Routes[0].RegistrationInterval,
 						),
@@ -579,7 +589,9 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 'route-0' has invalid healthcheck timeout: time: invalid duration asdf"))
+					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
+					Expect(err.Error()).To(ContainSubstring("error with 'healthcheck'"))
+					Expect(err.Error()).To(ContainSubstring("invalid healthcheck timeout: time: invalid duration"))
 				})
 			})
 		})
@@ -628,19 +640,22 @@ var _ = Describe("Config", func() {
 				c, err := configSchema.ToConfig()
 				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(HavePrefix("encountered 6 errors during validation"))
+				Expect(err.Error()).To(HavePrefix("there were 6 errors with 'config'"))
 			})
 
 			It("aggregates the errors", func() {
 				c, err := configSchema.ToConfig()
 				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("host required"))
-				Expect(err.Error()).To(ContainSubstring("message_bus_servers must have at least one entry"))
-				Expect(err.Error()).To(ContainSubstring("route 0 has no registration_interval"))
-				Expect(err.Error()).To(ContainSubstring("route 0 has no name"))
-				Expect(err.Error()).To(ContainSubstring("route 1 has no registration_interval"))
-				Expect(err.Error()).To(ContainSubstring("route 1 has no name"))
+				buf := gbytes.BufferWithBytes([]byte(err.Error()))
+				Expect(buf).To(gbytes.Say("host required"))
+				Expect(buf).To(gbytes.Say("message_bus_servers must have at least one entry"))
+				Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 0'`))
+				Expect(buf).To(gbytes.Say("no name"))
+				Expect(buf).To(gbytes.Say("no registration_interval"))
+				Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
+				Expect(buf).To(gbytes.Say("no name"))
+				Expect(buf).To(gbytes.Say("no registration_interval"))
 			})
 
 			Context("when a registration interval is unparseable", func() {
@@ -652,8 +667,10 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 1 has invalid registration_interval: time: invalid duration asdf"))
-					Expect(err.Error()).NotTo(ContainSubstring("route 0 has invalid registration_interval: time: invalid duration"))
+					buf := gbytes.BufferWithBytes([]byte(err.Error()))
+					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 0'`))
+					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
+					Expect(buf).To(gbytes.Say("invalid registration_interval: time: invalid duration"))
 				})
 			})
 
@@ -666,8 +683,10 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 1 has invalid registration_interval: time: missing unit in duration 10"))
-					Expect(err.Error()).NotTo(ContainSubstring("route 0 has invalid registration_interval: time: missing unit in duration 10"))
+					buf := gbytes.BufferWithBytes([]byte(err.Error()))
+					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 0'`))
+					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
+					Expect(buf).To(gbytes.Say("invalid registration_interval: time: missing unit in duration 10"))
 				})
 			})
 
@@ -680,10 +699,10 @@ var _ = Describe("Config", func() {
 					c, err := configSchema.ToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("route 1 has invalid registration_interval: interval must be greater than 0"))
-					Expect(err.Error()).NotTo(ContainSubstring("route 0 has invalid registration_interval: interval must be greater than 0"))
+					buf := gbytes.BufferWithBytes([]byte(err.Error()))
+					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
+					Expect(buf).To(gbytes.Say("invalid registration_interval: interval must be greater than 0"))
 				})
-
 			})
 
 			Context("and there is a healthcheck", func() {
@@ -710,8 +729,10 @@ var _ = Describe("Config", func() {
 							c, err := configSchema.ToConfig()
 							Expect(c).To(BeNil())
 							Expect(err).To(HaveOccurred())
-							Expect(err.Error()).To(ContainSubstring(fmt.Sprintf(
-								"route 1 has invalid healthcheck timeout: %s must be less than the registration interval",
+							buf := gbytes.BufferWithBytes([]byte(err.Error()))
+							Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
+							Expect(buf).To(gbytes.Say(fmt.Sprintf(
+								"invalid healthcheck timeout: %s must be less than the registration interval",
 								timeoutString,
 							)))
 						})
@@ -727,9 +748,9 @@ var _ = Describe("Config", func() {
 						c, err := configSchema.ToConfig()
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring(
-							"route 1 has invalid healthcheck timeout: 0",
-						))
+						buf := gbytes.BufferWithBytes([]byte(err.Error()))
+						Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
+						Expect(buf).To(gbytes.Say("invalid healthcheck timeout: 0"))
 					})
 				})
 
@@ -744,8 +765,10 @@ var _ = Describe("Config", func() {
 						c, err := configSchema.ToConfig()
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring(fmt.Sprintf(
-							"route 1 has invalid healthcheck timeout: %s",
+						buf := gbytes.BufferWithBytes([]byte(err.Error()))
+						Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
+						Expect(buf).To(gbytes.Say(fmt.Sprintf(
+							"invalid healthcheck timeout: %s",
 							timeoutString,
 						)))
 					})
@@ -779,9 +802,9 @@ var _ = Describe("Config", func() {
 						c, err := configSchema.ToConfig()
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring(
-							"route 1 has invalid healthcheck timeout: time: invalid duration",
-						))
+						buf := gbytes.BufferWithBytes([]byte(err.Error()))
+						Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
+						Expect(buf).To(gbytes.Say("invalid healthcheck timeout: time: invalid duration"))
 					})
 				})
 
@@ -796,8 +819,10 @@ var _ = Describe("Config", func() {
 						c, err := configSchema.ToConfig()
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(ContainSubstring(fmt.Sprintf(
-							"route 1 has invalid healthcheck timeout: time: invalid duration %s",
+						buf := gbytes.BufferWithBytes([]byte(err.Error()))
+						Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
+						Expect(buf).To(gbytes.Say(fmt.Sprintf(
+							"invalid healthcheck timeout: time: invalid duration %s",
 							timeoutString,
 						)))
 					})

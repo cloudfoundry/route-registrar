@@ -9,7 +9,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/cloudfoundry/multierror"
+	"code.cloudfoundry.org/multierror"
 )
 
 type MessageBusServerSchema struct {
@@ -85,7 +85,7 @@ func NewConfigSchemaFromFile(configFile string) (ConfigSchema, error) {
 }
 
 func (c ConfigSchema) ToConfig() (*Config, error) {
-	errors := multierror.MultiError{}
+	errors := multierror.NewMultiError("config")
 
 	if c.Host == "" {
 		errors.Add(fmt.Errorf("host required"))
@@ -95,22 +95,18 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 	if err != nil {
 		errors.Add(err)
 	}
-
 	routes := []Route{}
 	for index, r := range c.Routes {
-		route, err := routeFromSchema(r)
+		route, err := routeFromSchema(r, index)
 		if err != nil {
-			errors.AddWithPrefix(
-				err,
-				fmt.Sprintf("route %s has ", nameOrIndex(r, index)),
-			)
+			errors.Add(err)
 			continue
 		}
 
 		routes = append(routes, *route)
 	}
 
-	if errors.HasAny() {
+	if errors.Length() > 0 {
 		return nil, errors
 	}
 
@@ -125,7 +121,7 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 
 func nameOrIndex(r RouteSchema, index int) string {
 	if r.Name != "" {
-		return fmt.Sprintf("'%s'", r.Name)
+		return fmt.Sprintf(`"%s"`, r.Name)
 	}
 
 	return strconv.Itoa(index)
@@ -151,8 +147,8 @@ func parseRegistrationInterval(registrationInterval string) (time.Duration, erro
 	return duration, nil
 }
 
-func routeFromSchema(r RouteSchema) (*Route, error) {
-	errors := multierror.MultiError{}
+func routeFromSchema(r RouteSchema, index int) (*Route, error) {
+	errors := multierror.NewMultiError(fmt.Sprintf("route %s", nameOrIndex(r, index)))
 
 	if r.Name == "" {
 		errors.Add(fmt.Errorf("no name"))
@@ -193,7 +189,7 @@ func routeFromSchema(r RouteSchema) (*Route, error) {
 		}
 	}
 
-	if errors.HasAny() {
+	if errors.Length() > 0 {
 		return nil, errors
 	}
 
@@ -213,7 +209,7 @@ func healthCheckFromSchema(
 	healthCheckSchema *HealthCheckSchema,
 	registrationInterval time.Duration,
 ) (*HealthCheck, error) {
-	errors := multierror.MultiError{}
+	errors := multierror.NewMultiError("healthcheck")
 
 	healthCheck := &HealthCheck{
 		Name:       healthCheckSchema.Name,
@@ -221,15 +217,15 @@ func healthCheckFromSchema(
 	}
 
 	if healthCheck.Name == "" {
-		errors.Add(fmt.Errorf("a healthcheck with no name"))
+		errors.Add(fmt.Errorf("no name"))
 	}
 
 	if healthCheck.ScriptPath == "" {
-		errors.Add(fmt.Errorf("a healthcheck with no script_path"))
+		errors.Add(fmt.Errorf("no script_path"))
 	}
 
 	if healthCheckSchema.Timeout == "" && registrationInterval > 0 {
-		if errors.HasAny() {
+		if errors.Length() > 0 {
 			return nil, errors
 		}
 
@@ -258,7 +254,7 @@ func healthCheckFromSchema(
 		return nil, errors
 	}
 
-	if errors.HasAny() {
+	if errors.Length() > 0 {
 		return nil, errors
 	}
 

@@ -191,7 +191,8 @@ var _ = Describe("Main", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 
 			Eventually(session.Out).Should(gbytes.Say("Initializing"))
-			Eventually(session.Err).Should(gbytes.Say("route 'My route' has invalid registration_interval: time: invalid duration asdf"))
+			Eventually(session.Err).Should(gbytes.Say(`1 error with 'route "My route"'`))
+			Eventually(session.Err).Should(gbytes.Say("registration_interval: time: invalid duration asdf"))
 
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).ToNot(BeZero())
@@ -231,7 +232,7 @@ host: "127.0.0.1"
 			Expect(err).ShouldNot(HaveOccurred())
 
 			Eventually(session.Out).Should(gbytes.Say("Initializing"))
-			Eventually(session.Err).Should(gbytes.Say("encountered 1 error during validation"))
+			Eventually(session.Err).Should(gbytes.Say(`1 error with 'route "My route"'`))
 
 			Eventually(session).Should(gexec.Exit())
 			Expect(session.ExitCode()).ToNot(BeZero())
