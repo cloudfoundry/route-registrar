@@ -77,9 +77,11 @@ var _ = Describe("CommandRunner", func() {
 		It("captures stdout and stderr", func() {
 			err := r.Run(&outbuf, &errbuf)
 			Expect(err).NotTo(HaveOccurred())
+			err = r.Wait()
+			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(outbuf.String).Should(ContainSubstring("my-stdout"))
-			Eventually(errbuf.String).Should(ContainSubstring("my-stderr"))
+			Expect(outbuf.String()).Should(ContainSubstring("my-stdout"))
+			Expect(errbuf.String()).Should(ContainSubstring("my-stderr"))
 		})
 
 		It("runs the command in the background", func() {
