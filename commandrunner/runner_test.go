@@ -46,10 +46,9 @@ var _ = Describe("CommandRunner", func() {
 		gopath := gopathArray[0]
 		Expect(gopath).NotTo(BeEmpty())
 
-		tmpGoPkg = "tmp-foo"
-		tmpGoPkgPath = filepath.Join(gopath, "src", tmpGoPkg)
-		err = os.MkdirAll(tmpGoPkgPath, os.ModePerm)
+		tmpGoPkgPath, err = ioutil.TempDir(filepath.Join(gopath, "src"), "tmp-foo")
 		Expect(err).NotTo(HaveOccurred())
+		tmpGoPkg = filepath.Base(tmpGoPkgPath)
 
 		executable = filepath.Join(tmpDir, "healthchecker.sh")
 		scriptText := "echo 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
@@ -63,10 +62,10 @@ var _ = Describe("CommandRunner", func() {
 
 	AfterEach(func() {
 		err := os.RemoveAll(tmpDir)
-		Expect(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
-		err = os.RemoveAll(tmpGoPkg)
-		Expect(err).ShouldNot(HaveOccurred())
+		err = os.RemoveAll(tmpGoPkgPath)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Describe("Run", func() {
