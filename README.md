@@ -11,7 +11,7 @@ A standalone executable written in golang that continuously broadcasts a routes 
 
 1. Clone the [routing-release repository](https://github.com/cloudfoundry-incubator/routing-release)
   ```
-  git clone git@github.com:cloudfoundry-incubator/routing-release.git
+  git clone --recursive https://github.com/cloudfoundry-incubator/routing-release
   ```
 
 1. Build the route-registrar binary
@@ -19,6 +19,7 @@ A standalone executable written in golang that continuously broadcasts a routes 
   cd routing-release
   source .envrc # or direnv allow
   go get code.cloudfoundry.org/route-registrar
+  ls -la bin/route-registrar
   ```
 
 1. The route-registrar expects a configuration YAML file like the one below:
