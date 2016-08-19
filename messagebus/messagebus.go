@@ -55,7 +55,7 @@ func (m *msgBus) Connect(servers []config.MessageBusServer) error {
 
 	opts := nats.DefaultOptions
 	opts.Servers = natsServers
-	opts.PingInterval = 30 * time.Second
+	opts.PingInterval = 20 * time.Second
 	natsConn, err := opts.Connect()
 
 	if err != nil {
