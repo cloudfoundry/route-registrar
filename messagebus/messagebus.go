@@ -39,14 +39,9 @@ func NewMessageBus(logger lager.Logger) MessageBus {
 }
 
 func (m *msgBus) Connect(servers []config.MessageBusServer) error {
-	m.logger.Debug("Connecting to nats", lager.Data{"servers": servers})
 
 	var natsServers []string
 	for _, server := range servers {
-		m.logger.Info(
-			"Adding NATS server",
-			lager.Data{"server": server},
-		)
 		natsServers = append(
 			natsServers,
 			fmt.Sprintf("nats://%s:%s@%s", server.User, server.Password, server.Host),
