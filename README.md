@@ -56,7 +56,7 @@ A standalone executable written in golang that continuously broadcasts a routes 
 
 1. Run route-registrar binaries using the following command
   ```
-  ./bin/route-registrar -configPath=FILE_PATH_TO_CONFIG_YML --pidFile=PATH_TO_PIDFILE
+  ./bin/route-registrar -configPath FILE_PATH_TO_CONFIG_YML --pidFile PATH_TO_PIDFILE
   ```
 
 ### Health check
