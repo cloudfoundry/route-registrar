@@ -88,7 +88,7 @@ func (m *msgBus) Connect(servers []config.MessageBusServer) error {
 }
 
 func (m msgBus) SendMessage(subject string, host string, route config.Route, privateInstanceId string) error {
-	m.logger.Debug("Creating message", lager.Data{"subject": subject, "host": host, "route": route, "privateInstanceId": privateInstanceId})
+	m.logger.Debug("creating-message", lager.Data{"subject": subject, "host": host, "route": route, "privateInstanceId": privateInstanceId})
 
 	msg := &Message{
 		URIs:              route.URIs,
@@ -105,7 +105,7 @@ func (m msgBus) SendMessage(subject string, host string, route config.Route, pri
 		return err
 	}
 
-	m.logger.Debug("Publishing message", lager.Data{"msg": string(json)})
+	m.logger.Debug("publishing-message", lager.Data{"msg": string(json)})
 
 	return m.natsConn.Publish(subject, json)
 }
