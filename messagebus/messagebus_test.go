@@ -99,14 +99,13 @@ var _ = Describe("Messagebus test Suite", func() {
 				Expect(err).ShouldNot(HaveOccurred())
 			})
 			It("logs a message", func() {
-				Eventually(logger).Should(gbytes.Say(`nats-connection-successfull`))
+				Eventually(logger).Should(gbytes.Say(`nats-connection-successful`))
 				Eventually(logger).Should(gbytes.Say(fmt.Sprintf("%s", natsHost)))
 			})
 		})
 
 		Context("when nats connection closes", func() {
 			BeforeEach(func() {
-				fmt.Println(messageBusServers)
 				err := messageBus.Connect(messageBusServers)
 				Expect(err).ShouldNot(HaveOccurred())
 				messageBus.Close()
@@ -114,7 +113,9 @@ var _ = Describe("Messagebus test Suite", func() {
 
 			It("logs a message", func() {
 				Eventually(logger).Should(gbytes.Say(`nats-connection-disconnected`))
+				Eventually(logger).Should(gbytes.Say(fmt.Sprintf("%s", natsHost)))
 				Eventually(logger).Should(gbytes.Say(`nats-connection-closed`))
+				Eventually(logger).Should(gbytes.Say(fmt.Sprintf("%s", natsHost)))
 			})
 		})
 	})

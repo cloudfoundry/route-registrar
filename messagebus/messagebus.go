@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sync/atomic"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -21,6 +22,7 @@ type MessageBus interface {
 }
 
 type msgBus struct {
+	natsHost *atomic.Value
 	natsConn *nats.Conn
 	logger   lager.Logger
 }
@@ -36,7 +38,8 @@ type Message struct {
 
 func NewMessageBus(logger lager.Logger) MessageBus {
 	return &msgBus{
-		logger: logger,
+		logger:   logger,
+		natsHost: &atomic.Value{},
 	}
 }
 
@@ -55,11 +58,11 @@ func (m *msgBus) Connect(servers []config.MessageBusServer) error {
 	opts.PingInterval = 20 * time.Second
 
 	opts.ClosedCB = func(conn *nats.Conn) {
-		m.logger.Error("nats-connection-closed", errors.New("unexpected nats conn closed"))
+		m.logger.Error("nats-connection-closed", errors.New("unexpected nats conn closed"), lager.Data{"nats-host": m.natsHost.Load()})
 	}
 
 	opts.DisconnectedCB = func(conn *nats.Conn) {
-		m.logger.Info("nats-connection-disconnected")
+		m.logger.Info("nats-connection-disconnected", lager.Data{"nats-host": m.natsHost.Load()})
 	}
 
 	opts.ReconnectedCB = func(conn *nats.Conn) {
@@ -67,12 +70,13 @@ func (m *msgBus) Connect(servers []config.MessageBusServer) error {
 		if err != nil {
 			m.logger.Error("nats-url-parse-failed", err, lager.Data{"nats-host": natsHost})
 		}
-		m.logger.Info("nats-connection-reconnected", lager.Data{"nats-host": natsHost})
+		m.natsHost.Store(natsHost)
+		m.logger.Info("nats-connection-reconnected", lager.Data{"nats-host": m.natsHost.Load()})
 	}
 
 	natsConn, err := opts.Connect()
 	if err != nil {
-		m.logger.Error("nats-connection-failed", err)
+		m.logger.Error("nats-connection-failed", err, lager.Data{"nats-error": natsConn.LastError()})
 		return err
 	}
 
@@ -81,7 +85,8 @@ func (m *msgBus) Connect(servers []config.MessageBusServer) error {
 		m.logger.Error("nats-url-parse-failed", err, lager.Data{"nats-host": natsHost})
 	}
 
-	m.logger.Info("nats-connection-successfull", lager.Data{"nats-url": natsHost})
+	m.natsHost.Store(natsHost)
+	m.logger.Info("nats-connection-successful", lager.Data{"nats-url": m.natsHost.Load()})
 	m.natsConn = natsConn
 
 	return nil
