@@ -46,11 +46,13 @@ func NewMessageBus(logger lager.Logger) MessageBus {
 func (m *msgBus) Connect(servers []config.MessageBusServer) error {
 
 	var natsServers []string
+	var natsHosts []string
 	for _, server := range servers {
 		natsServers = append(
 			natsServers,
 			fmt.Sprintf("nats://%s:%s@%s", server.User, server.Password, server.Host),
 		)
+		natsHosts = append(natsHosts, server.Host)
 	}
 
 	opts := nats.DefaultOptions
@@ -76,7 +78,7 @@ func (m *msgBus) Connect(servers []config.MessageBusServer) error {
 
 	natsConn, err := opts.Connect()
 	if err != nil {
-		m.logger.Error("nats-connection-failed", err, lager.Data{"nats-error": natsConn.LastError()})
+		m.logger.Error("nats-connection-failed", err, lager.Data{"nats-hosts": natsHosts})
 		return err
 	}
 
@@ -86,7 +88,7 @@ func (m *msgBus) Connect(servers []config.MessageBusServer) error {
 	}
 
 	m.natsHost.Store(natsHost)
-	m.logger.Info("nats-connection-successful", lager.Data{"nats-url": m.natsHost.Load()})
+	m.logger.Info("nats-connection-successful", lager.Data{"nats-host": m.natsHost.Load()})
 	m.natsConn = natsConn
 
 	return nil
