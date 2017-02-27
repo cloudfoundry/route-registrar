@@ -64,7 +64,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			natsPassword,
 		}
 
-		messageBusServers = []config.MessageBusServer{messageBusServer, messageBusServer}
+		messageBusServers = []config.MessageBusServer{messageBusServer}
 
 		messageBus = messagebus.NewMessageBus(logger)
 	})
