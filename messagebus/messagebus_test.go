@@ -56,6 +56,12 @@ var _ = Describe("Messagebus test Suite", func() {
 		opts.Servers = servers
 
 		testSpyClient, err = opts.Connect()
+		// Ensure nats server is listening before tests
+		Eventually(func() string {
+			connStatus := testSpyClient.Status()
+			return fmt.Sprintf("%v", connStatus)
+		}).Should(Equal("1"))
+
 		Expect(err).ShouldNot(HaveOccurred())
 
 		messageBusServer := config.MessageBusServer{
