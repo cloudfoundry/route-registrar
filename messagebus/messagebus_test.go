@@ -60,7 +60,7 @@ var _ = Describe("Messagebus test Suite", func() {
 		Eventually(func() string {
 			connStatus := testSpyClient.Status()
 			return fmt.Sprintf("%v", connStatus)
-		}).Should(Equal("1"))
+		}, 5*time.Second).Should(Equal("1"))
 
 		Expect(err).ShouldNot(HaveOccurred())
 
