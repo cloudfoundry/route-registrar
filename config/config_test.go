@@ -65,7 +65,14 @@ var _ = Describe("Config", func() {
 				},
 				{
 					Name:                 routeName1,
-					Port:                 &port1,
+					TLSPort:              &port1,
+					RegistrationInterval: registrationInterval1String,
+					URIs:                 []string{"my-other-app.my-domain.com"},
+				},
+				{
+					Name:                 routeName1,
+					Port:                 &port0,
+					TLSPort:              &port1,
 					RegistrationInterval: registrationInterval1String,
 					URIs:                 []string{"my-other-app.my-domain.com"},
 				},
@@ -344,6 +351,19 @@ var _ = Describe("Config", func() {
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
+					Expect(err.Error()).To(ContainSubstring("no port"))
+				})
+			})
+			Context("when the port value is not provided", func() {
+				BeforeEach(func() {
+					configSchema.Routes[1].TLSPort = nil
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring(`route "route-1"`))
 					Expect(err.Error()).To(ContainSubstring("no port"))
 				})
 			})

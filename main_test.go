@@ -122,10 +122,11 @@ var _ = Describe("Main", func() {
 		var receivedMessage string
 		Eventually(registered, 10*time.Second).Should(Receive(&receivedMessage))
 
+		i12345 := 12345
 		expectedRegistryMessage := messagebus.Message{
 			URIs: []string{"uri-1", "uri-2"},
 			Host: "127.0.0.1",
-			Port: 12345,
+			Port: &i12345,
 			Tags: map[string]string{"tag1": "val1", "tag2": "val2"},
 		}
 
