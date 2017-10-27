@@ -25,6 +25,7 @@ var _ = Describe("Config", func() {
 
 		routeName0 string
 		routeName1 string
+		routeName2 string
 
 		port0 int
 		port1 int
@@ -39,6 +40,7 @@ var _ = Describe("Config", func() {
 
 		routeName0 = "route-0"
 		routeName1 = "route-1"
+		routeName2 = "route-2"
 
 		port0 = 3000
 		port1 = 3001
@@ -70,7 +72,7 @@ var _ = Describe("Config", func() {
 					URIs:                 []string{"my-other-app.my-domain.com"},
 				},
 				{
-					Name:                 routeName1,
+					Name:                 routeName2,
 					Port:                 &port0,
 					TLSPort:              &port1,
 					RegistrationInterval: registrationInterval1String,
@@ -146,13 +148,20 @@ var _ = Describe("Config", func() {
 				Routes: []config.Route{
 					{
 						Name:                 routeName0,
-						Port:                 port0,
+						Port:                 &port0,
 						RegistrationInterval: registrationInterval0,
 						URIs:                 configSchema.Routes[0].URIs,
 					},
 					{
 						Name:                 routeName1,
-						Port:                 port1,
+						TLSPort:              &port1,
+						RegistrationInterval: registrationInterval1,
+						URIs:                 configSchema.Routes[1].URIs,
+					},
+					{
+						Name:                 routeName2,
+						Port:                 &port0,
+						TLSPort:              &port1,
 						RegistrationInterval: registrationInterval1,
 						URIs:                 configSchema.Routes[1].URIs,
 					},
