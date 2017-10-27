@@ -28,13 +28,14 @@ type msgBus struct {
 }
 
 type Message struct {
-	URIs              []string          `json:"uris"`
-	Host              string            `json:"host"`
-	Port              *int              `json:"port,omitempty"`
-	TLSPort           *int              `json:"tls_port,omitempty"`
-	Tags              map[string]string `json:"tags"`
-	RouteServiceUrl   string            `json:"route_service_url,omitempty"`
-	PrivateInstanceId string            `json:"private_instance_id"`
+	URIs                []string          `json:"uris"`
+	Host                string            `json:"host"`
+	Port                *int              `json:"port,omitempty"`
+	TLSPort             *int              `json:"tls_port,omitempty"`
+	Tags                map[string]string `json:"tags"`
+	RouteServiceUrl     string            `json:"route_service_url,omitempty"`
+	PrivateInstanceId   string            `json:"private_instance_id"`
+	ServerCertDomainSAN string            `json:"server_cert_domain_san,omitempty"`
 }
 
 func NewMessageBus(logger lager.Logger) MessageBus {
@@ -99,13 +100,14 @@ func (m msgBus) SendMessage(subject string, host string, route config.Route, pri
 	m.logger.Debug("creating-message", lager.Data{"subject": subject, "host": host, "route": route, "privateInstanceId": privateInstanceId})
 
 	msg := &Message{
-		URIs:              route.URIs,
-		Host:              host,
-		Port:              route.Port,
-		TLSPort:           route.TLSPort,
-		Tags:              route.Tags,
-		RouteServiceUrl:   route.RouteServiceUrl,
-		PrivateInstanceId: privateInstanceId,
+		URIs:                route.URIs,
+		Host:                host,
+		Port:                route.Port,
+		TLSPort:             route.TLSPort,
+		Tags:                route.Tags,
+		RouteServiceUrl:     route.RouteServiceUrl,
+		ServerCertDomainSAN: route.ServerCertDomainSAN,
+		PrivateInstanceId:   privateInstanceId,
 	}
 
 	json, err := json.Marshal(msg)

@@ -39,6 +39,7 @@ type RouteSchema struct {
 	RouteServiceUrl      string             `yaml:"route_service_url"`
 	RegistrationInterval string             `yaml:"registration_interval,omitempty"`
 	HealthCheck          *HealthCheckSchema `yaml:"health_check,omitempty"`
+	ServerCertDomainSAN  string             `yaml:"server_cert_domain_san,omitempty"`
 }
 
 type MessageBusServer struct {
@@ -68,6 +69,7 @@ type Route struct {
 	RouteServiceUrl      string
 	RegistrationInterval time.Duration
 	HealthCheck          *HealthCheck
+	ServerCertDomainSAN  string
 }
 
 func NewConfigSchemaFromFile(configFile string) (ConfigSchema, error) {
@@ -206,6 +208,7 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		Tags:                 r.Tags,
 		URIs:                 r.URIs,
 		RouteServiceUrl:      r.RouteServiceUrl,
+		ServerCertDomainSAN:  r.ServerCertDomainSAN,
 		RegistrationInterval: registrationInterval,
 		HealthCheck:          healthCheck,
 	}

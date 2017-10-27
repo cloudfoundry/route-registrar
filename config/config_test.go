@@ -70,6 +70,7 @@ var _ = Describe("Config", func() {
 					TLSPort:              &port1,
 					RegistrationInterval: registrationInterval1String,
 					URIs:                 []string{"my-other-app.my-domain.com"},
+					ServerCertDomainSAN:  "my.internal.cert",
 				},
 				{
 					Name:                 routeName2,
@@ -77,6 +78,7 @@ var _ = Describe("Config", func() {
 					TLSPort:              &port1,
 					RegistrationInterval: registrationInterval1String,
 					URIs:                 []string{"my-other-app.my-domain.com"},
+					ServerCertDomainSAN:  "my.internal.cert",
 				},
 			},
 			Host: "127.0.0.1",
@@ -157,6 +159,7 @@ var _ = Describe("Config", func() {
 						TLSPort:              &port1,
 						RegistrationInterval: registrationInterval1,
 						URIs:                 configSchema.Routes[1].URIs,
+						ServerCertDomainSAN:  "my.internal.cert",
 					},
 					{
 						Name:                 routeName2,
@@ -164,6 +167,7 @@ var _ = Describe("Config", func() {
 						TLSPort:              &port1,
 						RegistrationInterval: registrationInterval1,
 						URIs:                 configSchema.Routes[1].URIs,
+						ServerCertDomainSAN:  "my.internal.cert",
 					},
 				},
 			}

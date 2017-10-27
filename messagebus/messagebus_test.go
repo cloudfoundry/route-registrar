@@ -148,12 +148,13 @@ var _ = Describe("Messagebus test Suite", func() {
 			port := 12345
 
 			route = config.Route{
-				Name:            "some_name",
-				Port:            &port,
-				TLSPort:         &port,
-				URIs:            []string{"uri1", "uri2"},
-				RouteServiceUrl: "https://rs.example.com",
-				Tags:            map[string]string{"tag1": "val1", "tag2": "val2"},
+				Name:                "some_name",
+				Port:                &port,
+				TLSPort:             &port,
+				URIs:                []string{"uri1", "uri2"},
+				RouteServiceUrl:     "https://rs.example.com",
+				Tags:                map[string]string{"tag1": "val1", "tag2": "val2"},
+				ServerCertDomainSAN: "cf.cert.internal",
 			}
 		})
 
@@ -176,12 +177,13 @@ var _ = Describe("Messagebus test Suite", func() {
 			Eventually(registered, 2).Should(Receive(&receivedMessage))
 
 			expectedRegistryMessage := messagebus.Message{
-				URIs:            route.URIs,
-				Host:            host,
-				Port:            route.Port,
-				TLSPort:         route.TLSPort,
-				RouteServiceUrl: route.RouteServiceUrl,
-				Tags:            route.Tags,
+				URIs:                route.URIs,
+				Host:                host,
+				Port:                route.Port,
+				TLSPort:             route.TLSPort,
+				RouteServiceUrl:     route.RouteServiceUrl,
+				Tags:                route.Tags,
+				ServerCertDomainSAN: "cf.cert.internal",
 			}
 
 			var registryMessage messagebus.Message

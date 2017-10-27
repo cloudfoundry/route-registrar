@@ -102,6 +102,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					"tag2.2": "value2.2",
 				},
 				RegistrationInterval: registrationInterval,
+				ServerCertDomainSAN:  "my.internal.cert",
 			},
 		}
 
