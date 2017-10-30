@@ -33,11 +33,13 @@ type ConfigSchema struct {
 type RouteSchema struct {
 	Name                 string             `yaml:"name"`
 	Port                 *int               `yaml:"port"`
+	TLSPort              *int               `yaml:"tls_port"`
 	Tags                 map[string]string  `yaml:"tags"`
 	URIs                 []string           `yaml:"uris"`
 	RouteServiceUrl      string             `yaml:"route_service_url"`
 	RegistrationInterval string             `yaml:"registration_interval,omitempty"`
 	HealthCheck          *HealthCheckSchema `yaml:"health_check,omitempty"`
+	ServerCertDomainSAN  string             `yaml:"server_cert_domain_san,omitempty"`
 }
 
 type MessageBusServer struct {
@@ -60,12 +62,14 @@ type Config struct {
 
 type Route struct {
 	Name                 string
-	Port                 int
+	Port                 *int
+	TLSPort              *int
 	Tags                 map[string]string
 	URIs                 []string
 	RouteServiceUrl      string
 	RegistrationInterval time.Duration
 	HealthCheck          *HealthCheck
+	ServerCertDomainSAN  string
 }
 
 func NewConfigSchemaFromFile(configFile string) (ConfigSchema, error) {
@@ -154,10 +158,14 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		errors.Add(fmt.Errorf("no name"))
 	}
 
-	if r.Port == nil {
+	if r.Port == nil && r.TLSPort == nil {
 		errors.Add(fmt.Errorf("no port"))
-	} else if *r.Port <= 0 {
+	}
+	if r.Port != nil && *r.Port <= 0 {
 		errors.Add(fmt.Errorf("invalid port: %d", *r.Port))
+	}
+	if r.TLSPort != nil && *r.TLSPort <= 0 {
+		errors.Add(fmt.Errorf("invalid tls_port: %d", *r.TLSPort))
 	}
 
 	if len(r.URIs) == 0 {
@@ -195,10 +203,12 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 
 	route := Route{
 		Name:                 r.Name,
-		Port:                 *r.Port,
+		Port:                 r.Port,
+		TLSPort:              r.TLSPort,
 		Tags:                 r.Tags,
 		URIs:                 r.URIs,
 		RouteServiceUrl:      r.RouteServiceUrl,
+		ServerCertDomainSAN:  r.ServerCertDomainSAN,
 		RegistrationInterval: registrationInterval,
 		HealthCheck:          healthCheck,
 	}

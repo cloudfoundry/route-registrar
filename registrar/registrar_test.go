@@ -72,12 +72,14 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		signals = make(chan os.Signal, 1)
 		ready = make(chan struct{}, 1)
+		port := 8080
+		port2 := 8081
 
 		registrationInterval := 100 * time.Millisecond
 		rrConfig.Routes = []config.Route{
 			{
 				Name: "my route 1",
-				Port: 8080,
+				Port: &port,
 				URIs: []string{
 					"my uri 1.1",
 					"my uri 1.2",
@@ -89,8 +91,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				RegistrationInterval: registrationInterval,
 			},
 			{
-				Name: "my route 2",
-				Port: 8081,
+				Name:    "my route 2",
+				TLSPort: &port2,
 				URIs: []string{
 					"my uri 2.1",
 					"my uri 2.2",
@@ -100,6 +102,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					"tag2.2": "value2.2",
 				},
 				RegistrationInterval: registrationInterval,
+				ServerCertDomainSAN:  "my.internal.cert",
 			},
 		}
 
