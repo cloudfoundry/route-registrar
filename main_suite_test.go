@@ -45,7 +45,7 @@ var _ = BeforeSuite(func() {
 
 	natsPort = 40000 + gconfig.GinkgoConfig.ParallelNode
 
-	configFile = filepath.Join(tempDir, "registrar_settings.yml")
+	configFile = filepath.Join(tempDir, "registrar_settings.json")
 })
 
 var _ = AfterSuite(func() {

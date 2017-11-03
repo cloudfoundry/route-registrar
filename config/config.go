@@ -1,45 +1,44 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 	"strconv"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
 	"code.cloudfoundry.org/multierror"
 )
 
 type MessageBusServerSchema struct {
-	Host     string `yaml:"host"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
+	Host     string `json:"host"`
+	User     string `json:"user"`
+	Password string `json:"password"`
 }
 
 type HealthCheckSchema struct {
-	Name       string `yaml:"name"`
-	ScriptPath string `yaml:"script_path"`
-	Timeout    string `yaml:"timeout"`
+	Name       string `json:"name"`
+	ScriptPath string `json:"script_path"`
+	Timeout    string `json:"timeout"`
 }
 
 type ConfigSchema struct {
-	MessageBusServers []MessageBusServerSchema `yaml:"message_bus_servers"`
-	Routes            []RouteSchema            `yaml:"routes"`
-	Host              string                   `yaml:"host"`
+	MessageBusServers []MessageBusServerSchema `json:"message_bus_servers"`
+	Routes            []RouteSchema            `json:"routes"`
+	Host              string                   `json:"host"`
 }
 
 type RouteSchema struct {
-	Name                 string             `yaml:"name"`
-	Port                 *int               `yaml:"port"`
-	TLSPort              *int               `yaml:"tls_port"`
-	Tags                 map[string]string  `yaml:"tags"`
-	URIs                 []string           `yaml:"uris"`
-	RouteServiceUrl      string             `yaml:"route_service_url"`
-	RegistrationInterval string             `yaml:"registration_interval,omitempty"`
-	HealthCheck          *HealthCheckSchema `yaml:"health_check,omitempty"`
-	ServerCertDomainSAN  string             `yaml:"server_cert_domain_san,omitempty"`
+	Name                 string             `json:"name"`
+	Port                 *int               `json:"port"`
+	TLSPort              *int               `json:"tls_port"`
+	Tags                 map[string]string  `json:"tags"`
+	URIs                 []string           `json:"uris"`
+	RouteServiceUrl      string             `json:"route_service_url"`
+	RegistrationInterval string             `json:"registration_interval,omitempty"`
+	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty"`
+	ServerCertDomainSAN  string             `json:"server_cert_domain_san,omitempty"`
 }
 
 type MessageBusServer struct {
@@ -80,7 +79,7 @@ func NewConfigSchemaFromFile(configFile string) (ConfigSchema, error) {
 		return ConfigSchema{}, err
 	}
 
-	err = yaml.Unmarshal(c, &config)
+	err = json.Unmarshal(c, &config)
 	if err != nil {
 		return ConfigSchema{}, err
 	}

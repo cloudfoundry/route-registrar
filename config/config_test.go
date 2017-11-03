@@ -87,7 +87,7 @@ var _ = Describe("Config", func() {
 
 	Describe("NewConfigSchemaFromFile", func() {
 		It("returns a valid config", func() {
-			cfg_file := "../example_config/example.yml"
+			cfg_file := "../example_config/example.json"
 			cfg, err := config.NewConfigSchemaFromFile(cfg_file)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -113,7 +113,7 @@ var _ = Describe("Config", func() {
 				configFile, err = ioutil.TempFile("", "route-registrar-config")
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = configFile.Write([]byte("invalid yaml %^&#"))
+				_, err = configFile.Write([]byte("invalid %^&#"))
 				Expect(err).NotTo(HaveOccurred())
 			})
 

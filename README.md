@@ -22,30 +22,41 @@ A standalone executable written in golang that continuously broadcasts a routes 
   ls -la bin/route-registrar
   ```
 
-1. The route-registrar expects a configuration YAML file like the one below:
-  ```yaml
-  message_bus_servers:
-  - host: NATS_SERVER_HOST:PORT
-    user: NATS_SERVER_USERNAME
-    password: NATS_SERVER_PASSWORD
-  host: HOSTNAME_OR_IP_OF_ROUTE_DESTINATION
-  routes:
-  - name: SOME_ROUTE_NAME
-    port: PORT_OF_ROUTE_DESTINATION
-    tls_port: TLS_PORT_OF_ROUTE_DESTINATION
-    tags:
-      optional_tag_field: some_tag_value
-      another_tag_field: some_other_value
-    uris:
-    - some_source_uri_for_the_router_to_map_to_the_destination
-    - some_other_source_uri_for_the_router_to_map_to_the_destination
-    server_cert_domain_san: some.service.internal
-    route_service_url: https://route-service.example.com
-    registration_interval: REGISTRATION_INTERVAL # required
-    health_check: # optional
-      name: HEALTH_CHECK_NAME
-      script_path: /path/to/check/executable
-      timeout: HEALTH_CHECK_TIMEOUT # optional
+1. The route-registrar expects a configuration json file like the one below:
+  ```json
+{
+  "message_bus_servers": [
+    {
+      "host": "NATS_SERVER_HOST:PORT",
+      "user": "NATS_SERVER_USERNAME",
+      "password": "NATS_SERVER_PASSWORD"
+    }
+  ],
+  "host": "HOSTNAME_OR_IP_OF_ROUTE_DESTINATION",
+  "routes": [
+    {
+      "name": "SOME_ROUTE_NAME",
+      "port": "PORT_OF_ROUTE_DESTINATION",
+      "tls_port": "TLS_PORT_OF_ROUTE_DESTINATION",
+      "tags": {
+        "optional_tag_field": "some_tag_value",
+        "another_tag_field": "some_other_value"
+      },
+      "uris": [
+        "some_source_uri_for_the_router_to_map_to_the_destination",
+        "some_other_source_uri_for_the_router_to_map_to_the_destination"
+      ],
+      "server_cert_domain_san": "some.service.internal",
+      "route_service_url": "https://route-service.example.com",
+      "registration_interval": "REGISTRATION_INTERVAL",
+      "health_check": {
+        "name": "HEALTH_CHECK_NAME",
+        "script_path": "/path/to/check/executable",
+        "timeout": "HEALTH_CHECK_TIMEOUT"
+      }
+    }
+  ]
+}
   ```
   - `message_bus_servers` is an array of data with location and credentials for the NATS servers; route-registrar currently registers and deregisters routes via NATS messages. `message_bus_servers.host` must include both hostname and port; e.g. `host: 10.0.32.11:4222`
   - `host` is the destination hostname or IP for the routes being registered. To Gorouter, these are backends.

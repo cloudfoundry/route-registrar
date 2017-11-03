@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
 	"code.cloudfoundry.org/localip"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/messagebus"
@@ -206,23 +204,31 @@ var _ = Describe("Main", func() {
 	Context("When the config has a missing value for registration interval", func() {
 		BeforeEach(func() {
 			rootConfig.Routes[0].RegistrationInterval = ""
-			rrConfig := `---
-message_bus_servers:
-- host: "127.0.0.1:12345"
-  user: nats
-  password: nats
-routes:
-- name: My route
-  port: 12345
-  uris:
-  - "uri-1"
-  - "uri-2"
-  tags:
-    tag1: val1
-    tag2: val2
-  registration_interval:
-host: "127.0.0.1"
-`
+			rrConfig := `{
+  "message_bus_servers": [
+    {
+      "host": "127.0.0.1:12345",
+      "user": "nats",
+      "password": "nats"
+    }
+  ],
+  "routes": [
+    {
+      "name": "My route",
+      "port": 12345,
+      "uris": [
+        "uri-1",
+        "uri-2"
+      ],
+      "tags": {
+        "tag1": "val1",
+        "tag2": "val2"
+      },
+      "registration_interval": null
+    }
+  ],
+  "host": "127.0.0.1"
+}`
 			err := ioutil.WriteFile(configFile, []byte(rrConfig), os.ModePerm)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -287,7 +293,7 @@ func writeConfig() {
 	fileToWrite, err := os.Create(configFile)
 	Expect(err).ShouldNot(HaveOccurred())
 
-	data, err := yaml.Marshal(rootConfig)
+	data, err := json.Marshal(rootConfig)
 	Expect(err).ShouldNot(HaveOccurred())
 
 	_, err = fileToWrite.Write(data)
