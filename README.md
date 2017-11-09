@@ -36,7 +36,6 @@ A standalone executable written in golang that continuously broadcasts a routes 
   "routes": [
     {
       "name": "SOME_ROUTE_NAME",
-      "port": "PORT_OF_ROUTE_DESTINATION",
       "tls_port": "TLS_PORT_OF_ROUTE_DESTINATION",
       "tags": {
         "optional_tag_field": "some_tag_value",
@@ -63,7 +62,7 @@ A standalone executable written in golang that continuously broadcasts a routes 
   - `routes` is required and is an array of hashes. For each route collection:
     - `name` must be provided and be a string
     - `port` or `tls_port` are for the destination host (backend). At least one must be provided and must be a positive integer > 1.
-    - `server_cert_domain_san` is the SAN on the destination host's TLS certificate. Used when `tls_port` is provided.
+    - `server_cert_domain_san` is the SAN on the destination host's TLS certificate. Required when `tls_port` is provided.
     - `uris` are the routes being registered for the destination `host`. Must be provided and be a non empty array of strings.  All URIs in a given route collection will be mapped to the same host and port.
     - `registration_interval` is the interval for which routes are registered with NATS. Must be provided and be a string with units (e.g. "20s"). It must parse to a positive time duration e.g. "-5s" is not permitted.
     - `route_service_url` is optional. When provided, Gorouter will proxy requests received for the `uris` above to this address.
