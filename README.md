@@ -70,7 +70,7 @@ A standalone executable written in golang that continuously broadcasts a routes 
 
 1. Run route-registrar binaries using the following command
   ```
-  route-registrar -configPath FILE_PATH_TO_CONFIG_YML -pidfile PATH_TO_PIDFILE
+  route-registrar -configPath FILE_PATH_TO_CONFIG_JSON -pidfile PATH_TO_PIDFILE
   ```
 
 ### Health check
