@@ -6,6 +6,7 @@ import (
 
 	"code.cloudfoundry.org/route-registrar/commandrunner"
 	"code.cloudfoundry.org/route-registrar/messagebus"
+	"code.cloudfoundry.org/route-registrar/routingapi"
 	"github.com/nu7hatch/gouuid"
 
 	"code.cloudfoundry.org/route-registrar/config"
@@ -23,6 +24,7 @@ type registrar struct {
 	config            config.Config
 	healthChecker     healthchecker.HealthChecker
 	messageBus        messagebus.MessageBus
+	routingAPI        routingapi.RoutingAPI
 	privateInstanceId string
 }
 
@@ -31,6 +33,7 @@ func NewRegistrar(
 	healthChecker healthchecker.HealthChecker,
 	logger lager.Logger,
 	messageBus messagebus.MessageBus,
+	routingAPI routingapi.RoutingAPI,
 ) Registrar {
 	aUUID, err := uuid.NewV4()
 	if err != nil {
@@ -42,17 +45,28 @@ func NewRegistrar(
 		privateInstanceId: aUUID.String(),
 		healthChecker:     healthChecker,
 		messageBus:        messageBus,
+		routingAPI:        routingAPI,
 	}
 }
 
 func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	var err error
 
-	err = r.messageBus.Connect(r.config.MessageBusServers)
-	if err != nil {
-		return err
+	if len(r.config.MessageBusServers) > 0 {
+		err = r.messageBus.Connect(r.config.MessageBusServers)
+		if err != nil {
+			return err
+		}
+		defer r.messageBus.Close()
 	}
-	defer r.messageBus.Close()
+
+	if r.config.RoutingAPI.APIURL != "" {
+		err = r.routingAPI.Init(r.config.RoutingAPI)
+		if err != nil {
+			return err
+		}
+		defer r.routingAPI.Close()
+	}
 
 	close(ready)
 
@@ -162,7 +176,12 @@ func (r registrar) periodicallyDetermineHealth(
 func (r registrar) registerRoutes(route config.Route) error {
 	r.logger.Info("Registering route", lager.Data{"route": route})
 
-	err := r.messageBus.SendMessage("router.register", r.config.Host, route, r.privateInstanceId)
+	var err error
+	if route.Type == "tcp" {
+		err = r.routingAPI.RegisterRoute(route)
+	} else {
+		err = r.messageBus.SendMessage("router.register", r.config.Host, route, r.privateInstanceId)
+	}
 	if err != nil {
 		return err
 	}
@@ -175,7 +194,12 @@ func (r registrar) registerRoutes(route config.Route) error {
 func (r registrar) unregisterRoutes(route config.Route) error {
 	r.logger.Info("Unregistering route", lager.Data{"route": route})
 
-	err := r.messageBus.SendMessage("router.unregister", r.config.Host, route, r.privateInstanceId)
+	var err error
+	if route.Type == "tcp" {
+		err = r.routingAPI.UnregisterRoute(route)
+	} else {
+		err = r.messageBus.SendMessage("router.unregister", r.config.Host, route, r.privateInstanceId)
+	}
 	if err != nil {
 		return err
 	}

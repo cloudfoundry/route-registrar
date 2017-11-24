@@ -27,8 +27,9 @@ var _ = Describe("Config", func() {
 		routeName1 string
 		routeName2 string
 
-		port0 int
-		port1 int
+		port0    int
+		port1    int
+		tcpPort0 int
 	)
 
 	BeforeEach(func() {
@@ -44,6 +45,7 @@ var _ = Describe("Config", func() {
 
 		port0 = 3000
 		port1 = 3001
+		tcpPort0 = 5000
 
 		configSchema = config.ConfigSchema{
 			MessageBusServers: []config.MessageBusServerSchema{
@@ -57,6 +59,12 @@ var _ = Describe("Config", func() {
 					User:     "another-user",
 					Password: "another-password",
 				},
+			},
+			RoutingAPI: config.RoutingAPISchema{
+				APIURL:       "https://api.somewhere",
+				OAuthURL:     "https://uaa.somewhere",
+				ClientID:     "clientid",
+				ClientSecret: "secret",
 			},
 			Routes: []config.RouteSchema{
 				{
@@ -79,6 +87,14 @@ var _ = Describe("Config", func() {
 					RegistrationInterval: registrationInterval1String,
 					URIs:                 []string{"my-other-app.my-domain.com"},
 					ServerCertDomainSAN:  "my.internal.cert",
+				},
+				{
+					Type:                 "tcp",
+					Port:                 &tcpPort0,
+					BackendIP:            "10.0.1.1",
+					BackendPort:          15000,
+					RouterGroup:          "some-router-group",
+					RegistrationInterval: registrationInterval1String,
 				},
 			},
 			Host: "127.0.0.1",
@@ -147,6 +163,12 @@ var _ = Describe("Config", func() {
 						Password: configSchema.MessageBusServers[1].Password,
 					},
 				},
+				RoutingAPI: config.RoutingAPI{
+					APIURL:       "https://api.somewhere",
+					OAuthURL:     "https://uaa.somewhere",
+					ClientID:     "clientid",
+					ClientSecret: "secret",
+				},
 				Routes: []config.Route{
 					{
 						Name:                 routeName0,
@@ -168,6 +190,14 @@ var _ = Describe("Config", func() {
 						RegistrationInterval: registrationInterval1,
 						URIs:                 configSchema.Routes[1].URIs,
 						ServerCertDomainSAN:  "my.internal.cert",
+					},
+					{
+						Type:                 "tcp",
+						Port:                 &tcpPort0,
+						BackendIP:            "10.0.1.1",
+						BackendPort:          15000,
+						RouterGroup:          "some-router-group",
+						RegistrationInterval: registrationInterval1,
 					},
 				},
 			}
@@ -645,7 +675,7 @@ var _ = Describe("Config", func() {
 		})
 
 		Describe("on the message bus servers", func() {
-			Context("when message bus servers are empty", func() {
+			Context("when message bus servers are empty and http routes are used", func() {
 				BeforeEach(func() {
 					configSchema.MessageBusServers = []config.MessageBusServerSchema{}
 				})
@@ -655,6 +685,45 @@ var _ = Describe("Config", func() {
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("message_bus_servers must have at least one entry"))
+				})
+			})
+			Context("when message bus servers are empty and http routes are not used", func() {
+				BeforeEach(func() {
+					configSchema.MessageBusServers = []config.MessageBusServerSchema{}
+					configSchema.Routes = configSchema.Routes[3:]
+				})
+
+				It("returns no error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).NotTo(BeNil())
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+		})
+
+		Describe("on the routing api", func() {
+			Context("when routing api is missing and tcp routes are used", func() {
+				BeforeEach(func() {
+					configSchema.RoutingAPI = config.RoutingAPISchema{}
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("routing_api must have an api_url"))
+				})
+			})
+			Context("when routing api is missing and tcp routes are not used", func() {
+				BeforeEach(func() {
+					configSchema.RoutingAPI = config.RoutingAPISchema{}
+					configSchema.Routes = configSchema.Routes[0:2]
+				})
+
+				It("returns no error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).NotTo(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 		})
@@ -682,13 +751,13 @@ var _ = Describe("Config", func() {
 				Expect(err).To(HaveOccurred())
 				buf := gbytes.BufferWithBytes([]byte(err.Error()))
 				Expect(buf).To(gbytes.Say("host required"))
-				Expect(buf).To(gbytes.Say("message_bus_servers must have at least one entry"))
 				Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 0'`))
 				Expect(buf).To(gbytes.Say("no name"))
 				Expect(buf).To(gbytes.Say("no registration_interval"))
 				Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
 				Expect(buf).To(gbytes.Say("no name"))
 				Expect(buf).To(gbytes.Say("no registration_interval"))
+				Expect(buf).To(gbytes.Say("message_bus_servers must have at least one entry"))
 			})
 
 			Context("when a registration interval is unparseable", func() {
