@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/url"
 	"strconv"
 	"time"
@@ -17,6 +18,15 @@ type MessageBusServerSchema struct {
 	Password string `json:"password"`
 }
 
+type RoutingAPISchema struct {
+	APIURL             string `json:"api_url"`
+	OAuthURL           string `json:"oauth_url"`
+	ClientID           string `json:"client_id"`
+	ClientSecret       string `json:"client_secret"`
+	CACerts            string `json:"ca_certs"`
+	SkipCertValidation bool   `json:"skip_cert_validation"`
+}
+
 type HealthCheckSchema struct {
 	Name       string `json:"name"`
 	ScriptPath string `json:"script_path"`
@@ -25,16 +35,21 @@ type HealthCheckSchema struct {
 
 type ConfigSchema struct {
 	MessageBusServers []MessageBusServerSchema `json:"message_bus_servers"`
+	RoutingAPI        RoutingAPISchema         `json:"routing_api"`
 	Routes            []RouteSchema            `json:"routes"`
 	Host              string                   `json:"host"`
 }
 
 type RouteSchema struct {
+	Type                 string             `json:"type"`
 	Name                 string             `json:"name"`
 	Port                 *int               `json:"port"`
 	TLSPort              *int               `json:"tls_port"`
 	Tags                 map[string]string  `json:"tags"`
 	URIs                 []string           `json:"uris"`
+	RouterGroup          string             `json:"router_group"`
+	BackendIP            string             `json:"backend_ip,omitempty"`
+	BackendPort          int                `json:"backend_port,omitempty"`
 	RouteServiceUrl      string             `json:"route_service_url"`
 	RegistrationInterval string             `json:"registration_interval,omitempty"`
 	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty"`
@@ -47,6 +62,15 @@ type MessageBusServer struct {
 	Password string
 }
 
+type RoutingAPI struct {
+	APIURL             string
+	OAuthURL           string
+	ClientID           string
+	ClientSecret       string
+	CACerts            string
+	SkipCertValidation bool
+}
+
 type HealthCheck struct {
 	Name       string
 	ScriptPath string
@@ -55,16 +79,21 @@ type HealthCheck struct {
 
 type Config struct {
 	MessageBusServers []MessageBusServer
+	RoutingAPI        RoutingAPI
 	Routes            []Route
 	Host              string
 }
 
 type Route struct {
+	Type                 string
 	Name                 string
 	Port                 *int
 	TLSPort              *int
 	Tags                 map[string]string
 	URIs                 []string
+	RouterGroup          string
+	BackendIP            string
+	BackendPort          int
 	RouteServiceUrl      string
 	RegistrationInterval time.Duration
 	HealthCheck          *HealthCheck
@@ -94,10 +123,8 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 		errors.Add(fmt.Errorf("host required"))
 	}
 
-	messageBusServers, err := messageBusServersFromSchema(c.MessageBusServers)
-	if err != nil {
-		errors.Add(err)
-	}
+	tcp_routes := 0
+
 	routes := []Route{}
 	for index, r := range c.Routes {
 		route, err := routeFromSchema(r, index)
@@ -106,7 +133,21 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 			continue
 		}
 
+		if route.Type == "tcp" {
+			tcp_routes++
+		}
+
 		routes = append(routes, *route)
+	}
+
+	messageBusServers, err := messageBusServersFromSchema(c.MessageBusServers)
+	if err != nil && (len(routes)-tcp_routes > 0) {
+		errors.Add(err)
+	}
+
+	routingAPI, err := routingAPIFromSchema(c.RoutingAPI)
+	if err != nil && tcp_routes > 0 {
+		errors.Add(err)
 	}
 
 	if errors.Length() > 0 {
@@ -117,6 +158,9 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 		Host:              c.Host,
 		MessageBusServers: messageBusServers,
 		Routes:            routes,
+	}
+	if routingAPI != nil {
+		config.RoutingAPI = *routingAPI
 	}
 
 	return &config, nil
@@ -153,7 +197,7 @@ func parseRegistrationInterval(registrationInterval string) (time.Duration, erro
 func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 	errors := multierror.NewMultiError(fmt.Sprintf("route %s", nameOrIndex(r, index)))
 
-	if r.Name == "" {
+	if r.Name == "" && r.Type != "tcp" {
 		errors.Add(fmt.Errorf("no name"))
 	}
 
@@ -167,20 +211,32 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		errors.Add(fmt.Errorf("invalid tls_port: %d", *r.TLSPort))
 	}
 
-	if len(r.URIs) == 0 {
-		errors.Add(fmt.Errorf("no URIs"))
-	}
-
-	for _, u := range r.URIs {
-		if u == "" {
-			errors.Add(fmt.Errorf("empty URIs"))
-			break
+	if r.Type != "tcp" {
+		if len(r.URIs) == 0 {
+			errors.Add(fmt.Errorf("no URIs"))
 		}
-	}
 
-	_, err := url.Parse(r.RouteServiceUrl)
-	if err != nil {
-		errors.Add(err)
+		for _, u := range r.URIs {
+			if u == "" {
+				errors.Add(fmt.Errorf("empty URIs"))
+				break
+			}
+		}
+
+		_, err := url.Parse(r.RouteServiceUrl)
+		if err != nil {
+			errors.Add(err)
+		}
+	} else {
+		if r.RouterGroup == "" {
+			errors.Add(fmt.Errorf("missing router_group"))
+		}
+		if r.BackendPort <= 0 {
+			errors.Add(fmt.Errorf("invalid backend_port: %d", r.BackendPort))
+		}
+		if net.ParseIP(r.BackendIP) == nil {
+			errors.Add(fmt.Errorf("invalid backend_ip: %s", r.BackendIP))
+		}
 	}
 
 	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval)
@@ -201,11 +257,15 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 	}
 
 	route := Route{
+		Type:                 r.Type,
 		Name:                 r.Name,
 		Port:                 r.Port,
 		TLSPort:              r.TLSPort,
 		Tags:                 r.Tags,
 		URIs:                 r.URIs,
+		RouterGroup:          r.RouterGroup,
+		BackendIP:            r.BackendIP,
+		BackendPort:          r.BackendPort,
 		RouteServiceUrl:      r.RouteServiceUrl,
 		ServerCertDomainSAN:  r.ServerCertDomainSAN,
 		RegistrationInterval: registrationInterval,
@@ -288,4 +348,28 @@ func messageBusServersFromSchema(servers []MessageBusServerSchema) ([]MessageBus
 	}
 
 	return messageBusServers, nil
+}
+
+func routingAPIFromSchema(api RoutingAPISchema) (*RoutingAPI, error) {
+	if api.APIURL == "" {
+		return nil, fmt.Errorf("routing_api must have an api_url")
+	}
+	if api.OAuthURL == "" {
+		return nil, fmt.Errorf("routing_api must have an oauth_url")
+	}
+	if api.ClientID == "" {
+		return nil, fmt.Errorf("routing_api must have a client_id")
+	}
+	if api.ClientSecret == "" {
+		return nil, fmt.Errorf("routing_api must have a client_secret")
+	}
+
+	return &RoutingAPI{
+		APIURL:             api.APIURL,
+		OAuthURL:           api.OAuthURL,
+		ClientID:           api.ClientID,
+		ClientSecret:       api.ClientSecret,
+		CACerts:            api.CACerts,
+		SkipCertValidation: api.SkipCertValidation,
+	}, nil
 }

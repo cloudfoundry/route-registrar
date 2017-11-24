@@ -15,6 +15,7 @@ import (
 	"code.cloudfoundry.org/route-registrar/healthchecker"
 	"code.cloudfoundry.org/route-registrar/messagebus"
 	"code.cloudfoundry.org/route-registrar/registrar"
+	"code.cloudfoundry.org/route-registrar/routingapi"
 	"github.com/tedsuo/ifrit"
 )
 
@@ -49,7 +50,10 @@ func main() {
 	logger.Info("creating nats connection")
 	messageBus := messagebus.NewMessageBus(logger)
 
-	r := registrar.NewRegistrar(*c, hc, logger, messageBus)
+	logger.Info("creating routing API connection")
+	routingAPI := routingapi.NewRoutingAPI(logger)
+
+	r := registrar.NewRegistrar(*c, hc, logger, messageBus, routingAPI)
 
 	if *pidfile != "" {
 		pid := strconv.Itoa(os.Getpid())

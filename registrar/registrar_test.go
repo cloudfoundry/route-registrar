@@ -109,7 +109,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		fakeHealthChecker = new(healthchecker_fakes.FakeHealthChecker)
 		fakeMessageBus = new(messagebus_fakes.FakeMessageBus)
 
-		r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
+		r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
 	})
 
 	It("connects to messagebus", func() {
@@ -281,14 +281,14 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				Timeout:    timeout,
 			}
 
-			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
+			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
 		})
 
 		Context("and the healthcheck succeeds", func() {
 			BeforeEach(func() {
 				fakeHealthChecker.CheckReturns(true, nil)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
 			})
 
 			It("registers routes", func() {
@@ -357,7 +357,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			BeforeEach(func() {
 				fakeHealthChecker.CheckReturns(false, nil)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
 			})
 
 			It("unregisters routes", func() {
@@ -429,7 +429,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				healthcheckErr = fmt.Errorf("boom")
 				fakeHealthChecker.CheckReturns(true, healthcheckErr)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
 			})
 
 			It("unregisters routes", func() {
@@ -501,7 +501,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					return true, nil
 				}
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
 			})
 
 			It("returns instantly upon interrupt", func() {

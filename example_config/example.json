@@ -27,6 +27,14 @@
       ],
       "registration_interval": "10s",
       "server_cert_domain_san": "my.internal.cert"
+    },
+    {
+        "type": "tcp",
+        "port": 5000,
+        "backend_ip": "10.0.1.1",
+        "backend_port": 15000,
+        "router_group": "some-router-group",
+        "registration_interval": "10s"
     }
   ],
   "message_bus_servers": [
@@ -40,5 +48,11 @@
       "user": "another-user",
       "password": "another-password"
     }
-  ]
+  ],
+  "routing_api": {
+    "api_url": "https://api.somewhere",
+    "oauth_url": "https://uaa.somewhere",
+    "client_id": "clientid",
+    "client_secret": "secret"
+  }
 }
