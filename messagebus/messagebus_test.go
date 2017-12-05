@@ -16,7 +16,7 @@ import (
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/messagebus"
-	"github.com/nats-io/nats"
+	"github.com/nats-io/go-nats"
 )
 
 var _ = Describe("Messagebus test Suite", func() {
