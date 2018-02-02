@@ -9,9 +9,9 @@ A standalone executable written in golang that continuously broadcasts a routes 
 
 ## Usage
 
-1. Clone the [routing-release repository](https://github.com/cloudfoundry-incubator/routing-release)
+1. Clone the [routing-release repository](https://github.com/cloudfoundry/routing-release)
   ```
-  git clone --recursive https://github.com/cloudfoundry-incubator/routing-release
+  git clone --recursive https://github.com/cloudfoundry/routing-release
   ```
 
 1. Build the route-registrar binary
@@ -85,7 +85,7 @@ If the `health_check` is configured, the executable provided at `health_check.sc
 
 ## BOSH release
 
-This program is packaged as a [job](https://github.com/cloudfoundry-incubator/routing-release/tree/master/jobs/route_registrar) and a [package](https://github.com/cloudfoundry-incubator/routing-release/tree/master/packages/route_registrar) in the [routing-release](https://github.com/cloudfoundry-incubator/routing-release)
+This program is packaged as a [job](https://github.com/cloudfoundry/routing-release/tree/master/jobs/route_registrar) and a [package](https://github.com/cloudfoundry/routing-release/tree/master/packages/route_registrar) in the [routing-release](https://github.com/cloudfoundry/routing-release)
 BOSH release, it can be colocated with the following manifest changes:
 
 ```yaml
@@ -111,7 +111,7 @@ jobs:
 
 ### Dependencies
 
-Dependencies are saved using the [routing-release](https://github.com/cloudfoundry-incubator/routing-release).
+Dependencies are saved using the [routing-release](https://github.com/cloudfoundry/routing-release).
 Just clone the repo and set the `GOPATH` to the routing release directory.
 
 ### Running tests
