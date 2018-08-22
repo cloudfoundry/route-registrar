@@ -91,7 +91,7 @@ var _ = Describe("Config", func() {
 				{
 					Type:                 "tcp",
 					Port:                 &tcpPort0,
-					BackendIP:            "10.0.1.1",
+					BackendHost:          "10.0.1.1",
 					BackendPort:          15000,
 					RouterGroup:          "some-router-group",
 					RegistrationInterval: registrationInterval1String,
@@ -194,7 +194,7 @@ var _ = Describe("Config", func() {
 					{
 						Type:                 "tcp",
 						Port:                 &tcpPort0,
-						BackendIP:            "10.0.1.1",
+						BackendHost:          "10.0.1.1",
 						BackendPort:          15000,
 						RouterGroup:          "some-router-group",
 						RegistrationInterval: registrationInterval1,

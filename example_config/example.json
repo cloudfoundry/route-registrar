@@ -31,7 +31,7 @@
     {
         "type": "tcp",
         "port": 5000,
-        "backend_ip": "10.0.1.1",
+        "backend_host": "10.0.1.1",
         "backend_port": 15000,
         "router_group": "some-router-group",
         "registration_interval": "10s"

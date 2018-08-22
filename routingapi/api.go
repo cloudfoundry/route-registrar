@@ -1,9 +1,10 @@
 package routingapi
 
 import (
-	"code.cloudfoundry.org/route-registrar/config"
 	"fmt"
 	"time"
+
+	"code.cloudfoundry.org/route-registrar/config"
 
 	uaaclient "code.cloudfoundry.org/uaa-go-client"
 	uaaconfig "code.cloudfoundry.org/uaa-go-client/config"
@@ -106,7 +107,7 @@ func (a *apiState) makeTcpRouteMapping(route config.Route) (models.TcpRouteMappi
 	return models.NewTcpRouteMapping(
 		routerGroupGUID,
 		uint16(*route.Port),
-		route.BackendIP,
+		route.BackendHost,
 		uint16(route.BackendPort),
 		int(route.RegistrationInterval.Seconds())), nil
 }

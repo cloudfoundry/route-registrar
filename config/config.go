@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/url"
 	"strconv"
 	"time"
@@ -48,7 +47,7 @@ type RouteSchema struct {
 	Tags                 map[string]string  `json:"tags"`
 	URIs                 []string           `json:"uris"`
 	RouterGroup          string             `json:"router_group"`
-	BackendIP            string             `json:"backend_ip,omitempty"`
+	BackendHost          string             `json:"backend_host,omitempty"`
 	BackendPort          int                `json:"backend_port,omitempty"`
 	RouteServiceUrl      string             `json:"route_service_url"`
 	RegistrationInterval string             `json:"registration_interval,omitempty"`
@@ -92,7 +91,7 @@ type Route struct {
 	Tags                 map[string]string
 	URIs                 []string
 	RouterGroup          string
-	BackendIP            string
+	BackendHost          string
 	BackendPort          int
 	RouteServiceUrl      string
 	RegistrationInterval time.Duration
@@ -234,9 +233,6 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		if r.BackendPort <= 0 {
 			errors.Add(fmt.Errorf("invalid backend_port: %d", r.BackendPort))
 		}
-		if net.ParseIP(r.BackendIP) == nil {
-			errors.Add(fmt.Errorf("invalid backend_ip: %s", r.BackendIP))
-		}
 	}
 
 	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval)
@@ -264,7 +260,7 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		Tags:                 r.Tags,
 		URIs:                 r.URIs,
 		RouterGroup:          r.RouterGroup,
-		BackendIP:            r.BackendIP,
+		BackendHost:          r.BackendHost,
 		BackendPort:          r.BackendPort,
 		RouteServiceUrl:      r.RouteServiceUrl,
 		ServerCertDomainSAN:  r.ServerCertDomainSAN,
