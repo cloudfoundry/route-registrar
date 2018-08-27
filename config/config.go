@@ -18,12 +18,12 @@ type MessageBusServerSchema struct {
 }
 
 type RoutingAPISchema struct {
-	APIURL             string `json:"api_url"`
-	OAuthURL           string `json:"oauth_url"`
-	ClientID           string `json:"client_id"`
-	ClientSecret       string `json:"client_secret"`
-	CACerts            string `json:"ca_certs"`
-	SkipCertValidation bool   `json:"skip_cert_validation"`
+	APIURL            string `json:"api_url"`
+	OAuthURL          string `json:"oauth_url"`
+	ClientID          string `json:"client_id"`
+	ClientSecret      string `json:"client_secret"`
+	CACerts           string `json:"ca_certs"`
+	SkipSSLValidation bool   `json:"skip_ssl_validation"`
 }
 
 type HealthCheckSchema struct {
@@ -47,8 +47,7 @@ type RouteSchema struct {
 	Tags                 map[string]string  `json:"tags"`
 	URIs                 []string           `json:"uris"`
 	RouterGroup          string             `json:"router_group"`
-	BackendHost          string             `json:"backend_host,omitempty"`
-	BackendPort          int                `json:"backend_port,omitempty"`
+	ExternalPort         *int               `json:"external_port,omitempty"`
 	RouteServiceUrl      string             `json:"route_service_url"`
 	RegistrationInterval string             `json:"registration_interval,omitempty"`
 	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty"`
@@ -62,12 +61,12 @@ type MessageBusServer struct {
 }
 
 type RoutingAPI struct {
-	APIURL             string
-	OAuthURL           string
-	ClientID           string
-	ClientSecret       string
-	CACerts            string
-	SkipCertValidation bool
+	APIURL            string
+	OAuthURL          string
+	ClientID          string
+	ClientSecret      string
+	CACerts           string
+	SkipSSLValidation bool
 }
 
 type HealthCheck struct {
@@ -91,8 +90,8 @@ type Route struct {
 	Tags                 map[string]string
 	URIs                 []string
 	RouterGroup          string
-	BackendHost          string
-	BackendPort          int
+	Host                 string
+	ExternalPort         *int
 	RouteServiceUrl      string
 	RegistrationInterval time.Duration
 	HealthCheck          *HealthCheck
@@ -134,6 +133,7 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 
 		if route.Type == "tcp" {
 			tcp_routes++
+			route.Host = c.Host
 		}
 
 		routes = append(routes, *route)
@@ -230,8 +230,8 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		if r.RouterGroup == "" {
 			errors.Add(fmt.Errorf("missing router_group"))
 		}
-		if r.BackendPort <= 0 {
-			errors.Add(fmt.Errorf("invalid backend_port: %d", r.BackendPort))
+		if r.ExternalPort != nil && *r.ExternalPort <= 0 {
+			errors.Add(fmt.Errorf("invalid port: %d", *r.ExternalPort))
 		}
 	}
 
@@ -260,8 +260,7 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		Tags:                 r.Tags,
 		URIs:                 r.URIs,
 		RouterGroup:          r.RouterGroup,
-		BackendHost:          r.BackendHost,
-		BackendPort:          r.BackendPort,
+		ExternalPort:         r.ExternalPort,
 		RouteServiceUrl:      r.RouteServiceUrl,
 		ServerCertDomainSAN:  r.ServerCertDomainSAN,
 		RegistrationInterval: registrationInterval,
@@ -361,11 +360,11 @@ func routingAPIFromSchema(api RoutingAPISchema) (*RoutingAPI, error) {
 	}
 
 	return &RoutingAPI{
-		APIURL:             api.APIURL,
-		OAuthURL:           api.OAuthURL,
-		ClientID:           api.ClientID,
-		ClientSecret:       api.ClientSecret,
-		CACerts:            api.CACerts,
-		SkipCertValidation: api.SkipCertValidation,
+		APIURL:            api.APIURL,
+		OAuthURL:          api.OAuthURL,
+		ClientID:          api.ClientID,
+		ClientSecret:      api.ClientSecret,
+		CACerts:           api.CACerts,
+		SkipSSLValidation: api.SkipSSLValidation,
 	}, nil
 }

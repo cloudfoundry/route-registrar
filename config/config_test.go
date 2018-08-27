@@ -27,9 +27,10 @@ var _ = Describe("Config", func() {
 		routeName1 string
 		routeName2 string
 
-		port0    int
-		port1    int
-		tcpPort0 int
+		port0       int
+		port1       int
+		tcpPort0    int
+		backendPort int
 	)
 
 	BeforeEach(func() {
@@ -46,6 +47,7 @@ var _ = Describe("Config", func() {
 		port0 = 3000
 		port1 = 3001
 		tcpPort0 = 5000
+		backendPort = 15000
 
 		configSchema = config.ConfigSchema{
 			MessageBusServers: []config.MessageBusServerSchema{
@@ -90,9 +92,8 @@ var _ = Describe("Config", func() {
 				},
 				{
 					Type:                 "tcp",
-					Port:                 &tcpPort0,
-					BackendHost:          "10.0.1.1",
-					BackendPort:          15000,
+					ExternalPort:         &tcpPort0,
+					Port:                 &backendPort,
 					RouterGroup:          "some-router-group",
 					RegistrationInterval: registrationInterval1String,
 				},
@@ -193,9 +194,9 @@ var _ = Describe("Config", func() {
 					},
 					{
 						Type:                 "tcp",
-						Port:                 &tcpPort0,
-						BackendHost:          "10.0.1.1",
-						BackendPort:          15000,
+						ExternalPort:         &tcpPort0,
+						Host:                 "127.0.0.1",
+						Port:                 &backendPort,
 						RouterGroup:          "some-router-group",
 						RegistrationInterval: registrationInterval1,
 					},

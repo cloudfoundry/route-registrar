@@ -41,7 +41,7 @@ func buildOAuthConfig(config config.RoutingAPI) *uaaconfig.Config {
 
 	return &uaaconfig.Config{
 		UaaEndpoint:           config.OAuthURL,
-		SkipVerification:      config.SkipCertValidation,
+		SkipVerification:      config.SkipSSLValidation,
 		ClientName:            config.ClientID,
 		ClientSecret:          config.ClientSecret,
 		MaxNumberOfRetries:    3,
@@ -61,7 +61,7 @@ func (a *apiState) Init(config config.RoutingAPI) error {
 	}
 
 	a.uaaClient = uaaClient
-	a.apiClient = routing_api.NewClient(config.APIURL, config.SkipCertValidation)
+	a.apiClient = routing_api.NewClient(config.APIURL, config.SkipSSLValidation)
 
 	return nil
 }
@@ -106,9 +106,9 @@ func (a *apiState) makeTcpRouteMapping(route config.Route) (models.TcpRouteMappi
 
 	return models.NewTcpRouteMapping(
 		routerGroupGUID,
+		uint16(*route.ExternalPort),
+		route.Host,
 		uint16(*route.Port),
-		route.BackendHost,
-		uint16(route.BackendPort),
 		int(route.RegistrationInterval.Seconds())), nil
 }
 
