@@ -6,7 +6,6 @@ import (
 
 	"code.cloudfoundry.org/route-registrar/commandrunner"
 	"code.cloudfoundry.org/route-registrar/messagebus"
-	"code.cloudfoundry.org/route-registrar/routingapi"
 	"github.com/nu7hatch/gouuid"
 
 	"code.cloudfoundry.org/route-registrar/config"
@@ -19,12 +18,17 @@ type Registrar interface {
 	Run(signals <-chan os.Signal, ready chan<- struct{}) error
 }
 
+type api interface {
+	RegisterRoute(route config.Route) error
+	UnregisterRoute(route config.Route) error
+}
+
 type registrar struct {
 	logger            lager.Logger
 	config            config.Config
 	healthChecker     healthchecker.HealthChecker
 	messageBus        messagebus.MessageBus
-	routingAPI        routingapi.RoutingAPI
+	routingAPI        api
 	privateInstanceId string
 }
 
@@ -33,7 +37,7 @@ func NewRegistrar(
 	healthChecker healthchecker.HealthChecker,
 	logger lager.Logger,
 	messageBus messagebus.MessageBus,
-	routingAPI routingapi.RoutingAPI,
+	routingAPI api,
 ) Registrar {
 	aUUID, err := uuid.NewV4()
 	if err != nil {
@@ -59,15 +63,6 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		}
 		defer r.messageBus.Close()
 	}
-
-	if r.config.RoutingAPI.APIURL != "" {
-		err = r.routingAPI.Init(r.config.RoutingAPI)
-		if err != nil {
-			return err
-		}
-		defer r.routingAPI.Close()
-	}
-
 	close(ready)
 
 	nohealthcheckChan := make(chan config.Route, len(r.config.Routes))
