@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 
 	"code.cloudfoundry.org/route-registrar/config"
-	. "github.com/onsi/ginkgo"
 	gconfig "github.com/onsi/ginkgo/config"
+
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
