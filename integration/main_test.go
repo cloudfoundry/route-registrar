@@ -1,4 +1,4 @@
-package main_test
+package integration
 
 import (
 	"encoding/json"
@@ -14,10 +14,11 @@ import (
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/messagebus"
 	"github.com/nats-io/go-nats"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Main", func() {

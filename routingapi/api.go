@@ -67,6 +67,8 @@ func (r *RoutingAPI) makeTcpRouteMapping(route config.Route) (models.TcpRouteMap
 		return models.TcpRouteMapping{}, err
 	}
 
+	r.logger.Info("Creating mapping", lager.Data{})
+
 	return models.NewTcpRouteMapping(
 		routerGroupGUID,
 		uint16(*route.ExternalPort),
@@ -86,6 +88,8 @@ func (r *RoutingAPI) RegisterRoute(route config.Route) error {
 		return err
 	}
 
+	r.logger.Info("Upserting route", lager.Data{"route-mapping": routeMapping})
+
 	return r.apiClient.UpsertTcpRouteMappings([]models.TcpRouteMapping{
 		routeMapping})
 }
@@ -100,6 +104,8 @@ func (r *RoutingAPI) UnregisterRoute(route config.Route) error {
 	if err != nil {
 		return err
 	}
+
+	r.logger.Info("Deleting route", lager.Data{})
 
 	return r.apiClient.DeleteTcpRouteMappings([]models.TcpRouteMapping{routeMapping})
 }

@@ -1,4 +1,4 @@
-package main_test
+package integration
 
 import (
 	"io/ioutil"
@@ -29,9 +29,9 @@ var (
 	tempDir string
 )
 
-func TestRouteRegistrar(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Main Suite")
+	RunSpecs(t, "Integration Suite")
 }
 
 var _ = BeforeSuite(func() {
