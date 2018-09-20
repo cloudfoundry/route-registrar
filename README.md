@@ -5,7 +5,7 @@ A standalone executable written in golang that continuously broadcasts a routes 
 
 **Note**: This repository should be imported as `code.cloudfoundry.org/route-registrar`.
 
-* CI: [Concourse](https://cf-routing.ci.cf-app.com/pipelines/route-registrar)
+* CI: [Concourse](https://routing.ci.cf-app.com/pipelines/routing)
 
 ## Usage
 
