@@ -100,7 +100,7 @@ var _ = Describe("TCP Route Registration", func() {
 			session.Kill().Wait()
 			Eventually(session).Should(gexec.Exit())
 
-			Eventually(bodyBytes, "5s").ShouldNot(BeZero())
+			Eventually(bodyBytes, "10s").ShouldNot(BeZero())
 			server.Close()
 			stopNats(natsCmd)
 
