@@ -23,12 +23,13 @@ import (
 
 var _ = Describe("TCP Route Registration", func() {
 	var (
-		server    *httptest.Server
-		natsCmd   *exec.Cmd
-		bodyBytes []byte
+		server   *httptest.Server
+		natsCmd  *exec.Cmd
+		bodyChan chan []byte
 	)
 
 	BeforeEach(func() {
+		bodyChan = make(chan []byte, 1)
 		server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 
@@ -47,9 +48,10 @@ var _ = Describe("TCP Route Registration", func() {
 					"reservable_ports": "1024-1025"
 				}]`))
 			case "/routing/v1/tcp_routes/create":
-				var err error
-				bodyBytes, err = ioutil.ReadAll(req.Body)
+				bs, err := ioutil.ReadAll(req.Body)
 				Expect(err).NotTo(HaveOccurred())
+
+				bodyChan <- bs
 			default:
 				out, err := httputil.DumpRequest(req, true)
 				Expect(err).NotTo(HaveOccurred())
@@ -100,7 +102,8 @@ var _ = Describe("TCP Route Registration", func() {
 			session.Kill().Wait()
 			Eventually(session).Should(gexec.Exit())
 
-			Eventually(bodyBytes, "10s").ShouldNot(BeZero())
+			var bodyBytes []byte
+			Eventually(bodyChan, "10s").Should(Receive(&bodyBytes))
 			server.Close()
 			stopNats(natsCmd)
 
