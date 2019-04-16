@@ -98,7 +98,7 @@ var _ = Describe("TCP Route Registration", func() {
 			Eventually(session.Out).Should(gbytes.Say("Writing pid"))
 			Eventually(session.Out).Should(gbytes.Say("Running"))
 			Eventually(session.Out).Should(gbytes.Say("Mapped new router group"))
-			Eventually(session.Out).Should(gbytes.Say("Upserting route"))
+			Eventually(session.Out).Should(gbytes.Say("Upserted route"))
 			session.Kill().Wait()
 			Eventually(session).Should(gexec.Exit())
 

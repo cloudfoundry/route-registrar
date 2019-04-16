@@ -88,10 +88,13 @@ func (r *RoutingAPI) RegisterRoute(route config.Route) error {
 		return err
 	}
 
-	r.logger.Info("Upserting route", lager.Data{"route-mapping": routeMapping})
 
-	return r.apiClient.UpsertTcpRouteMappings([]models.TcpRouteMapping{
+	err = r.apiClient.UpsertTcpRouteMappings([]models.TcpRouteMapping{
 		routeMapping})
+
+	r.logger.Info("Upserted route", lager.Data{"route-mapping": routeMapping})
+
+	return err
 }
 
 func (r *RoutingAPI) UnregisterRoute(route config.Route) error {
