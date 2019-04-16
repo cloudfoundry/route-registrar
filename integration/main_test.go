@@ -266,7 +266,7 @@ func initConfig() {
 	registrationInterval := "1s"
 
 	messageBusServers := []config.MessageBusServerSchema{
-		config.MessageBusServerSchema{
+		{
 			Host:     fmt.Sprintf("127.0.0.1:%d", natsPort),
 			User:     "nats",
 			Password: "nats",

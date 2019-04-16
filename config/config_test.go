@@ -51,12 +51,12 @@ var _ = Describe("Config", func() {
 
 		configSchema = config.ConfigSchema{
 			MessageBusServers: []config.MessageBusServerSchema{
-				config.MessageBusServerSchema{
+				{
 					Host:     "some-host",
 					User:     "some-user",
 					Password: "some-password",
 				},
-				config.MessageBusServerSchema{
+				{
 					Host:     "another-host",
 					User:     "another-user",
 					Password: "another-password",
