@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"code.cloudfoundry.org/localip"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/messagebus"
 	"github.com/nats-io/go-nats"
@@ -32,8 +31,8 @@ var _ = Describe("Main", func() {
 		natsPassword := "nats"
 		natsHost := "127.0.0.1"
 
-		initConfig()
-		writeConfig()
+		rootConfig := initConfig()
+		writeConfig(rootConfig)
 
 		natsCmd = exec.Command(
 			"gnatsd",
@@ -71,8 +70,7 @@ var _ = Describe("Main", func() {
 	})
 
 	AfterEach(func() {
-		natsCmd.Process.Kill()
-		natsCmd.Wait()
+		Expect(natsCmd.Process.Kill()).To(Succeed())
 	})
 
 	It("Writes pid to the provided pidfile", func() {
@@ -179,10 +177,12 @@ var _ = Describe("Main", func() {
 		Expect(session.ExitCode()).To(BeZero())
 	})
 
-	Context("When the config validatation fails", func() {
+	Context("When the config validation fails", func() {
 		BeforeEach(func() {
+			rootConfig := initConfig()
+
 			rootConfig.Routes[0].RegistrationInterval = "asdf"
-			writeConfig()
+			writeConfig(rootConfig)
 		})
 
 		It("exits with error", func() {
@@ -203,15 +203,7 @@ var _ = Describe("Main", func() {
 	})
 })
 
-func nextAvailPort() uint16 {
-	port, err := localip.LocalPort()
-	Expect(err).ToNot(HaveOccurred())
-
-	return port
-}
-
-func initConfig() {
-	natsPort = int(nextAvailPort())
+func initConfig() config.ConfigSchema {
 
 	aPort := 12345
 
@@ -235,18 +227,18 @@ func initConfig() {
 		},
 	}
 
-	rootConfig = config.ConfigSchema{
+	return config.ConfigSchema{
 		MessageBusServers: messageBusServers,
 		Host:              "127.0.0.1",
 		Routes:            routes,
 	}
 }
 
-func writeConfig() {
+func writeConfig(config config.ConfigSchema) {
 	fileToWrite, err := os.Create(configFile)
 	Expect(err).ShouldNot(HaveOccurred())
 
-	data, err := json.Marshal(rootConfig)
+	data, err := json.Marshal(config)
 	Expect(err).ShouldNot(HaveOccurred())
 
 	_, err = fileToWrite.Write(data)

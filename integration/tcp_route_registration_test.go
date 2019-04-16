@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"code.cloudfoundry.org/route-registrar/config"
+	"code.cloudfoundry.org/routing-api/models"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,9 +12,6 @@ import (
 	"net/http/httputil"
 	"os/exec"
 	"strconv"
-
-	"code.cloudfoundry.org/route-registrar/config"
-	"code.cloudfoundry.org/routing-api/models"
 
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
@@ -35,18 +34,20 @@ var _ = Describe("TCP Route Registration", func() {
 
 			switch req.URL.Path {
 			case "/oauth/token":
-				w.Write([]byte(`{
+				_, err := w.Write([]byte(`{
 					"access_token": "some-access-token",
 					"token_type": "bearer",
 					"expires_in": 3600
 				}`))
+				Expect(err).ToNot(HaveOccurred())
 			case "/routing/v1/router_groups":
-				w.Write([]byte(`[{
+				_, err :=  w.Write([]byte(`[{
 					"guid": "router-group-guid",
 					"name": "my-router-group",
 					"type": "tcp",
 					"reservable_ports": "1024-1025"
 				}]`))
+				Expect(err).ToNot(HaveOccurred())
 			case "/routing/v1/tcp_routes/create":
 				bs, err := ioutil.ReadAll(req.Body)
 				Expect(err).NotTo(HaveOccurred())
@@ -59,13 +60,13 @@ var _ = Describe("TCP Route Registration", func() {
 			}
 		}))
 
-		initConfig()
+		rootConfig := initConfig()
 		rootConfig.RoutingAPI.APIURL = server.URL
 		rootConfig.RoutingAPI.ClientID = "my-client"
 		rootConfig.RoutingAPI.ClientSecret = "my-secret"
 		rootConfig.RoutingAPI.OAuthURL = server.URL
-		var port int = 1234
-		var externalPort int = 5678
+		var port = 1234
+		var externalPort = 5678
 		rootConfig.Routes = []config.RouteSchema{{
 			Name:                 "my-route",
 			Type:                 "tcp",
@@ -75,8 +76,13 @@ var _ = Describe("TCP Route Registration", func() {
 			RouterGroup:          "my-router-group",
 			RegistrationInterval: "100ns",
 		}}
-		writeConfig()
+		writeConfig(rootConfig)
 		natsCmd = startNats()
+	})
+
+	AfterEach(func() {
+		close(bodyChan)
+		stopNats(natsCmd)
 	})
 
 	Context("when provided a tcp route", func() {
@@ -144,6 +150,5 @@ func startNats() *exec.Cmd {
 }
 
 func stopNats(natsCmd *exec.Cmd) {
-	natsCmd.Process.Kill()
-	natsCmd.Wait()
+	Expect(natsCmd.Process.Kill()).To(Succeed())
 }

@@ -1,12 +1,10 @@
 package integration
 
 import (
+	"code.cloudfoundry.org/routing-api/test_helpers"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"code.cloudfoundry.org/route-registrar/config"
-	gconfig "github.com/onsi/ginkgo/config"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,7 +21,6 @@ var (
 	routeRegistrarBinPath string
 	pidFile               string
 	configFile            string
-	rootConfig            config.ConfigSchema
 	natsPort              int
 
 	tempDir string
@@ -34,22 +31,26 @@ func TestIntegration(t *testing.T) {
 	RunSpecs(t, "Integration Suite")
 }
 
-var _ = BeforeSuite(func() {
-	var err error
-	routeRegistrarBinPath, err = gexec.Build(routeRegistrarPackage, "-race")
+var _ = SynchronizedBeforeSuite(func() []byte {
+	path, err := gexec.Build(routeRegistrarPackage, "-race")
 	Expect(err).ShouldNot(HaveOccurred())
 
-	tempDir, err = ioutil.TempDir(os.TempDir(), "route-registrar")
-	Expect(err).ShouldNot(HaveOccurred())
+	return []byte(path)
+}, func(data []byte) {
+	routeRegistrarBinPath = string(data)
+
+	tempDir, err := ioutil.TempDir(os.TempDir(), "route-registrar")
+	Expect(err).ToNot(HaveOccurred())
 
 	pidFile = filepath.Join(tempDir, "route-registrar.pid")
 
-	natsPort = 40000 + gconfig.GinkgoConfig.ParallelNode
+	natsPort = test_helpers.NextAvailPort()
 
 	configFile = filepath.Join(tempDir, "registrar_settings.json")
 })
 
-var _ = AfterSuite(func() {
+var _ = SynchronizedAfterSuite(func() {
+}, func() {
 	err := os.RemoveAll(tempDir)
 	Expect(err).ShouldNot(HaveOccurred())
 
