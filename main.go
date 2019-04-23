@@ -19,6 +19,7 @@ import (
 	"code.cloudfoundry.org/route-registrar/registrar"
 	"code.cloudfoundry.org/route-registrar/routingapi"
 	"code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/tlsconfig"
 	uaaclient "code.cloudfoundry.org/uaa-go-client"
 	uaaconfig "code.cloudfoundry.org/uaa-go-client/config"
 
@@ -76,7 +77,17 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		apiClient := routing_api.NewClient(c.RoutingAPI.APIURL, c.RoutingAPI.SkipSSLValidation)
+		routingAPITLSConfig, err := tlsconfig.Build(
+			tlsconfig.WithInternalServiceDefaults(),
+			tlsconfig.WithIdentityFromFile(c.RoutingAPI.ClientCertificatePath, c.RoutingAPI.ClientPrivateKeyPath),
+		).Client(
+			tlsconfig.WithAuthorityFromFile(c.RoutingAPI.ServerCACertificatePath),
+		)
+		if err != nil {
+			logger.Fatal("failed-to-create-tls-config", err)
+		}
+
+		apiClient := routing_api.NewClientWithTLSConfig(c.RoutingAPI.APIURL, routingAPITLSConfig)
 		routingAPI = routingapi.NewRoutingAPI(logger, uaaClient, apiClient)
 	}
 

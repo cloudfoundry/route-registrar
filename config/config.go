@@ -24,6 +24,10 @@ type RoutingAPISchema struct {
 	ClientSecret      string `json:"client_secret"`
 	CACerts           string `json:"ca_certs"`
 	SkipSSLValidation bool   `json:"skip_ssl_validation"`
+
+	ClientCertificatePath   string `json:"client_cert_path"`
+	ClientPrivateKeyPath    string `json:"client_private_key_path"`
+	ServerCACertificatePath string `json:"server_ca_cert_path"`
 }
 
 type HealthCheckSchema struct {
@@ -67,6 +71,10 @@ type RoutingAPI struct {
 	ClientSecret      string
 	CACerts           string
 	SkipSSLValidation bool
+
+	ClientCertificatePath   string
+	ClientPrivateKeyPath    string
+	ServerCACertificatePath string
 }
 
 type HealthCheck struct {
@@ -358,13 +366,25 @@ func routingAPIFromSchema(api RoutingAPISchema) (*RoutingAPI, error) {
 	if api.ClientSecret == "" {
 		return nil, fmt.Errorf("routing_api must have a client_secret")
 	}
+	if api.ClientCertificatePath == "" {
+		return nil, fmt.Errorf("routing_api must have a client_certificate_path")
+	}
+	if api.ClientPrivateKeyPath == "" {
+		return nil, fmt.Errorf("routing_api must have a client_private_key_path")
+	}
+	if api.ServerCACertificatePath == "" {
+		return nil, fmt.Errorf("routing_api must have a server_ca_cert_path")
+	}
 
 	return &RoutingAPI{
-		APIURL:            api.APIURL,
-		OAuthURL:          api.OAuthURL,
-		ClientID:          api.ClientID,
-		ClientSecret:      api.ClientSecret,
-		CACerts:           api.CACerts,
-		SkipSSLValidation: api.SkipSSLValidation,
+		APIURL:                  api.APIURL,
+		OAuthURL:                api.OAuthURL,
+		ClientID:                api.ClientID,
+		ClientSecret:            api.ClientSecret,
+		CACerts:                 api.CACerts,
+		SkipSSLValidation:       api.SkipSSLValidation,
+		ClientCertificatePath:   api.ClientCertificatePath,
+		ClientPrivateKeyPath:    api.ClientPrivateKeyPath,
+		ServerCACertificatePath: api.ServerCACertificatePath,
 	}, nil
 }
