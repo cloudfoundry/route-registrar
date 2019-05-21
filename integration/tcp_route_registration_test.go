@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os/exec"
 	"strconv"
-	testhelpers "test-helpers"
 
+	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	"code.cloudfoundry.org/route-registrar/config"
 
 	"github.com/onsi/gomega/gbytes"
@@ -27,14 +27,14 @@ var _ = Describe("TCP Route Registration", func() {
 	)
 
 	BeforeEach(func() {
-		routingAPICAFileName, routingAPICAPrivateKey := testhelpers.GenerateCa()
-		_, _, serverTLSConfig := testhelpers.GenerateCertAndKey(routingAPICAFileName, routingAPICAPrivateKey)
-		routingAPIClientCertPath, routingAPIClientPrivateKeyPath, _ := testhelpers.GenerateCertAndKey(routingAPICAFileName, routingAPICAPrivateKey)
+		routingAPICAFileName, routingAPICAPrivateKey := tls_helpers.GenerateCa()
+		_, _, serverTLSConfig := tls_helpers.GenerateCertAndKey(routingAPICAFileName, routingAPICAPrivateKey)
+		routingAPIClientCertPath, routingAPIClientPrivateKeyPath, _ := tls_helpers.GenerateCertAndKey(routingAPICAFileName, routingAPICAPrivateKey)
 
 		routingAPIServer = ghttp.NewUnstartedServer()
 		routingAPIServer.HTTPTestServer.TLS = &tls.Config{}
-		routingAPIServer.HTTPTestServer.TLS.RootCAs = testhelpers.CertPool(routingAPICAFileName)
-		routingAPIServer.HTTPTestServer.TLS.ClientCAs = testhelpers.CertPool(routingAPICAFileName)
+		routingAPIServer.HTTPTestServer.TLS.RootCAs = tls_helpers.CertPool(routingAPICAFileName)
+		routingAPIServer.HTTPTestServer.TLS.ClientCAs = tls_helpers.CertPool(routingAPICAFileName)
 		routingAPIServer.HTTPTestServer.TLS.ClientAuth = tls.RequireAndVerifyClientCert
 		routingAPIServer.HTTPTestServer.TLS.CipherSuites = []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256}
 		routingAPIServer.HTTPTestServer.TLS.PreferServerCipherSuites = true
