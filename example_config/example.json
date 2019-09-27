@@ -50,12 +50,9 @@
     }
   ],
   "routing_api": {
-    "api_url": "https://api.somewhere",
+    "api_url": "http://api.example.com",
     "oauth_url": "https://uaa.somewhere",
     "client_id": "clientid",
-    "client_secret": "secret",
-    "client_cert_path":   "client cert path",
-    "client_private_key_path":    "client private key path",
-    "server_ca_cert_path": "server ca path"
+    "client_secret": "secret"
   }
 }

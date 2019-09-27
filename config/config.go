@@ -357,6 +357,13 @@ func routingAPIFromSchema(api RoutingAPISchema) (*RoutingAPI, error) {
 	if api.APIURL == "" {
 		return nil, fmt.Errorf("routing_api must have an api_url")
 	}
+
+	apiURL, err := url.Parse(api.APIURL)
+
+	if err != nil {
+		return nil, fmt.Errorf("routing_api must a vaid URL")
+	}
+
 	if api.OAuthURL == "" {
 		return nil, fmt.Errorf("routing_api must have an oauth_url")
 	}
@@ -366,14 +373,17 @@ func routingAPIFromSchema(api RoutingAPISchema) (*RoutingAPI, error) {
 	if api.ClientSecret == "" {
 		return nil, fmt.Errorf("routing_api must have a client_secret")
 	}
-	if api.ClientCertificatePath == "" {
-		return nil, fmt.Errorf("routing_api must have a client_certificate_path")
-	}
-	if api.ClientPrivateKeyPath == "" {
-		return nil, fmt.Errorf("routing_api must have a client_private_key_path")
-	}
-	if api.ServerCACertificatePath == "" {
-		return nil, fmt.Errorf("routing_api must have a server_ca_cert_path")
+
+	if apiURL.Scheme == "https" {
+		if api.ClientCertificatePath == "" {
+			return nil, fmt.Errorf("routing_api must have a client_certificate_path")
+		}
+		if api.ClientPrivateKeyPath == "" {
+			return nil, fmt.Errorf("routing_api must have a client_private_key_path")
+		}
+		if api.ServerCACertificatePath == "" {
+			return nil, fmt.Errorf("routing_api must have a server_ca_cert_path")
+		}
 	}
 
 	return &RoutingAPI{

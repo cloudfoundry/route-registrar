@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -126,15 +127,28 @@ func main() {
 }
 
 func newAPIClient(c *config.Config) (routing_api.Client, error) {
-	routingAPITLSConfig, err := tlsconfig.Build(
-		tlsconfig.WithInternalServiceDefaults(),
-		tlsconfig.WithIdentityFromFile(c.RoutingAPI.ClientCertificatePath, c.RoutingAPI.ClientPrivateKeyPath),
-	).Client(
-		tlsconfig.WithAuthorityFromFile(c.RoutingAPI.ServerCACertificatePath),
-	)
+	apiURL, err := url.Parse(c.RoutingAPI.APIURL)
 	if err != nil {
 		return nil, err
 	}
 
-	return routing_api.NewClientWithTLSConfig(c.RoutingAPI.APIURL, routingAPITLSConfig), nil
+	var client routing_api.Client
+
+	if apiURL.Scheme == "https" {
+		routingAPITLSConfig, err := tlsconfig.Build(
+			tlsconfig.WithInternalServiceDefaults(),
+			tlsconfig.WithIdentityFromFile(c.RoutingAPI.ClientCertificatePath, c.RoutingAPI.ClientPrivateKeyPath),
+		).Client(
+			tlsconfig.WithAuthorityFromFile(c.RoutingAPI.ServerCACertificatePath),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		client = routing_api.NewClientWithTLSConfig(c.RoutingAPI.APIURL, routingAPITLSConfig)
+	} else {
+		client = routing_api.NewClient(c.RoutingAPI.APIURL, c.RoutingAPI.SkipSSLValidation)
+	}
+
+	return client, nil
 }

@@ -24,6 +24,7 @@ var _ = Describe("TCP Route Registration", func() {
 		oauthServer      *ghttp.Server
 		routingAPIServer *ghttp.Server
 		natsCmd          *exec.Cmd
+		rootConfig config.ConfigSchema
 	)
 
 	BeforeEach(func() {
@@ -69,7 +70,7 @@ var _ = Describe("TCP Route Registration", func() {
 		}
 		routingAPIServer.AppendHandlers(routingAPIResponses...)
 		routingAPIServer.SetAllowUnhandledRequests(true) //sometimes multiple creates happen
-		routingAPIServer.HTTPTestServer.StartTLS()
+
 
 		oauthServer = ghttp.NewUnstartedServer()
 		oauthServerResponse := []http.HandlerFunc{
@@ -85,8 +86,7 @@ var _ = Describe("TCP Route Registration", func() {
 		oauthServer.AppendHandlers(oauthServerResponse...)
 		oauthServer.Start()
 
-		rootConfig := initConfig()
-		rootConfig.RoutingAPI.APIURL = routingAPIServer.URL()
+		rootConfig = initConfig()
 		rootConfig.RoutingAPI.ClientID = "my-client"
 		rootConfig.RoutingAPI.ClientSecret = "my-secret"
 		rootConfig.RoutingAPI.OAuthURL = oauthServer.URL()
@@ -106,7 +106,6 @@ var _ = Describe("TCP Route Registration", func() {
 			RegistrationInterval: "100ns",
 		}}
 		rootConfig.Routes = routes
-		writeConfig(rootConfig)
 		natsCmd = startNats()
 	})
 
@@ -117,17 +116,17 @@ var _ = Describe("TCP Route Registration", func() {
 	})
 
 	Context("when provided a tcp route", func() {
+		JustBeforeEach(func() {
+			routingAPIServer.HTTPTestServer.Start()
+			rootConfig.RoutingAPI.APIURL = routingAPIServer.URL()
+			writeConfig(rootConfig)
+		})
+
 		var session *gexec.Session
 
 		BeforeEach(func() {
-			command := exec.Command(
-				routeRegistrarBinPath,
-				fmt.Sprintf("-pidfile=%s", pidFile),
-				fmt.Sprintf("-configPath=%s", configFile),
-			)
-
 			var err error
-			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			session, err = registerRoute()
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 
@@ -145,7 +144,49 @@ var _ = Describe("TCP Route Registration", func() {
 			// Upserted Route content verified with expected body in the ghttp server setup
 		})
 	})
+
+	Context("when routing API uses TLS", func() {
+		Context("when provided a tcp route", func() {
+			JustBeforeEach(func() {
+				routingAPIServer.HTTPTestServer.StartTLS()
+				rootConfig.RoutingAPI.APIURL = routingAPIServer.URL()
+				writeConfig(rootConfig)
+			})
+
+			var session *gexec.Session
+
+			BeforeEach(func() {
+				var err error
+				session, err = registerRoute()
+				Expect(err).ShouldNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				session.Kill()
+			})
+
+			It("registers it with the routing API", func() {
+				Eventually(session.Out).Should(gbytes.Say("Initializing"))
+				Eventually(session.Out).Should(gbytes.Say("creating routing API connection"))
+				Eventually(session.Out).Should(gbytes.Say("Writing pid"))
+				Eventually(session.Out).Should(gbytes.Say("Running"))
+				Eventually(session.Out).Should(gbytes.Say("Mapped new router group"))
+				Eventually(session.Out).Should(gbytes.Say("Upserted route"))
+				// Upserted Route content verified with expected body in the ghttp server setup
+			})
+		})
+	})
 })
+
+func registerRoute() (*gexec.Session, error) {
+	command := exec.Command(
+		routeRegistrarBinPath,
+		fmt.Sprintf("-pidfile=%s", pidFile),
+		fmt.Sprintf("-configPath=%s", configFile),
+	)
+
+	return gexec.Start(command, GinkgoWriter, GinkgoWriter)
+}
 
 func startNats() *exec.Cmd {
 	natsUsername := "nats"

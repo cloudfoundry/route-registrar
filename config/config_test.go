@@ -63,13 +63,10 @@ var _ = Describe("Config", func() {
 				},
 			},
 			RoutingAPI: config.RoutingAPISchema{
-				APIURL:                  "https://api.somewhere",
+				APIURL:                  "http://api.example.com",
 				OAuthURL:                "https://uaa.somewhere",
 				ClientID:                "clientid",
 				ClientSecret:            "secret",
-				ClientCertificatePath:   "client cert path",
-				ClientPrivateKeyPath:    "client private key path",
-				ServerCACertificatePath: "server ca path",
 			},
 			Routes: []config.RouteSchema{
 				{
@@ -168,13 +165,10 @@ var _ = Describe("Config", func() {
 					},
 				},
 				RoutingAPI: config.RoutingAPI{
-					APIURL:                  "https://api.somewhere",
+					APIURL:                  "http://api.example.com",
 					OAuthURL:                "https://uaa.somewhere",
 					ClientID:                "clientid",
 					ClientSecret:            "secret",
-					ClientCertificatePath:   "client cert path",
-					ClientPrivateKeyPath:    "client private key path",
-					ServerCACertificatePath: "server ca path",
 				},
 				Routes: []config.Route{
 					{
@@ -735,33 +729,50 @@ var _ = Describe("Config", func() {
 				})
 			})
 
-			Context("when the client certificate is not supplied", func() {
+			Context("when routing api url is invalid URL", func() {
 				BeforeEach(func() {
-					configSchema.RoutingAPI.ClientCertificatePath = ""
+					configSchema.RoutingAPI.APIURL = ":invalid"
 				})
+
 				It("returns an error", func() {
 					_, err := configSchema.ToConfig()
 					Expect(err).To(HaveOccurred())
 				})
 			})
 
-			Context("when the client private key is not supplied", func() {
+			Context("when routing api url has https scheme", func () {
 				BeforeEach(func() {
-					configSchema.RoutingAPI.ClientPrivateKeyPath = ""
+					configSchema.RoutingAPI.APIURL = "https://api.example.com"
 				})
-				It("returns an error", func() {
-					_, err := configSchema.ToConfig()
-					Expect(err).To(HaveOccurred())
-				})
-			})
 
-			Context("when the server ca path is not supplied", func() {
-				BeforeEach(func() {
-					configSchema.RoutingAPI.ServerCACertificatePath = ""
+				Context("when the client certificate is not supplied", func() {
+					BeforeEach(func() {
+						configSchema.RoutingAPI.ClientCertificatePath = ""
+					})
+					It("returns an error", func() {
+						_, err := configSchema.ToConfig()
+						Expect(err).To(HaveOccurred())
+					})
 				})
-				It("returns an error", func() {
-					_, err := configSchema.ToConfig()
-					Expect(err).To(HaveOccurred())
+
+				Context("when the client private key is not supplied", func() {
+					BeforeEach(func() {
+						configSchema.RoutingAPI.ClientPrivateKeyPath = ""
+					})
+					It("returns an error", func() {
+						_, err := configSchema.ToConfig()
+						Expect(err).To(HaveOccurred())
+					})
+				})
+
+				Context("when the server ca path is not supplied", func() {
+					BeforeEach(func() {
+						configSchema.RoutingAPI.ServerCACertificatePath = ""
+					})
+					It("returns an error", func() {
+						_, err := configSchema.ToConfig()
+						Expect(err).To(HaveOccurred())
+					})
 				})
 			})
 		})
