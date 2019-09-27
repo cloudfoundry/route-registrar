@@ -77,17 +77,12 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		routingAPITLSConfig, err := tlsconfig.Build(
-			tlsconfig.WithInternalServiceDefaults(),
-			tlsconfig.WithIdentityFromFile(c.RoutingAPI.ClientCertificatePath, c.RoutingAPI.ClientPrivateKeyPath),
-		).Client(
-			tlsconfig.WithAuthorityFromFile(c.RoutingAPI.ServerCACertificatePath),
-		)
+		apiClient, err := newAPIClient(c)
+
 		if err != nil {
 			logger.Fatal("failed-to-create-tls-config", err)
 		}
 
-		apiClient := routing_api.NewClientWithTLSConfig(c.RoutingAPI.APIURL, routingAPITLSConfig)
 		routingAPI = routingapi.NewRoutingAPI(logger, uaaClient, apiClient)
 	}
 
@@ -128,4 +123,18 @@ func main() {
 			os.Exit(0)
 		}
 	}
+}
+
+func newAPIClient(c *config.Config) (routing_api.Client, error) {
+	routingAPITLSConfig, err := tlsconfig.Build(
+		tlsconfig.WithInternalServiceDefaults(),
+		tlsconfig.WithIdentityFromFile(c.RoutingAPI.ClientCertificatePath, c.RoutingAPI.ClientPrivateKeyPath),
+	).Client(
+		tlsconfig.WithAuthorityFromFile(c.RoutingAPI.ServerCACertificatePath),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return routing_api.NewClientWithTLSConfig(c.RoutingAPI.APIURL, routingAPITLSConfig), nil
 }
