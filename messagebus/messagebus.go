@@ -10,7 +10,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/route-registrar/config"
-	"github.com/nats-io/go-nats"
+	"github.com/nats-io/nats.go"
 )
 
 //go:generate counterfeiter . MessageBus

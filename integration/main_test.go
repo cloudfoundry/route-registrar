@@ -12,7 +12,7 @@ import (
 
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/messagebus"
-	"github.com/nats-io/go-nats"
+	"github.com/nats-io/nats.go"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
