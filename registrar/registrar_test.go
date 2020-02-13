@@ -1,6 +1,7 @@
 package registrar_test
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"os"
@@ -128,7 +129,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		BeforeEach(func() {
 			err = errors.New("Failed to connect")
 
-			fakeMessageBus.ConnectStub = func([]config.MessageBusServer) error {
+			fakeMessageBus.ConnectStub = func([]config.MessageBusServer, *tls.Config) error {
 				return err
 			}
 		})

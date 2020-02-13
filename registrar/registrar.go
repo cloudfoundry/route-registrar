@@ -6,7 +6,7 @@ import (
 
 	"code.cloudfoundry.org/route-registrar/commandrunner"
 	"code.cloudfoundry.org/route-registrar/messagebus"
-	"github.com/nu7hatch/gouuid"
+	uuid "github.com/nu7hatch/gouuid"
 
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/healthchecker"
@@ -57,7 +57,7 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	var err error
 
 	if len(r.config.MessageBusServers) > 0 {
-		err = r.messageBus.Connect(r.config.MessageBusServers)
+		err = r.messageBus.Connect(r.config.MessageBusServers, nil)
 		if err != nil {
 			return err
 		}

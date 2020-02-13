@@ -1,6 +1,7 @@
 package messagebus
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,7 +17,7 @@ import (
 //go:generate counterfeiter . MessageBus
 
 type MessageBus interface {
-	Connect(servers []config.MessageBusServer) error
+	Connect(servers []config.MessageBusServer, tlsConfig *tls.Config) error
 	SendMessage(subject string, host string, route config.Route, privateInstanceId string) error
 	Close()
 }
@@ -45,7 +46,7 @@ func NewMessageBus(logger lager.Logger) MessageBus {
 	}
 }
 
-func (m *msgBus) Connect(servers []config.MessageBusServer) error {
+func (m *msgBus) Connect(servers []config.MessageBusServer, tlsConfig *tls.Config) error {
 
 	var natsServers []string
 	var natsHosts []string
@@ -59,6 +60,7 @@ func (m *msgBus) Connect(servers []config.MessageBusServer) error {
 
 	opts := nats.DefaultOptions
 	opts.Servers = natsServers
+	opts.TLSConfig = tlsConfig
 	opts.PingInterval = 20 * time.Second
 
 	opts.ClosedCB = func(conn *nats.Conn) {

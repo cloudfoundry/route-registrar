@@ -1,6 +1,7 @@
 package messagebus_test
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -12,10 +13,12 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
+	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/messagebus"
+	"code.cloudfoundry.org/tlsconfig"
 	"github.com/nats-io/nats.go"
 )
 
@@ -88,8 +91,95 @@ var _ = Describe("Messagebus test Suite", func() {
 
 	Describe("Connect", func() {
 		It("connects without error", func() {
-			err := messageBus.Connect(messageBusServers)
+			err := messageBus.Connect(messageBusServers, nil)
 			Expect(err).ShouldNot(HaveOccurred())
+		})
+
+		Context("when tls config is provided", func() {
+			var (
+				natsTlsHost            string
+				natsTlsPort            int
+				natsTlsCmd             *exec.Cmd
+				tlsMessageBusServers   []config.MessageBusServer
+				natsCAPath             string
+				mtlsNATSServerCertPath string
+				mtlsNATSServerKeyPath  string
+				mtlsNATSClientCert     tls.Certificate
+			)
+			BeforeEach(func() {
+				natsTlsHost = "127.0.0.1"
+				natsTlsPort = natsPort + 1000
+				natsCAPath, mtlsNATSServerCertPath, mtlsNATSServerKeyPath, mtlsNATSClientCert = tls_helpers.GenerateCaAndMutualTlsCerts()
+
+				natsTlsCmd = startNatsTls(natsTlsHost, natsTlsPort, natsCAPath, mtlsNATSServerCertPath, mtlsNATSServerKeyPath)
+
+				tlsServers := []string{
+					fmt.Sprintf(
+						"nats://%s:%d",
+						natsTlsHost,
+						natsTlsPort,
+					),
+				}
+
+				tlsOpts := nats.DefaultOptions
+				tlsOpts.Servers = tlsServers
+
+				spyClientTlsConfig, err := tlsconfig.Build(
+					tlsconfig.WithInternalServiceDefaults(),
+					tlsconfig.WithIdentity(mtlsNATSClientCert),
+				).Client(
+					tlsconfig.WithAuthorityFromFile(natsCAPath),
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				tlsOpts.TLSConfig = spyClientTlsConfig
+
+				tlsTestSpyClient, err := tlsOpts.Connect()
+				Expect(err).ToNot(HaveOccurred())
+
+				// Ensure nats server is listening before tests
+				Eventually(func() string {
+					connStatus := tlsTestSpyClient.Status()
+					return fmt.Sprintf("%v", connStatus)
+				}, 5*time.Second).Should(Equal("1"))
+
+				Expect(err).ShouldNot(HaveOccurred())
+
+				tlsMessageBusServer := config.MessageBusServer{
+					Host: fmt.Sprintf("%s:%d", natsTlsHost, natsTlsPort),
+				}
+
+				tlsMessageBusServers = []config.MessageBusServer{tlsMessageBusServer}
+
+				tlsTestSpyClient.Close()
+
+				messageBusServers = []config.MessageBusServer{}
+			})
+			AfterEach(func() {
+
+				err := natsTlsCmd.Process.Kill()
+				Expect(err).NotTo(HaveOccurred())
+				_, err = natsTlsCmd.Process.Wait()
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("connects without error", func() {
+				var (
+					err             error
+					clientTlsConfig *tls.Config
+				)
+
+				clientTlsConfig, err = tlsconfig.Build(
+					tlsconfig.WithInternalServiceDefaults(),
+					tlsconfig.WithIdentity(mtlsNATSClientCert),
+				).Client(
+					tlsconfig.WithAuthorityFromFile(natsCAPath),
+				)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = messageBus.Connect(tlsMessageBusServers, clientTlsConfig)
+				Expect(err).NotTo(HaveOccurred())
+			})
 		})
 
 		Context("when no servers are provided", func() {
@@ -98,14 +188,14 @@ var _ = Describe("Messagebus test Suite", func() {
 			})
 
 			It("returns error", func() {
-				err := messageBus.Connect(messageBusServers)
+				err := messageBus.Connect(messageBusServers, nil)
 				Expect(err).Should(HaveOccurred())
 			})
 		})
 
 		Context("when nats connection is successful", func() {
 			BeforeEach(func() {
-				err := messageBus.Connect(messageBusServers)
+				err := messageBus.Connect(messageBusServers, nil)
 				Expect(err).ShouldNot(HaveOccurred())
 			})
 			It("logs a message", func() {
@@ -116,7 +206,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 		Context("when nats connection closes", func() {
 			BeforeEach(func() {
-				err := messageBus.Connect(messageBusServers)
+				err := messageBus.Connect(messageBusServers, nil)
 				Expect(err).ShouldNot(HaveOccurred())
 				messageBus.Close()
 			})
@@ -142,7 +232,7 @@ var _ = Describe("Messagebus test Suite", func() {
 		)
 
 		BeforeEach(func() {
-			err := messageBus.Connect(messageBusServers)
+			err := messageBus.Connect(messageBusServers, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			port := 12345
@@ -198,7 +288,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 		Context("when the connection is already closed", func() {
 			BeforeEach(func() {
-				err := messageBus.Connect(messageBusServers)
+				err := messageBus.Connect(messageBusServers, nil)
 				Expect(err).ShouldNot(HaveOccurred())
 
 				messageBus.Close()
@@ -220,6 +310,34 @@ func startNats(host string, port int, username, password string) *exec.Cmd {
 		"-p", strconv.Itoa(port),
 		"--user", username,
 		"--pass", password)
+
+	err := cmd.Start()
+	if err != nil {
+		fmt.Printf("gnatsd failed to start: %v\n", err)
+	}
+
+	natsTimeout := 10 * time.Second
+	natsPollingInterval := 20 * time.Millisecond
+	Eventually(func() error {
+		_, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+		return err
+	}, natsTimeout, natsPollingInterval).Should(Succeed())
+
+	fmt.Fprintf(GinkgoWriter, "gnatsd running on port %d\n", port)
+	return cmd
+}
+
+func startNatsTls(host string, port int, caFile, certFile, keyFile string) *exec.Cmd {
+	fmt.Fprintf(GinkgoWriter, "Starting gnatsd on port %d\n", port)
+
+	cmd := exec.Command(
+		"gnatsd",
+		"-p", strconv.Itoa(port),
+		"--tlsverify",
+		"--tlscacert", caFile,
+		"--tlscert", certFile,
+		"--tlskey", keyFile,
+	)
 
 	err := cmd.Start()
 	if err != nil {
