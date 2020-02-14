@@ -63,10 +63,10 @@ var _ = Describe("Config", func() {
 				},
 			},
 			RoutingAPI: config.RoutingAPISchema{
-				APIURL:                  "http://api.example.com",
-				OAuthURL:                "https://uaa.somewhere",
-				ClientID:                "clientid",
-				ClientSecret:            "secret",
+				APIURL:       "http://api.example.com",
+				OAuthURL:     "https://uaa.somewhere",
+				ClientID:     "clientid",
+				ClientSecret: "secret",
 			},
 			Routes: []config.RouteSchema{
 				{
@@ -97,6 +97,12 @@ var _ = Describe("Config", func() {
 					RouterGroup:          "some-router-group",
 					RegistrationInterval: registrationInterval1String,
 				},
+			},
+			NATSmTLSConfig: config.ClientTLSConfigSchema {
+				Enabled: true,
+					CertPath: "cert-path",
+					KeyPath:  "key-path",
+					CAPath:   "ca-path",
 			},
 			Host: "127.0.0.1",
 		}
@@ -165,10 +171,10 @@ var _ = Describe("Config", func() {
 					},
 				},
 				RoutingAPI: config.RoutingAPI{
-					APIURL:                  "http://api.example.com",
-					OAuthURL:                "https://uaa.somewhere",
-					ClientID:                "clientid",
-					ClientSecret:            "secret",
+					APIURL:       "http://api.example.com",
+					OAuthURL:     "https://uaa.somewhere",
+					ClientID:     "clientid",
+					ClientSecret: "secret",
 				},
 				Routes: []config.Route{
 					{
@@ -200,6 +206,12 @@ var _ = Describe("Config", func() {
 						RouterGroup:          "some-router-group",
 						RegistrationInterval: registrationInterval1,
 					},
+				},
+				NATSmTLSConfig: config.ClientTLSConfig {
+					Enabled:  true,
+					CertPath: "cert-path",
+					KeyPath:  "key-path",
+					CAPath:   "ca-path",
 				},
 			}
 
@@ -740,7 +752,7 @@ var _ = Describe("Config", func() {
 				})
 			})
 
-			Context("when routing api url has https scheme", func () {
+			Context("when routing api url has https scheme", func() {
 				BeforeEach(func() {
 					configSchema.RoutingAPI.APIURL = "https://api.example.com"
 				})

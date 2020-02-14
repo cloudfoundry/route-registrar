@@ -111,7 +111,7 @@ var _ = Describe("Messagebus test Suite", func() {
 				natsTlsPort = natsPort + 1000
 				natsCAPath, mtlsNATSServerCertPath, mtlsNATSServerKeyPath, mtlsNATSClientCert = tls_helpers.GenerateCaAndMutualTlsCerts()
 
-				natsTlsCmd = startNatsTls(natsTlsHost, natsTlsPort, natsCAPath, mtlsNATSServerCertPath, mtlsNATSServerKeyPath)
+				natsTlsCmd = startNatsTls(natsTlsHost, natsTlsPort, natsCAPath, mtlsNATSServerCertPath, mtlsNATSServerKeyPath, "testuser", "testpw")
 
 				tlsServers := []string{
 					fmt.Sprintf(
@@ -123,6 +123,8 @@ var _ = Describe("Messagebus test Suite", func() {
 
 				tlsOpts := nats.DefaultOptions
 				tlsOpts.Servers = tlsServers
+				tlsOpts.User = "testuser"
+				tlsOpts.Password = "testpw"
 
 				spyClientTlsConfig, err := tlsconfig.Build(
 					tlsconfig.WithInternalServiceDefaults(),
@@ -146,7 +148,9 @@ var _ = Describe("Messagebus test Suite", func() {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				tlsMessageBusServer := config.MessageBusServer{
-					Host: fmt.Sprintf("%s:%d", natsTlsHost, natsTlsPort),
+					Host:     fmt.Sprintf("%s:%d", natsTlsHost, natsTlsPort),
+					User:     "testuser",
+					Password: "testpw",
 				}
 
 				tlsMessageBusServers = []config.MessageBusServer{tlsMessageBusServer}
@@ -327,7 +331,7 @@ func startNats(host string, port int, username, password string) *exec.Cmd {
 	return cmd
 }
 
-func startNatsTls(host string, port int, caFile, certFile, keyFile string) *exec.Cmd {
+func startNatsTls(host string, port int, caFile, certFile, keyFile, username, password string) *exec.Cmd {
 	fmt.Fprintf(GinkgoWriter, "Starting gnatsd on port %d\n", port)
 
 	cmd := exec.Command(
@@ -337,6 +341,8 @@ func startNatsTls(host string, port int, caFile, certFile, keyFile string) *exec
 		"--tlscacert", caFile,
 		"--tlscert", certFile,
 		"--tlskey", keyFile,
+		"--user", username,
+		"--pass", password,
 	)
 
 	err := cmd.Start()

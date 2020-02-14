@@ -54,5 +54,11 @@
     "oauth_url": "https://uaa.somewhere",
     "client_id": "clientid",
     "client_secret": "secret"
+  },
+  "nats_mtls_config": {
+    "enabled": true,
+    "cert_path": "cert-path",
+    "key_path": "key-path",
+    "ca_path": "ca-path"
   }
 }

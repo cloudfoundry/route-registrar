@@ -1,11 +1,14 @@
 package registrar
 
 import (
+	"crypto/tls"
+	"fmt"
 	"os"
 	"time"
 
 	"code.cloudfoundry.org/route-registrar/commandrunner"
 	"code.cloudfoundry.org/route-registrar/messagebus"
+	"code.cloudfoundry.org/tlsconfig"
 	uuid "github.com/nu7hatch/gouuid"
 
 	"code.cloudfoundry.org/route-registrar/config"
@@ -55,9 +58,23 @@ func NewRegistrar(
 
 func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	var err error
+	var tlsConfig *tls.Config
+
+	if r.config.NATSmTLSConfig.Enabled {
+		tlsConfig, err = tlsconfig.Build(
+			tlsconfig.WithInternalServiceDefaults(),
+			tlsconfig.WithIdentityFromFile(r.config.NATSmTLSConfig.CertPath, r.config.NATSmTLSConfig.KeyPath),
+		).Client(
+			tlsconfig.WithAuthorityFromFile(r.config.NATSmTLSConfig.CAPath),
+		)
+
+		if err != nil {
+			return fmt.Errorf("failed building NATS mTLS config: %s", err)
+		}
+	}
 
 	if len(r.config.MessageBusServers) > 0 {
-		err = r.messageBus.Connect(r.config.MessageBusServers, nil)
+		err = r.messageBus.Connect(r.config.MessageBusServers, tlsConfig)
 		if err != nil {
 			return err
 		}

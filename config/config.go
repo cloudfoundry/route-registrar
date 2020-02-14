@@ -40,6 +40,7 @@ type ConfigSchema struct {
 	MessageBusServers []MessageBusServerSchema `json:"message_bus_servers"`
 	RoutingAPI        RoutingAPISchema         `json:"routing_api"`
 	Routes            []RouteSchema            `json:"routes"`
+	NATSmTLSConfig    ClientTLSConfigSchema    `json:"nats_mtls_config"`
 	Host              string                   `json:"host"`
 }
 
@@ -56,6 +57,13 @@ type RouteSchema struct {
 	RegistrationInterval string             `json:"registration_interval,omitempty"`
 	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty"`
 	ServerCertDomainSAN  string             `json:"server_cert_domain_san,omitempty"`
+}
+
+type ClientTLSConfigSchema struct {
+	Enabled  bool   `json:"enabled`
+	CertPath string `json:"cert_path"`
+	KeyPath  string `json:"key_path"`
+	CAPath   string `json:"ca_path"`
 }
 
 type MessageBusServer struct {
@@ -87,7 +95,15 @@ type Config struct {
 	MessageBusServers []MessageBusServer
 	RoutingAPI        RoutingAPI
 	Routes            []Route
+	NATSmTLSConfig    ClientTLSConfig
 	Host              string
+}
+
+type ClientTLSConfig struct {
+	Enabled  bool
+	CertPath string
+	KeyPath  string
+	CAPath   string
 }
 
 type Route struct {
@@ -161,10 +177,13 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 		return nil, errors
 	}
 
+	natsTLSConfig := clientTLSConfigFromSchema(c.NATSmTLSConfig)
+
 	config := Config{
 		Host:              c.Host,
 		MessageBusServers: messageBusServers,
 		Routes:            routes,
+		NATSmTLSConfig:    natsTLSConfig,
 	}
 	if routingAPI != nil {
 		config.RoutingAPI = *routingAPI
@@ -397,4 +416,13 @@ func routingAPIFromSchema(api RoutingAPISchema) (*RoutingAPI, error) {
 		ClientPrivateKeyPath:    api.ClientPrivateKeyPath,
 		ServerCACertificatePath: api.ServerCACertificatePath,
 	}, nil
+}
+
+func clientTLSConfigFromSchema(clientTLSConfigSchema ClientTLSConfigSchema) ClientTLSConfig {
+	return ClientTLSConfig{
+		Enabled:  clientTLSConfigSchema.Enabled,
+		CertPath: clientTLSConfigSchema.CertPath,
+		KeyPath:  clientTLSConfigSchema.KeyPath,
+		CAPath:   clientTLSConfigSchema.CAPath,
+	}
 }
