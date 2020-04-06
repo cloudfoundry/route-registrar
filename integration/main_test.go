@@ -38,7 +38,7 @@ var _ = Describe("Main", func() {
 		writeConfig(rootConfig)
 
 		natsCmd = exec.Command(
-			"gnatsd",
+			"nats-server",
 			"-p", strconv.Itoa(natsPort),
 			"--user", natsUsername,
 			"--pass", natsPassword,
@@ -367,10 +367,10 @@ func writeConfig(config config.ConfigSchema) {
 }
 
 func startNatsTLS(host string, port int, caFile, certFile, keyFile string) *exec.Cmd {
-	fmt.Fprintf(GinkgoWriter, "Starting gnatsd on port %d\n", port)
+	fmt.Fprintf(GinkgoWriter, "Starting nats-server on port %d\n", port)
 
 	cmd := exec.Command(
-		"gnatsd",
+		"nats-server",
 		"-p", strconv.Itoa(port),
 		"--tlsverify",
 		"--tlscacert", caFile,
@@ -380,7 +380,7 @@ func startNatsTLS(host string, port int, caFile, certFile, keyFile string) *exec
 
 	err := cmd.Start()
 	if err != nil {
-		fmt.Printf("gnatsd failed to start: %v\n", err)
+		fmt.Printf("nats-server failed to start: %v\n", err)
 	}
 
 	natsTimeout := 10 * time.Second
@@ -390,6 +390,6 @@ func startNatsTLS(host string, port int, caFile, certFile, keyFile string) *exec
 		return err
 	}, natsTimeout, natsPollingInterval).Should(Succeed())
 
-	fmt.Fprintf(GinkgoWriter, "gnatsd running on port %d\n", port)
+	fmt.Fprintf(GinkgoWriter, "nats-server running on port %d\n", port)
 	return cmd
 }

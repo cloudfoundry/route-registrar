@@ -307,17 +307,17 @@ var _ = Describe("Messagebus test Suite", func() {
 })
 
 func startNats(host string, port int, username, password string) *exec.Cmd {
-	fmt.Fprintf(GinkgoWriter, "Starting gnatsd on port %d\n", port)
+	fmt.Fprintf(GinkgoWriter, "Starting nats-server on port %d\n", port)
 
 	cmd := exec.Command(
-		"gnatsd",
+		"nats-server",
 		"-p", strconv.Itoa(port),
 		"--user", username,
 		"--pass", password)
 
 	err := cmd.Start()
 	if err != nil {
-		fmt.Printf("gnatsd failed to start: %v\n", err)
+		fmt.Printf("nats-server failed to start: %v\n", err)
 	}
 
 	natsTimeout := 10 * time.Second
@@ -327,15 +327,15 @@ func startNats(host string, port int, username, password string) *exec.Cmd {
 		return err
 	}, natsTimeout, natsPollingInterval).Should(Succeed())
 
-	fmt.Fprintf(GinkgoWriter, "gnatsd running on port %d\n", port)
+	fmt.Fprintf(GinkgoWriter, "nats-server running on port %d\n", port)
 	return cmd
 }
 
 func startNatsTls(host string, port int, caFile, certFile, keyFile, username, password string) *exec.Cmd {
-	fmt.Fprintf(GinkgoWriter, "Starting gnatsd on port %d\n", port)
+	fmt.Fprintf(GinkgoWriter, "Starting nats-server on port %d\n", port)
 
 	cmd := exec.Command(
-		"gnatsd",
+		"nats-server",
 		"-p", strconv.Itoa(port),
 		"--tlsverify",
 		"--tlscacert", caFile,
@@ -347,7 +347,7 @@ func startNatsTls(host string, port int, caFile, certFile, keyFile, username, pa
 
 	err := cmd.Start()
 	if err != nil {
-		fmt.Printf("gnatsd failed to start: %v\n", err)
+		fmt.Printf("nats-server failed to start: %v\n", err)
 	}
 
 	natsTimeout := 10 * time.Second
@@ -357,6 +357,6 @@ func startNatsTls(host string, port int, caFile, certFile, keyFile, username, pa
 		return err
 	}, natsTimeout, natsPollingInterval).Should(Succeed())
 
-	fmt.Fprintf(GinkgoWriter, "gnatsd running on port %d\n", port)
+	fmt.Fprintf(GinkgoWriter, "nats-server running on port %d\n", port)
 	return cmd
 }

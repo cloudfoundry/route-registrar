@@ -193,7 +193,7 @@ func startNats() *exec.Cmd {
 	natsPassword := "nats"
 
 	natsCmd := exec.Command(
-		"gnatsd",
+		"nats-server",
 		"-p", strconv.Itoa(natsPort),
 		"--user", natsUsername,
 		"--pass", natsPassword,
