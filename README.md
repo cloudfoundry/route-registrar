@@ -11,6 +11,10 @@ components don't need to maintain logic for route registration.
 
 * CI: [Concourse](https://networking.ci.cf-app.com/teams/ga/pipelines/routing)
 
+## Reporting issues and requesting features
+
+Please report all issues and feature requests in [cloudfoundry/routing-release](https://github.com/cloudfoundry/routing-release).
+
 ## Usage
 
 1. Clone the [routing-release repository](https://github.com/cloudfoundry/routing-release)
