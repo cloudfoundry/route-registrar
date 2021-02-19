@@ -69,13 +69,22 @@ func (r *RoutingAPI) makeTcpRouteMapping(route config.Route) (models.TcpRouteMap
 
 	r.logger.Info("Creating mapping", lager.Data{})
 
-	return models.NewSniTcpRouteMapping(
-		routerGroupGUID,
-		uint16(*route.ExternalPort),
-		nilIfEmpty(&route.ServerCertDomainSAN),
-		route.Host,
-		uint16(*route.Port),
-		int(route.RegistrationInterval.Seconds())), nil
+	if nilIfEmpty(&route.ServerCertDomainSAN) != nil {
+		return models.NewSniTcpRouteMapping(
+			routerGroupGUID,
+			uint16(*route.ExternalPort),
+			nilIfEmpty(&route.ServerCertDomainSAN),
+			route.Host,
+			uint16(*route.TLSPort),
+			int(route.RegistrationInterval.Seconds())), nil
+	} else {
+		return models.NewTcpRouteMapping(
+			routerGroupGUID,
+			uint16(*route.ExternalPort),
+			route.Host,
+			uint16(*route.Port),
+			int(route.RegistrationInterval.Seconds())), nil
+	}
 }
 
 func nilIfEmpty(str *string) *string {
