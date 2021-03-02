@@ -39,9 +39,9 @@ var _ = Describe("Routing API", func() {
 
 	It("Sets SNI hostname if ServerCertDomainSAN is present.", func() {
 		tcpRouteMapping, err := api.makeTcpRouteMapping(config.Route{
-			TLSPort:      &port,
-			ExternalPort: &externalPort,
-			RouterGroup:  "my-router-group",
+			Port:                &port,
+			ExternalPort:        &externalPort,
+			RouterGroup:         "my-router-group",
 			ServerCertDomainSAN: "sniHostname",
 		})
 		Expect(err).NotTo(HaveOccurred())

@@ -80,43 +80,6 @@ var _ = Describe("Routing API", func() {
 			})
 		})
 
-		Context("when given a valid TCP Route with SNI hostname set", func() {
-			It("registers the route", func() {
-				sniHostName := "example.com"
-				err := api.RegisterRoute(config.Route{
-					Name:                 "test-sni-route",
-					TLSPort:              &port,
-					ExternalPort:         &externalPort,
-					Host:                 "myhost",
-					ServerCertDomainSAN:  sniHostName,
-					RegistrationInterval: 100 * time.Second,
-					RouterGroup:          "my-router-group",
-				})
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(uaaClient.FetchTokenCallCount()).To(Equal(1))
-				Expect(uaaClient.FetchTokenArgsForCall(0)).To(BeFalse())
-
-				Expect(client.SetTokenCallCount()).To(Equal(1))
-				Expect(client.SetTokenArgsForCall(0)).To(Equal("my-token"))
-
-				Expect(client.RouterGroupWithNameCallCount()).To(Equal(1))
-				Expect(client.RouterGroupWithNameArgsForCall(0)).To(Equal("my-router-group"))
-
-
-				routeMapping := models.TcpRouteMapping{TcpMappingEntity: models.TcpMappingEntity{
-					RouterGroupGuid: "router-group-guid",
-					HostPort:        1234,
-					ExternalPort:    5678,
-					HostIP:          "myhost",
-					TTL:             &ttl,
-					SniHostname: 	 &sniHostName,
-				}}
-				Expect(client.UpsertTcpRouteMappingsCallCount()).To(Equal(1))
-				Expect(client.UpsertTcpRouteMappingsArgsForCall(0)).To(Equal([]models.TcpRouteMapping{routeMapping}))
-			})
-		})
-
 		Context("when the route mapping fails to register", func() {
 			BeforeEach(func() {
 				client.UpsertTcpRouteMappingsReturns(errors.New("registration error"))
