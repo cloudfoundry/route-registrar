@@ -48,6 +48,7 @@ type RouteSchema struct {
 	Type                 string             `json:"type"`
 	Name                 string             `json:"name"`
 	Port                 *int               `json:"port"`
+	SniPort              *int               `json:"sni_port"`
 	TLSPort              *int               `json:"tls_port"`
 	Tags                 map[string]string  `json:"tags"`
 	URIs                 []string           `json:"uris"`
@@ -57,6 +58,7 @@ type RouteSchema struct {
 	RegistrationInterval string             `json:"registration_interval,omitempty"`
 	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty"`
 	ServerCertDomainSAN  string             `json:"server_cert_domain_san,omitempty"`
+	SniRoutableSan       string             `json:"sni_routable_san,omitempty"`
 }
 
 type ClientTLSConfigSchema struct {
@@ -223,11 +225,11 @@ func parseRegistrationInterval(registrationInterval string) (time.Duration, erro
 func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 	errors := multierror.NewMultiError(fmt.Sprintf("route %s", nameOrIndex(r, index)))
 
-	if r.Name == "" && r.Type != "tcp" {
+	if r.Type != "tcp" && r.Type != "sni" && r.Name == "" {
 		errors.Add(fmt.Errorf("no name"))
 	}
 
-	if r.Port == nil && r.TLSPort == nil {
+	if r.Port == nil && r.TLSPort == nil && r.SniPort == nil{
 		errors.Add(fmt.Errorf("no port"))
 	}
 	if r.Port != nil && *r.Port <= 0 {
@@ -237,7 +239,7 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		errors.Add(fmt.Errorf("invalid tls_port: %d", *r.TLSPort))
 	}
 
-	if r.Type != "tcp" {
+	if r.Type != "tcp" && r.Type != "sni" {
 		if len(r.URIs) == 0 {
 			errors.Add(fmt.Errorf("no URIs"))
 		}
@@ -292,6 +294,12 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		ServerCertDomainSAN:  r.ServerCertDomainSAN,
 		RegistrationInterval: registrationInterval,
 		HealthCheck:          healthCheck,
+	}
+
+	if r.Type == "sni" {
+		route.Port = r.SniPort
+		route.ServerCertDomainSAN = r.SniRoutableSan
+		route.Type = "tcp"
 	}
 	return &route, nil
 }
