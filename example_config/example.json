@@ -35,6 +35,14 @@
         "external_port": 5000,
         "router_group": "some-router-group",
         "registration_interval": "10s"
+    },
+    {
+      "type": "sni",
+      "sni_port": 17000,
+      "external_port": 16000,
+      "sni_routable_san": "sni.internal",
+      "router_group": "some-router-group",
+      "registration_interval": "10s"
     }
   ],
   "message_bus_servers": [

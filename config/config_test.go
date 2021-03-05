@@ -31,6 +31,8 @@ var _ = Describe("Config", func() {
 		port1       int
 		tcpPort0    int
 		backendPort int
+		sniExternalPort int
+		sniPort int
 	)
 
 	BeforeEach(func() {
@@ -48,6 +50,8 @@ var _ = Describe("Config", func() {
 		port1 = 3001
 		tcpPort0 = 5000
 		backendPort = 15000
+		sniExternalPort = 16000
+		sniPort = 17000
 
 		configSchema = config.ConfigSchema{
 			MessageBusServers: []config.MessageBusServerSchema{
@@ -94,6 +98,14 @@ var _ = Describe("Config", func() {
 					Type:                 "tcp",
 					ExternalPort:         &tcpPort0,
 					Port:                 &backendPort,
+					RouterGroup:          "some-router-group",
+					RegistrationInterval: registrationInterval1String,
+				},
+				{
+					Type:                 "sni",
+					ExternalPort:         &sniExternalPort,
+					SniPort:              &sniPort,
+					SniRoutableSan:       "sni.internal",
 					RouterGroup:          "some-router-group",
 					RegistrationInterval: registrationInterval1String,
 				},
@@ -203,6 +215,15 @@ var _ = Describe("Config", func() {
 						ExternalPort:         &tcpPort0,
 						Host:                 "127.0.0.1",
 						Port:                 &backendPort,
+						RouterGroup:          "some-router-group",
+						RegistrationInterval: registrationInterval1,
+					},
+					{
+						Type:                 "tcp",
+						ExternalPort:         &sniExternalPort,
+						Host:                 "127.0.0.1",
+						Port:                 &sniPort,
+						ServerCertDomainSAN:  "sni.internal",
 						RouterGroup:          "some-router-group",
 						RegistrationInterval: registrationInterval1,
 					},
@@ -708,8 +729,8 @@ var _ = Describe("Config", func() {
 
 				It("returns no error", func() {
 					c, err := configSchema.ToConfig()
-					Expect(c).NotTo(BeNil())
 					Expect(err).NotTo(HaveOccurred())
+					Expect(c).NotTo(BeNil())
 				})
 			})
 		})
