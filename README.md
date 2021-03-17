@@ -76,7 +76,7 @@ Please report all issues and feature requests in [cloudfoundry/routing-release](
     - `port` or `tls_port` are for the destination host (backend). At least one
       must be provided and must be a positive integer > 1.
     - `server_cert_domain_san` is the SAN on the destination host's TLS
-      certificate. Required when `tls_port` is provided. If `tls_port` is not provided
+      certificate. Required when `tls_port` is provided.
     - `uris` are the routes being registered for the destination `host`. Must be
       provided and be a non empty array of strings.  All URIs in a given route
       collection will be mapped to the same host and port.
