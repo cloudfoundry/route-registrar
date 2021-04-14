@@ -27,12 +27,12 @@ var _ = Describe("Config", func() {
 		routeName1 string
 		routeName2 string
 
-		port0       int
-		port1       int
-		tcpPort0    int
-		backendPort int
+		port0           int
+		port1           int
+		tcpPort0        int
+		backendPort     int
 		sniExternalPort int
-		sniPort int
+		sniPort         int
 	)
 
 	BeforeEach(func() {
@@ -110,11 +110,11 @@ var _ = Describe("Config", func() {
 					RegistrationInterval: registrationInterval1String,
 				},
 			},
-			NATSmTLSConfig: config.ClientTLSConfigSchema {
-				Enabled: true,
-					CertPath: "cert-path",
-					KeyPath:  "key-path",
-					CAPath:   "ca-path",
+			NATSmTLSConfig: config.ClientTLSConfigSchema{
+				Enabled:  true,
+				CertPath: "cert-path",
+				KeyPath:  "key-path",
+				CAPath:   "ca-path",
 			},
 			Host: "127.0.0.1",
 		}
@@ -228,7 +228,7 @@ var _ = Describe("Config", func() {
 						RegistrationInterval: registrationInterval1,
 					},
 				},
-				NATSmTLSConfig: config.ClientTLSConfig {
+				NATSmTLSConfig: config.ClientTLSConfig{
 					Enabled:  true,
 					CertPath: "cert-path",
 					KeyPath:  "key-path",
@@ -382,7 +382,7 @@ var _ = Describe("Config", func() {
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
-					Expect(err.Error()).To(ContainSubstring("registration_interval: time: missing unit in duration 1"))
+					Expect(err.Error()).To(ContainSubstring("registration_interval: time: missing unit in duration \"1\""))
 				})
 			})
 
@@ -396,7 +396,7 @@ var _ = Describe("Config", func() {
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
-					Expect(err.Error()).To(ContainSubstring("invalid registration_interval: time: invalid duration asdf"))
+					Expect(err.Error()).To(ContainSubstring("invalid registration_interval: time: invalid duration \"asdf\""))
 				})
 			})
 		})
@@ -870,7 +870,7 @@ var _ = Describe("Config", func() {
 					buf := gbytes.BufferWithBytes([]byte(err.Error()))
 					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 0'`))
 					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
-					Expect(buf).To(gbytes.Say("invalid registration_interval: time: missing unit in duration 10"))
+					Expect(buf).To(gbytes.Say("invalid registration_interval: time: missing unit in duration \"10\""))
 				})
 			})
 
@@ -1006,7 +1006,7 @@ var _ = Describe("Config", func() {
 						buf := gbytes.BufferWithBytes([]byte(err.Error()))
 						Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
 						Expect(buf).To(gbytes.Say(fmt.Sprintf(
-							"invalid healthcheck timeout: time: invalid duration %s",
+							"invalid healthcheck timeout: time: invalid duration \"%s\"",
 							timeoutString,
 						)))
 					})
