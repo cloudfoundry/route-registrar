@@ -29,7 +29,6 @@ var _ = Describe("CommandRunner", func() {
 	var (
 		executable   string
 		tmpDir       string
-		tmpGoPkg     string
 		tmpGoPkgPath string
 		outbuf       bytes.Buffer
 		errbuf       bytes.Buffer
@@ -41,20 +40,20 @@ var _ = Describe("CommandRunner", func() {
 		tmpDir, err = ioutil.TempDir("", "healthchecker-test")
 		Expect(err).NotTo(HaveOccurred())
 
-		gopathEnv := os.Getenv("GOPATH")
+		gopathEnv := os.Getenv("RELEASE_DIR")
 		gopathArray := strings.SplitN(gopathEnv, ":", 1)
 		gopath := gopathArray[0]
 		Expect(gopath).NotTo(BeEmpty())
-
-		tmpGoPkgPath, err = ioutil.TempDir(filepath.Join(gopath, "src"), "tmp-foo")
-		Expect(err).NotTo(HaveOccurred())
-		tmpGoPkg = filepath.Base(tmpGoPkgPath)
 
 		executable = filepath.Join(tmpDir, "healthchecker.sh")
 		scriptText := "echo 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
 
 		err = ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
 		Expect(err).NotTo(HaveOccurred())
+
+		tmpGoPkgPath, err = ioutil.TempDir(filepath.Join(gopath, "src", "code.cloudfoundry.org"), "tmp-foo")
+		Expect(err).NotTo(HaveOccurred())
+
 
 		outbuf = bytes.Buffer{}
 		errbuf = bytes.Buffer{}
@@ -112,7 +111,7 @@ var _ = Describe("CommandRunner", func() {
 				err := ioutil.WriteFile(executableFilepath, []byte(golangExecutable), os.ModePerm)
 				Expect(err).NotTo(HaveOccurred())
 
-				executable, err = gexec.Build(tmpGoPkg)
+				executable, err = gexec.Build(tmpGoPkgPath)
 				Expect(err).ShouldNot(HaveOccurred())
 			})
 

@@ -5,7 +5,19 @@ set -eux
 MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( cd "${MY_DIR}"/.. && pwd )"
 
-go get github.com/nats-io/nats-server
+if [ "${RELEASE_DIR:-}" = "" ]; then
+  echo "RELEASE_DIR empty or not set."
+  exit 1
+fi
+
+echo "RELEASE_DIR=$RELEASE_DIR"
+
+export BIN_DIR="$RELEASE_DIR/bin"
+
+
+pushd $RELEASE_DIR/src/code.cloudfoundry.org
+go build -o "$BIN_DIR/nats-server" github.com/nats-io/nats-server/v2
+popd
 
 pushd "${PROJECT_DIR}" > /dev/null
   ginkgo \
