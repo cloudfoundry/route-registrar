@@ -156,7 +156,7 @@ jobs:
 
 Dependencies are saved using the
 [routing-release](https://github.com/cloudfoundry/routing-release). Just clone
-the repo and set the `GOPATH` to the routing release directory.
+the repo and change directory to `src/code.cloudfoundry.org`
 
 ### Running tests
 
