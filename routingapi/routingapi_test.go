@@ -26,9 +26,9 @@ var _ = Describe("Routing API", func() {
 		api    *routingapi.RoutingAPI
 		logger lager.Logger
 
-		port         int
-		externalPort int
-		ttl          int
+		port                 int
+		externalPort         int
+		registrationInterval int
 	)
 
 	BeforeEach(func() {
@@ -40,7 +40,7 @@ var _ = Describe("Routing API", func() {
 
 		port = 1234
 		externalPort = 5678
-		ttl = 100
+		registrationInterval = 100
 	})
 
 	Describe("RegisterRoute", func() {
@@ -49,13 +49,13 @@ var _ = Describe("Routing API", func() {
 		})
 
 		Context("when given a valid route", func() {
-			It("registers the route", func() {
+			It("registers the route using the registration interval as the TTL", func() {
 				err := api.RegisterRoute(config.Route{
 					Name:                 "test-route",
 					Port:                 &port,
 					ExternalPort:         &externalPort,
 					Host:                 "myhost",
-					RegistrationInterval: 100 * time.Second,
+					RegistrationInterval: time.Duration(registrationInterval) * time.Second,
 					RouterGroup:          "my-router-group",
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -68,12 +68,13 @@ var _ = Describe("Routing API", func() {
 				Expect(client.RouterGroupWithNameCallCount()).To(Equal(1))
 				Expect(client.RouterGroupWithNameArgsForCall(0)).To(Equal("my-router-group"))
 
+				expectedTTL := registrationInterval
 				routeMapping := models.TcpRouteMapping{TcpMappingEntity: models.TcpMappingEntity{
 					RouterGroupGuid: "router-group-guid",
 					HostPort:        1234,
 					ExternalPort:    5678,
 					HostIP:          "myhost",
-					TTL:             &ttl,
+					TTL:             &expectedTTL,
 				}}
 				Expect(client.UpsertTcpRouteMappingsCallCount()).To(Equal(1))
 				Expect(client.UpsertTcpRouteMappingsArgsForCall(0)).To(Equal([]models.TcpRouteMapping{routeMapping}))
@@ -91,7 +92,7 @@ var _ = Describe("Routing API", func() {
 					Port:                 &port,
 					ExternalPort:         &externalPort,
 					Host:                 "myhost",
-					RegistrationInterval: 100 * time.Second,
+					RegistrationInterval: time.Duration(registrationInterval) * time.Second,
 					RouterGroup:          "my-router-group",
 				})
 
@@ -113,7 +114,7 @@ var _ = Describe("Routing API", func() {
 					Port:                 &port,
 					ExternalPort:         &externalPort,
 					Host:                 "myhost",
-					RegistrationInterval: 100 * time.Second,
+					RegistrationInterval: time.Duration(registrationInterval) * time.Second,
 					RouterGroup:          "my-router-group",
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -126,12 +127,13 @@ var _ = Describe("Routing API", func() {
 				Expect(client.RouterGroupWithNameCallCount()).To(Equal(1))
 				Expect(client.RouterGroupWithNameArgsForCall(0)).To(Equal("my-router-group"))
 
+				expectedTTL := registrationInterval
 				routeMapping := models.TcpRouteMapping{TcpMappingEntity: models.TcpMappingEntity{
 					RouterGroupGuid: "router-group-guid",
 					HostPort:        1234,
 					ExternalPort:    5678,
 					HostIP:          "myhost",
-					TTL:             &ttl,
+					TTL:             &expectedTTL,
 				}}
 
 				Expect(client.DeleteTcpRouteMappingsCallCount()).To(Equal(1))
@@ -149,7 +151,7 @@ var _ = Describe("Routing API", func() {
 					Port:                 &port,
 					ExternalPort:         &externalPort,
 					Host:                 "myhost",
-					RegistrationInterval: 100 * time.Second,
+					RegistrationInterval: time.Duration(registrationInterval) * time.Second,
 					RouterGroup:          "my-router-group",
 				})
 
@@ -184,7 +186,7 @@ var _ = Describe("Routing API", func() {
 					Port:                 &port,
 					ExternalPort:         &externalPort,
 					Host:                 "myhost",
-					RegistrationInterval: 100 * time.Second,
+					RegistrationInterval: time.Duration(registrationInterval) * time.Second,
 					RouterGroup:          "my-router-group",
 				})
 				Expect(err).To(HaveOccurred())
