@@ -84,7 +84,7 @@ func main() {
 			logger.Fatal("failed-to-create-tls-config", err)
 		}
 
-		routingAPI = routingapi.NewRoutingAPI(logger, uaaClient, apiClient)
+		routingAPI = routingapi.NewRoutingAPI(logger, uaaClient, apiClient, c.RoutingAPI.MaxTTL)
 	}
 
 	r := registrar.NewRegistrar(*c, hc, logger, messageBus, routingAPI)

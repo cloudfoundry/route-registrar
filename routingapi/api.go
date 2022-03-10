@@ -2,6 +2,7 @@ package routingapi
 
 import (
 	"fmt"
+	"time"
 
 	"code.cloudfoundry.org/route-registrar/config"
 
@@ -18,14 +19,18 @@ type RoutingAPI struct {
 	uaaClient       uaaclient.Client
 	apiClient       routing_api.Client
 	routerGroupGUID map[string]string
+
+	routingAPIMaxTTL time.Duration
 }
 
-func NewRoutingAPI(logger lager.Logger, uaaClient uaaclient.Client, apiClient routing_api.Client) *RoutingAPI {
+func NewRoutingAPI(logger lager.Logger, uaaClient uaaclient.Client, apiClient routing_api.Client, routingAPIMaxTTL time.Duration) *RoutingAPI {
 	return &RoutingAPI{
 		uaaClient:       uaaClient,
 		apiClient:       apiClient,
 		logger:          logger,
 		routerGroupGUID: make(map[string]string),
+
+		routingAPIMaxTTL: routingAPIMaxTTL,
 	}
 }
 
