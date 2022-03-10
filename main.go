@@ -19,7 +19,7 @@ import (
 	"code.cloudfoundry.org/route-registrar/messagebus"
 	"code.cloudfoundry.org/route-registrar/registrar"
 	"code.cloudfoundry.org/route-registrar/routingapi"
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/tlsconfig"
 	uaaclient "code.cloudfoundry.org/uaa-go-client"
 	uaaconfig "code.cloudfoundry.org/uaa-go-client/config"
