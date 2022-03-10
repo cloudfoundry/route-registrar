@@ -28,6 +28,7 @@ type RoutingAPISchema struct {
 	ClientCertificatePath   string `json:"client_cert_path"`
 	ClientPrivateKeyPath    string `json:"client_private_key_path"`
 	ServerCACertificatePath string `json:"server_ca_cert_path"`
+	MaxTTL                  string `json:"max_ttl",omitempty`
 }
 
 type HealthCheckSchema struct {
@@ -85,6 +86,8 @@ type RoutingAPI struct {
 	ClientCertificatePath   string
 	ClientPrivateKeyPath    string
 	ServerCACertificatePath string
+
+	MaxTTL time.Duration
 }
 
 type HealthCheck struct {
@@ -229,7 +232,7 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		errors.Add(fmt.Errorf("no name"))
 	}
 
-	if r.Port == nil && r.TLSPort == nil && r.SniPort == nil{
+	if r.Port == nil && r.TLSPort == nil && r.SniPort == nil {
 		errors.Add(fmt.Errorf("no port"))
 	}
 	if r.Port != nil && *r.Port <= 0 {
@@ -380,6 +383,15 @@ func messageBusServersFromSchema(servers []MessageBusServerSchema) ([]MessageBus
 	return messageBusServers, nil
 }
 
+func parseMaxTTL(max_ttl string) time.Duration {
+	ttl, _ := time.ParseDuration(max_ttl)
+	if ttl <= 0 {
+		ttl = 2 * time.Minute
+	}
+
+	return ttl
+}
+
 func routingAPIFromSchema(api RoutingAPISchema) (*RoutingAPI, error) {
 	if api.APIURL == "" {
 		return nil, fmt.Errorf("routing_api must have an api_url")
@@ -413,6 +425,8 @@ func routingAPIFromSchema(api RoutingAPISchema) (*RoutingAPI, error) {
 		}
 	}
 
+	maxTTL := parseMaxTTL(api.MaxTTL)
+
 	return &RoutingAPI{
 		APIURL:                  api.APIURL,
 		OAuthURL:                api.OAuthURL,
@@ -423,6 +437,7 @@ func routingAPIFromSchema(api RoutingAPISchema) (*RoutingAPI, error) {
 		ClientCertificatePath:   api.ClientCertificatePath,
 		ClientPrivateKeyPath:    api.ClientPrivateKeyPath,
 		ServerCACertificatePath: api.ServerCACertificatePath,
+		MaxTTL:                  maxTTL,
 	}, nil
 }
 

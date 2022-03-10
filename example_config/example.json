@@ -61,7 +61,8 @@
     "api_url": "http://api.example.com",
     "oauth_url": "https://uaa.somewhere",
     "client_id": "clientid",
-    "client_secret": "secret"
+    "client_secret": "secret",
+    "max_ttl": "30s"
   },
   "nats_mtls_config": {
     "enabled": true,
