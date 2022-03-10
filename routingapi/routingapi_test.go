@@ -36,7 +36,7 @@ var _ = Describe("Routing API", func() {
 		uaaClient = &fakeuaa.FakeClient{}
 		uaaClient.FetchTokenReturns(&schema.Token{AccessToken: "my-token"}, nil)
 		client = &fake_routing_api.FakeClient{}
-		api = routingapi.NewRoutingAPI(logger, uaaClient, client)
+		api = routingapi.NewRoutingAPI(logger, uaaClient, client, 2*time.Minute)
 
 		port = 1234
 		externalPort = 5678

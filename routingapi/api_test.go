@@ -1,6 +1,8 @@
 package routingapi
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -31,7 +33,7 @@ var _ = Describe("Routing API", func() {
 		uaaClient.FetchTokenReturns(&schema.Token{AccessToken: "my-token"}, nil)
 		client = &fake_routing_api.FakeClient{}
 		client.RouterGroupWithNameReturns(models.RouterGroup{Guid: "router-group-guid"}, nil)
-		api = NewRoutingAPI(logger, uaaClient, client)
+		api = NewRoutingAPI(logger, uaaClient, client, 2*time.Minute)
 
 		port = 1234
 		externalPort = 5678
