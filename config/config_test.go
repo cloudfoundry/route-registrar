@@ -71,6 +71,7 @@ var _ = Describe("Config", func() {
 				OAuthURL:     "https://uaa.somewhere",
 				ClientID:     "clientid",
 				ClientSecret: "secret",
+				MaxTTL:       "30s",
 			},
 			Routes: []config.RouteSchema{
 				{
@@ -187,6 +188,7 @@ var _ = Describe("Config", func() {
 					OAuthURL:     "https://uaa.somewhere",
 					ClientID:     "clientid",
 					ClientSecret: "secret",
+					MaxTTL:       30 * time.Second,
 				},
 				Routes: []config.Route{
 					{
@@ -327,6 +329,73 @@ var _ = Describe("Config", func() {
 	})
 
 	Describe("Handling errors", func() {
+		Describe("on the max_ttl", func() {
+			Context("The max_ttl interval is empty", func() {
+				BeforeEach(func() {
+					configSchema.RoutingAPI.MaxTTL = ""
+				})
+
+				It("returns the same default as Routing API -- 2 minutes", func() {
+					c, err := configSchema.ToConfig()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(c.RoutingAPI.MaxTTL).To(Equal(2 * time.Minute))
+				})
+			})
+
+			Context("The max_ttl is zero", func() {
+				BeforeEach(func() {
+					configSchema.RoutingAPI.MaxTTL = "0s"
+				})
+
+				It("returns the same default as Routing API -- 2 minutes", func() {
+					c, err := configSchema.ToConfig()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(c.RoutingAPI.MaxTTL).To(Equal(2 * time.Minute))
+				})
+			})
+
+			Context("The max_ttl is negative", func() {
+				BeforeEach(func() {
+					configSchema.RoutingAPI.MaxTTL = "-1s"
+				})
+
+				It("returns the same default as Routing API -- 2 minutes", func() {
+					c, err := configSchema.ToConfig()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(c.RoutingAPI.MaxTTL).To(Equal(2 * time.Minute))
+				})
+			})
+
+			Context("When the registration interval has no units", func() {
+				BeforeEach(func() {
+					configSchema.RoutingAPI.MaxTTL = "3"
+				})
+
+				It("returns the same default as Routing API -- 2 minutes", func() {
+					c, err := configSchema.ToConfig()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(c.RoutingAPI.MaxTTL).To(Equal(2 * time.Minute))
+				})
+			})
+
+			Context("When the registration interval is not parsable", func() {
+				BeforeEach(func() {
+					configSchema.RoutingAPI.MaxTTL = "asdf"
+				})
+
+				It("returns the same default as Routing API -- 2 minutes", func() {
+					c, err := configSchema.ToConfig()
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(c.RoutingAPI.MaxTTL).To(Equal(2 * time.Minute))
+				})
+			})
+		})
+
 		Describe("on the registration interval", func() {
 			Context("The registration interval is empty", func() {
 				BeforeEach(func() {
