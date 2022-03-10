@@ -11,7 +11,7 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 
 	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/routing-api"
+	routing_api "code.cloudfoundry.org/routing-api"
 )
 
 type RoutingAPI struct {
@@ -80,7 +80,19 @@ func (r *RoutingAPI) makeTcpRouteMapping(route config.Route) (models.TcpRouteMap
 		nilIfEmpty(&route.ServerCertDomainSAN),
 		route.Host,
 		uint16(*route.Port),
-		int(route.RegistrationInterval.Seconds())), nil
+		calculateTTL(route.RegistrationInterval, r.routingAPIMaxTTL)), nil
+}
+
+const TTL_BUFFER = 2 * time.Second
+
+// add a buffer to the registration interval so that it is not the same as the
+// TTL
+func calculateTTL(requestedTTL, maxTTL time.Duration) int {
+	ttl := requestedTTL + TTL_BUFFER
+	if ttl > maxTTL {
+		return int(maxTTL.Seconds())
+	}
+	return int(ttl.Seconds())
 }
 
 func nilIfEmpty(str *string) *string {

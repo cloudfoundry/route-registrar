@@ -24,7 +24,7 @@ var _ = Describe("TCP Route Registration", func() {
 		oauthServer      *ghttp.Server
 		routingAPIServer *ghttp.Server
 		natsCmd          *exec.Cmd
-		rootConfig config.ConfigSchema
+		rootConfig       config.ConfigSchema
 	)
 
 	BeforeEach(func() {
@@ -62,7 +62,7 @@ var _ = Describe("TCP Route Registration", func() {
 						"guid":"",
 						"index":0
 					},
-					"ttl":0,
+					"ttl":2,
 					"isolation_segment":""
 				}]`),
 				ghttp.RespondWith(200, ""),
@@ -70,7 +70,6 @@ var _ = Describe("TCP Route Registration", func() {
 		}
 		routingAPIServer.AppendHandlers(routingAPIResponses...)
 		routingAPIServer.SetAllowUnhandledRequests(true) //sometimes multiple creates happen
-
 
 		oauthServer = ghttp.NewUnstartedServer()
 		oauthServerResponse := []http.HandlerFunc{
