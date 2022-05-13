@@ -110,8 +110,9 @@ The route registrar can be used to setup SNI routing. This is an example route j
 
 If the `health_check` is not configured for a route collection, the routes are continually registered according to the `registration_interval`.
 
-If the `health_check` is configured, the executable provided at
-`health_check.script_path` is invoked and the following applies:
+If the `health_check` is configured, then, at the `registration_interval`, 
+the executable provided at `health_check.script_path` is invoked. 
+The following applies:
 - if the executable exits with success, the routes are registered.
 - if the executable exits with error, the routes are deregistered.
 - if `health_check.timeout` is configured, it must parse to a positive time
