@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"golang.org/x/oauth2"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/route-registrar/config"
@@ -14,14 +15,13 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 
 	"code.cloudfoundry.org/lager/lagertest"
-	fakeuaa "code.cloudfoundry.org/uaa-go-client/fakes"
-	"code.cloudfoundry.org/uaa-go-client/schema"
+	fakeuaa "code.cloudfoundry.org/route-registrar/routingapi/routingapifakes"
 )
 
 var _ = Describe("Routing API", func() {
 	var (
 		client    *fake_routing_api.FakeClient
-		uaaClient *fakeuaa.FakeClient
+		uaaClient *fakeuaa.FakeUaaClient
 
 		api    *routingapi.RoutingAPI
 		logger lager.Logger
@@ -37,8 +37,8 @@ var _ = Describe("Routing API", func() {
 		maxTTL = 2 * time.Minute
 
 		logger = lagertest.NewTestLogger("routing api test")
-		uaaClient = &fakeuaa.FakeClient{}
-		uaaClient.FetchTokenReturns(&schema.Token{AccessToken: "my-token"}, nil)
+		uaaClient = &fakeuaa.FakeUaaClient{}
+		uaaClient.TokenReturns(&oauth2.Token{AccessToken: "my-token"}, nil)
 		client = &fake_routing_api.FakeClient{}
 		api = routingapi.NewRoutingAPI(logger, uaaClient, client, maxTTL)
 
@@ -63,8 +63,7 @@ var _ = Describe("Routing API", func() {
 					RouterGroup:          "my-router-group",
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(uaaClient.FetchTokenCallCount()).To(Equal(1))
-				Expect(uaaClient.FetchTokenArgsForCall(0)).To(BeFalse())
+				Expect(uaaClient.TokenCallCount()).To(Equal(1))
 
 				Expect(client.SetTokenCallCount()).To(Equal(1))
 				Expect(client.SetTokenArgsForCall(0)).To(Equal("my-token"))
@@ -168,8 +167,7 @@ var _ = Describe("Routing API", func() {
 					RouterGroup:          "my-router-group",
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(uaaClient.FetchTokenCallCount()).To(Equal(1))
-				Expect(uaaClient.FetchTokenArgsForCall(0)).To(BeFalse())
+				Expect(uaaClient.TokenCallCount()).To(Equal(1))
 
 				Expect(client.SetTokenCallCount()).To(Equal(1))
 				Expect(client.SetTokenArgsForCall(0)).To(Equal("my-token"))
@@ -214,12 +212,12 @@ var _ = Describe("Routing API", func() {
 	Context("when an error occurs", func() {
 		Context("when a UAA token cannot be fetched", func() {
 			BeforeEach(func() {
-				uaaClient.FetchTokenReturns(&schema.Token{}, errors.New("my fetch error"))
+				uaaClient.TokenReturns(&oauth2.Token{}, errors.New("my fetch error"))
 			})
 
 			It("returns an error", func() {
 				err := api.RegisterRoute(config.Route{})
-				Expect(uaaClient.FetchTokenCallCount()).To(Equal(1))
+				Expect(uaaClient.TokenCallCount()).To(Equal(1))
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("my fetch error"))
 			})

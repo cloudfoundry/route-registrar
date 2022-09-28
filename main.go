@@ -1,17 +1,19 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"flag"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
-	"time"
 
-	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerflags"
 	"code.cloudfoundry.org/route-registrar/config"
@@ -21,8 +23,7 @@ import (
 	"code.cloudfoundry.org/route-registrar/routingapi"
 	routing_api "code.cloudfoundry.org/routing-api"
 	"code.cloudfoundry.org/tlsconfig"
-	uaaclient "code.cloudfoundry.org/uaa-go-client"
-	uaaconfig "code.cloudfoundry.org/uaa-go-client/config"
+	uaaclient "github.com/cloudfoundry-community/go-uaa"
 
 	"github.com/tedsuo/ifrit"
 )
@@ -61,19 +62,35 @@ func main() {
 	var routingAPI *routingapi.RoutingAPI
 	if c.RoutingAPI.APIURL != "" {
 		logger.Info("creating routing API connection")
-		clk := clock.NewClock()
-		uaaConf := &uaaconfig.Config{
-			UaaEndpoint:           c.RoutingAPI.OAuthURL,
-			SkipVerification:      c.RoutingAPI.SkipSSLValidation,
-			ClientName:            c.RoutingAPI.ClientID,
-			ClientSecret:          c.RoutingAPI.ClientSecret,
-			MaxNumberOfRetries:    3,
-			RetryInterval:         500 * time.Millisecond,
-			ExpirationBufferInSec: 30,
-			CACerts:               c.RoutingAPI.CACerts,
+
+		tlsConfig := &tls.Config{InsecureSkipVerify: c.RoutingAPI.SkipSSLValidation}
+		if c.RoutingAPI.CACerts != "" {
+			certBytes, err := ioutil.ReadFile(c.RoutingAPI.CACerts)
+			if err != nil {
+				log.Fatalf("Failed to read ca cert file: %s", err.Error())
+			}
+
+			caCertPool := x509.NewCertPool()
+			if ok := caCertPool.AppendCertsFromPEM(certBytes); !ok {
+				log.Fatal(errors.New("Unable to load caCert"))
+			}
+			tlsConfig.RootCAs = caCertPool
 		}
 
-		uaaClient, err := uaaclient.NewClient(logger, uaaConf, clk)
+		tr := &http.Transport{
+			TLSClientConfig: tlsConfig,
+		}
+
+		httpClient := &http.Client{Transport: tr}
+		httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+
+		uaaClient, err := uaaclient.New(c.RoutingAPI.OAuthURL,
+			uaaclient.WithClientCredentials(c.RoutingAPI.ClientID, c.RoutingAPI.ClientSecret, uaaclient.JSONWebToken),
+			uaaclient.WithClient(httpClient),
+			uaaclient.WithSkipSSLValidation(c.RoutingAPI.SkipSSLValidation),
+		)
 		if err != nil {
 			log.Fatalln(err)
 		}
