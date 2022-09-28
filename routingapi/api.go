@@ -1,12 +1,12 @@
 package routingapi
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"code.cloudfoundry.org/route-registrar/config"
-
-	uaaclient "code.cloudfoundry.org/uaa-go-client"
+	"golang.org/x/oauth2"
 
 	"code.cloudfoundry.org/routing-api/models"
 
@@ -16,14 +16,19 @@ import (
 
 type RoutingAPI struct {
 	logger          lager.Logger
-	uaaClient       uaaclient.Client
+	uaaClient       uaaClient
 	apiClient       routing_api.Client
 	routerGroupGUID map[string]string
 
 	routingAPIMaxTTL time.Duration
 }
 
-func NewRoutingAPI(logger lager.Logger, uaaClient uaaclient.Client, apiClient routing_api.Client, routingAPIMaxTTL time.Duration) *RoutingAPI {
+//go:generate counterfeiter . uaaClient
+type uaaClient interface {
+	Token(context.Context) (*oauth2.Token, error)
+}
+
+func NewRoutingAPI(logger lager.Logger, uaaClient uaaClient, apiClient routing_api.Client, routingAPIMaxTTL time.Duration) *RoutingAPI {
 	return &RoutingAPI{
 		uaaClient:       uaaClient,
 		apiClient:       apiClient,
@@ -35,11 +40,14 @@ func NewRoutingAPI(logger lager.Logger, uaaClient uaaclient.Client, apiClient ro
 }
 
 func (r *RoutingAPI) refreshToken() error {
-	token, err := r.uaaClient.FetchToken(false)
+	r.logger.Info("refresh-token")
+	token, err := r.uaaClient.Token(context.Background())
 	if err != nil {
+		r.logger.Error("token-error", err)
 		return err
 	}
 
+	r.logger.Debug("set-token", lager.Data{"token": token})
 	r.apiClient.SetToken(token.AccessToken)
 	return nil
 }

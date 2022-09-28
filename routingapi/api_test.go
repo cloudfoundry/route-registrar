@@ -5,20 +5,21 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"golang.org/x/oauth2"
+
+	fakeuaa "code.cloudfoundry.org/route-registrar/routingapi/routingapifakes"
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/routing-api/fake_routing_api"
 	"code.cloudfoundry.org/routing-api/models"
-	fakeuaa "code.cloudfoundry.org/uaa-go-client/fakes"
-	"code.cloudfoundry.org/uaa-go-client/schema"
 )
 
 var _ = Describe("Routing API", func() {
 	var (
 		client    *fake_routing_api.FakeClient
-		uaaClient *fakeuaa.FakeClient
+		uaaClient *fakeuaa.FakeUaaClient
 
 		api    *RoutingAPI
 		logger lager.Logger
@@ -29,8 +30,8 @@ var _ = Describe("Routing API", func() {
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("routing api test")
-		uaaClient = &fakeuaa.FakeClient{}
-		uaaClient.FetchTokenReturns(&schema.Token{AccessToken: "my-token"}, nil)
+		uaaClient = &fakeuaa.FakeUaaClient{}
+		uaaClient.TokenReturns(&oauth2.Token{AccessToken: "my-token"}, nil)
 		client = &fake_routing_api.FakeClient{}
 		client.RouterGroupWithNameReturns(models.RouterGroup{Guid: "router-group-guid"}, nil)
 		api = NewRoutingAPI(logger, uaaClient, client, 2*time.Minute)

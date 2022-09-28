@@ -79,7 +79,19 @@ var _ = Describe("TCP Route Registration", func() {
 					"access_token": "some-access-token",
 					"token_type": "bearer",
 					"expires_in": 3600
-				}`),
+				}`,
+					http.Header{"Content-Type": []string{"application/json"}},
+				),
+			),
+			ghttp.CombineHandlers(
+				ghttp.VerifyRequest("POST", "/oauth/token"),
+				ghttp.RespondWith(200, `{
+					"access_token": "some-access-token",
+					"token_type": "bearer",
+					"expires_in": 3600
+				}`,
+					http.Header{"Content-Type": []string{"application/json"}},
+				),
 			),
 		}
 		oauthServer.AppendHandlers(oauthServerResponse...)
