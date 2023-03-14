@@ -25,7 +25,7 @@ type RoutingAPI struct {
 
 //go:generate counterfeiter . uaaClient
 type uaaClient interface {
-	Token(context.Context) (*oauth2.Token, error)
+	FetchToken(context.Context, bool) (*oauth2.Token, error)
 }
 
 func NewRoutingAPI(logger lager.Logger, uaaClient uaaClient, apiClient routing_api.Client, routingAPIMaxTTL time.Duration) *RoutingAPI {
@@ -41,7 +41,7 @@ func NewRoutingAPI(logger lager.Logger, uaaClient uaaClient, apiClient routing_a
 
 func (r *RoutingAPI) refreshToken() error {
 	r.logger.Info("refresh-token")
-	token, err := r.uaaClient.Token(context.Background())
+	token, err := r.uaaClient.FetchToken(context.Background(), false)
 	if err != nil {
 		r.logger.Error("token-error", err)
 		return err
