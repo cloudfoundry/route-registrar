@@ -44,7 +44,7 @@ var _ = Describe("Routing API", func() {
 
 		port = 1234
 		externalPort = 5678
-		registrationInterval = 100 * time.Second
+		registrationInterval = 20 * time.Second
 	})
 
 	Describe("RegisterRoute", func() {
@@ -71,7 +71,7 @@ var _ = Describe("Routing API", func() {
 				Expect(client.RouterGroupWithNameCallCount()).To(Equal(1))
 				Expect(client.RouterGroupWithNameArgsForCall(0)).To(Equal("my-router-group"))
 
-				expectedTTL := int((registrationInterval + routingapi.TTL_BUFFER).Seconds())
+				expectedTTL := 42
 				expectedRouteMapping := models.TcpRouteMapping{TcpMappingEntity: models.TcpMappingEntity{
 					RouterGroupGuid: "router-group-guid",
 					HostPort:        1234,
@@ -81,6 +81,31 @@ var _ = Describe("Routing API", func() {
 				}}
 				Expect(client.UpsertTcpRouteMappingsCallCount()).To(Equal(1))
 				Expect(client.UpsertTcpRouteMappingsArgsForCall(0)).To(Equal([]models.TcpRouteMapping{expectedRouteMapping}))
+			})
+
+			Context("when the registration interval results in a TTL > maxTTL", func() {
+				It("Caps the maxTTL", func() {
+					err := api.RegisterRoute(config.Route{
+						Name:                 "test-route",
+						Port:                 &port,
+						ExternalPort:         &externalPort,
+						Host:                 "myhost",
+						RegistrationInterval: time.Duration(100 * time.Second),
+						RouterGroup:          "my-router-group",
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					expectedTTL := 120
+					expectedRouteMapping := models.TcpRouteMapping{TcpMappingEntity: models.TcpMappingEntity{
+						RouterGroupGuid: "router-group-guid",
+						HostPort:        1234,
+						ExternalPort:    5678,
+						HostIP:          "myhost",
+						TTL:             &expectedTTL,
+					}}
+					Expect(client.UpsertTcpRouteMappingsCallCount()).To(Equal(1))
+					Expect(client.UpsertTcpRouteMappingsArgsForCall(0)).To(Equal([]models.TcpRouteMapping{expectedRouteMapping}))
+				})
 			})
 		})
 
@@ -175,7 +200,7 @@ var _ = Describe("Routing API", func() {
 				Expect(client.RouterGroupWithNameCallCount()).To(Equal(1))
 				Expect(client.RouterGroupWithNameArgsForCall(0)).To(Equal("my-router-group"))
 
-				expectedTTL := int((registrationInterval + routingapi.TTL_BUFFER).Seconds())
+				expectedTTL := 42
 				routeMapping := models.TcpRouteMapping{TcpMappingEntity: models.TcpMappingEntity{
 					RouterGroupGuid: "router-group-guid",
 					HostPort:        1234,

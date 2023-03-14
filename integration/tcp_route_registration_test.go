@@ -64,7 +64,7 @@ var _ = Describe("TCP Route Registration", func() {
 						"guid":"",
 						"index":0
 					},
-					"ttl":2,
+					"ttl": 1,
 					"isolation_segment":""
 				}]`),
 				ghttp.RespondWith(200, ""),

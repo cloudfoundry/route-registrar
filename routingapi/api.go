@@ -91,14 +91,18 @@ func (r *RoutingAPI) makeTcpRouteMapping(route config.Route) (models.TcpRouteMap
 		calculateTTL(route.RegistrationInterval, r.routingAPIMaxTTL)), nil
 }
 
-const TTL_BUFFER = 2 * time.Second
+const TTL_BUFFER float64 = 2.1
 
 // add a buffer to the registration interval so that it is not the same as the
 // TTL
 func calculateTTL(requestedTTL, maxTTL time.Duration) int {
-	ttl := requestedTTL + TTL_BUFFER
+	ttl := time.Duration(float64(requestedTTL) * TTL_BUFFER)
 	if ttl > maxTTL {
 		return int(maxTTL.Seconds())
+	}
+	// ensure a bare minimum of TTL in case registration interval is <1s
+	if int(ttl.Seconds()) < 1 {
+		return 1
 	}
 	return int(ttl.Seconds())
 }
