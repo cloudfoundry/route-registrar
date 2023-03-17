@@ -67,13 +67,20 @@ var _ = Describe("Main", func() {
 		opts := nats.DefaultOptions
 		opts.Servers = servers
 
-		testSpyClient, err = opts.Connect()
+		Eventually(func() error {
+			testSpyClient, err = opts.Connect()
+			return err
+		}).ShouldNot(HaveOccurred())
 
-		Expect(err).ShouldNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		Expect(natsCmd.Process.Kill()).To(Succeed())
+		natsAddress := fmt.Sprintf("127.0.0.1:%d", natsPort)
+		Eventually(func() error {
+			_, err := net.Dial("tcp", natsAddress)
+			return err
+		}).ShouldNot(Succeed())
 	})
 
 	It("Writes pid to the provided pidfile", func() {

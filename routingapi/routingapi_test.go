@@ -38,13 +38,13 @@ var _ = Describe("Routing API", func() {
 
 		logger = lagertest.NewTestLogger("routing api test")
 		uaaClient = &fakeuaa.FakeUaaClient{}
-		uaaClient.TokenReturns(&oauth2.Token{AccessToken: "my-token"}, nil)
+		uaaClient.FetchTokenReturns(&oauth2.Token{AccessToken: "my-token"}, nil)
 		client = &fake_routing_api.FakeClient{}
 		api = routingapi.NewRoutingAPI(logger, uaaClient, client, maxTTL)
 
 		port = 1234
 		externalPort = 5678
-		registrationInterval = 100 * time.Second
+		registrationInterval = 20 * time.Second
 	})
 
 	Describe("RegisterRoute", func() {
@@ -63,7 +63,7 @@ var _ = Describe("Routing API", func() {
 					RouterGroup:          "my-router-group",
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(uaaClient.TokenCallCount()).To(Equal(1))
+				Expect(uaaClient.FetchTokenCallCount()).To(Equal(1))
 
 				Expect(client.SetTokenCallCount()).To(Equal(1))
 				Expect(client.SetTokenArgsForCall(0)).To(Equal("my-token"))
@@ -71,7 +71,7 @@ var _ = Describe("Routing API", func() {
 				Expect(client.RouterGroupWithNameCallCount()).To(Equal(1))
 				Expect(client.RouterGroupWithNameArgsForCall(0)).To(Equal("my-router-group"))
 
-				expectedTTL := int((registrationInterval + routingapi.TTL_BUFFER).Seconds())
+				expectedTTL := 42
 				expectedRouteMapping := models.TcpRouteMapping{TcpMappingEntity: models.TcpMappingEntity{
 					RouterGroupGuid: "router-group-guid",
 					HostPort:        1234,
@@ -81,6 +81,31 @@ var _ = Describe("Routing API", func() {
 				}}
 				Expect(client.UpsertTcpRouteMappingsCallCount()).To(Equal(1))
 				Expect(client.UpsertTcpRouteMappingsArgsForCall(0)).To(Equal([]models.TcpRouteMapping{expectedRouteMapping}))
+			})
+
+			Context("when the registration interval results in a TTL > maxTTL", func() {
+				It("Caps the maxTTL", func() {
+					err := api.RegisterRoute(config.Route{
+						Name:                 "test-route",
+						Port:                 &port,
+						ExternalPort:         &externalPort,
+						Host:                 "myhost",
+						RegistrationInterval: time.Duration(100 * time.Second),
+						RouterGroup:          "my-router-group",
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					expectedTTL := 120
+					expectedRouteMapping := models.TcpRouteMapping{TcpMappingEntity: models.TcpMappingEntity{
+						RouterGroupGuid: "router-group-guid",
+						HostPort:        1234,
+						ExternalPort:    5678,
+						HostIP:          "myhost",
+						TTL:             &expectedTTL,
+					}}
+					Expect(client.UpsertTcpRouteMappingsCallCount()).To(Equal(1))
+					Expect(client.UpsertTcpRouteMappingsArgsForCall(0)).To(Equal([]models.TcpRouteMapping{expectedRouteMapping}))
+				})
 			})
 		})
 
@@ -167,7 +192,7 @@ var _ = Describe("Routing API", func() {
 					RouterGroup:          "my-router-group",
 				})
 				Expect(err).NotTo(HaveOccurred())
-				Expect(uaaClient.TokenCallCount()).To(Equal(1))
+				Expect(uaaClient.FetchTokenCallCount()).To(Equal(1))
 
 				Expect(client.SetTokenCallCount()).To(Equal(1))
 				Expect(client.SetTokenArgsForCall(0)).To(Equal("my-token"))
@@ -175,7 +200,7 @@ var _ = Describe("Routing API", func() {
 				Expect(client.RouterGroupWithNameCallCount()).To(Equal(1))
 				Expect(client.RouterGroupWithNameArgsForCall(0)).To(Equal("my-router-group"))
 
-				expectedTTL := int((registrationInterval + routingapi.TTL_BUFFER).Seconds())
+				expectedTTL := 42
 				routeMapping := models.TcpRouteMapping{TcpMappingEntity: models.TcpMappingEntity{
 					RouterGroupGuid: "router-group-guid",
 					HostPort:        1234,
@@ -212,12 +237,12 @@ var _ = Describe("Routing API", func() {
 	Context("when an error occurs", func() {
 		Context("when a UAA token cannot be fetched", func() {
 			BeforeEach(func() {
-				uaaClient.TokenReturns(&oauth2.Token{}, errors.New("my fetch error"))
+				uaaClient.FetchTokenReturns(&oauth2.Token{}, errors.New("my fetch error"))
 			})
 
 			It("returns an error", func() {
 				err := api.RegisterRoute(config.Route{})
-				Expect(uaaClient.TokenCallCount()).To(Equal(1))
+				Expect(uaaClient.FetchTokenCallCount()).To(Equal(1))
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("my fetch error"))
 			})

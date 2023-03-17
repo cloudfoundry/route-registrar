@@ -9,16 +9,17 @@ import (
 )
 
 type FakeUaaClient struct {
-	TokenStub        func(context.Context) (*oauth2.Token, error)
-	tokenMutex       sync.RWMutex
-	tokenArgsForCall []struct {
+	FetchTokenStub        func(context.Context, bool) (*oauth2.Token, error)
+	fetchTokenMutex       sync.RWMutex
+	fetchTokenArgsForCall []struct {
 		arg1 context.Context
+		arg2 bool
 	}
-	tokenReturns struct {
+	fetchTokenReturns struct {
 		result1 *oauth2.Token
 		result2 error
 	}
-	tokenReturnsOnCall map[int]struct {
+	fetchTokenReturnsOnCall map[int]struct {
 		result1 *oauth2.Token
 		result2 error
 	}
@@ -26,18 +27,19 @@ type FakeUaaClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeUaaClient) Token(arg1 context.Context) (*oauth2.Token, error) {
-	fake.tokenMutex.Lock()
-	ret, specificReturn := fake.tokenReturnsOnCall[len(fake.tokenArgsForCall)]
-	fake.tokenArgsForCall = append(fake.tokenArgsForCall, struct {
+func (fake *FakeUaaClient) FetchToken(arg1 context.Context, arg2 bool) (*oauth2.Token, error) {
+	fake.fetchTokenMutex.Lock()
+	ret, specificReturn := fake.fetchTokenReturnsOnCall[len(fake.fetchTokenArgsForCall)]
+	fake.fetchTokenArgsForCall = append(fake.fetchTokenArgsForCall, struct {
 		arg1 context.Context
-	}{arg1})
-	stub := fake.TokenStub
-	fakeReturns := fake.tokenReturns
-	fake.recordInvocation("Token", []interface{}{arg1})
-	fake.tokenMutex.Unlock()
+		arg2 bool
+	}{arg1, arg2})
+	stub := fake.FetchTokenStub
+	fakeReturns := fake.fetchTokenReturns
+	fake.recordInvocation("FetchToken", []interface{}{arg1, arg2})
+	fake.fetchTokenMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -45,46 +47,46 @@ func (fake *FakeUaaClient) Token(arg1 context.Context) (*oauth2.Token, error) {
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeUaaClient) TokenCallCount() int {
-	fake.tokenMutex.RLock()
-	defer fake.tokenMutex.RUnlock()
-	return len(fake.tokenArgsForCall)
+func (fake *FakeUaaClient) FetchTokenCallCount() int {
+	fake.fetchTokenMutex.RLock()
+	defer fake.fetchTokenMutex.RUnlock()
+	return len(fake.fetchTokenArgsForCall)
 }
 
-func (fake *FakeUaaClient) TokenCalls(stub func(context.Context) (*oauth2.Token, error)) {
-	fake.tokenMutex.Lock()
-	defer fake.tokenMutex.Unlock()
-	fake.TokenStub = stub
+func (fake *FakeUaaClient) FetchTokenCalls(stub func(context.Context, bool) (*oauth2.Token, error)) {
+	fake.fetchTokenMutex.Lock()
+	defer fake.fetchTokenMutex.Unlock()
+	fake.FetchTokenStub = stub
 }
 
-func (fake *FakeUaaClient) TokenArgsForCall(i int) context.Context {
-	fake.tokenMutex.RLock()
-	defer fake.tokenMutex.RUnlock()
-	argsForCall := fake.tokenArgsForCall[i]
-	return argsForCall.arg1
+func (fake *FakeUaaClient) FetchTokenArgsForCall(i int) (context.Context, bool) {
+	fake.fetchTokenMutex.RLock()
+	defer fake.fetchTokenMutex.RUnlock()
+	argsForCall := fake.fetchTokenArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeUaaClient) TokenReturns(result1 *oauth2.Token, result2 error) {
-	fake.tokenMutex.Lock()
-	defer fake.tokenMutex.Unlock()
-	fake.TokenStub = nil
-	fake.tokenReturns = struct {
+func (fake *FakeUaaClient) FetchTokenReturns(result1 *oauth2.Token, result2 error) {
+	fake.fetchTokenMutex.Lock()
+	defer fake.fetchTokenMutex.Unlock()
+	fake.FetchTokenStub = nil
+	fake.fetchTokenReturns = struct {
 		result1 *oauth2.Token
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeUaaClient) TokenReturnsOnCall(i int, result1 *oauth2.Token, result2 error) {
-	fake.tokenMutex.Lock()
-	defer fake.tokenMutex.Unlock()
-	fake.TokenStub = nil
-	if fake.tokenReturnsOnCall == nil {
-		fake.tokenReturnsOnCall = make(map[int]struct {
+func (fake *FakeUaaClient) FetchTokenReturnsOnCall(i int, result1 *oauth2.Token, result2 error) {
+	fake.fetchTokenMutex.Lock()
+	defer fake.fetchTokenMutex.Unlock()
+	fake.FetchTokenStub = nil
+	if fake.fetchTokenReturnsOnCall == nil {
+		fake.fetchTokenReturnsOnCall = make(map[int]struct {
 			result1 *oauth2.Token
 			result2 error
 		})
 	}
-	fake.tokenReturnsOnCall[i] = struct {
+	fake.fetchTokenReturnsOnCall[i] = struct {
 		result1 *oauth2.Token
 		result2 error
 	}{result1, result2}
@@ -93,8 +95,8 @@ func (fake *FakeUaaClient) TokenReturnsOnCall(i int, result1 *oauth2.Token, resu
 func (fake *FakeUaaClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.tokenMutex.RLock()
-	defer fake.tokenMutex.RUnlock()
+	fake.fetchTokenMutex.RLock()
+	defer fake.fetchTokenMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

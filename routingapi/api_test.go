@@ -31,7 +31,7 @@ var _ = Describe("Routing API", func() {
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("routing api test")
 		uaaClient = &fakeuaa.FakeUaaClient{}
-		uaaClient.TokenReturns(&oauth2.Token{AccessToken: "my-token"}, nil)
+		uaaClient.FetchTokenReturns(&oauth2.Token{AccessToken: "my-token"}, nil)
 		client = &fake_routing_api.FakeClient{}
 		client.RouterGroupWithNameReturns(models.RouterGroup{Guid: "router-group-guid"}, nil)
 		api = NewRoutingAPI(logger, uaaClient, client, 2*time.Minute)

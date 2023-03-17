@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os/exec"
 	"strconv"
+	"time"
 
 	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	"code.cloudfoundry.org/route-registrar/config"
@@ -25,6 +26,7 @@ var _ = Describe("TCP Route Registration", func() {
 		routingAPIServer *ghttp.Server
 		natsCmd          *exec.Cmd
 		rootConfig       config.ConfigSchema
+		oauthHandlers    []http.HandlerFunc
 	)
 
 	BeforeEach(func() {
@@ -62,7 +64,7 @@ var _ = Describe("TCP Route Registration", func() {
 						"guid":"",
 						"index":0
 					},
-					"ttl":2,
+					"ttl": 1,
 					"isolation_segment":""
 				}]`),
 				ghttp.RespondWith(200, ""),
@@ -72,7 +74,7 @@ var _ = Describe("TCP Route Registration", func() {
 		routingAPIServer.SetAllowUnhandledRequests(true) //sometimes multiple creates happen
 
 		oauthServer = ghttp.NewUnstartedServer()
-		oauthServerResponse := []http.HandlerFunc{
+		oauthHandlers = []http.HandlerFunc{
 			ghttp.CombineHandlers(
 				ghttp.VerifyRequest("POST", "/oauth/token"),
 				ghttp.RespondWith(200, `{
@@ -94,13 +96,10 @@ var _ = Describe("TCP Route Registration", func() {
 				),
 			),
 		}
-		oauthServer.AppendHandlers(oauthServerResponse...)
-		oauthServer.Start()
 
 		rootConfig = initConfig()
 		rootConfig.RoutingAPI.ClientID = "my-client"
 		rootConfig.RoutingAPI.ClientSecret = "my-secret"
-		rootConfig.RoutingAPI.OAuthURL = oauthServer.URL()
 		rootConfig.RoutingAPI.ClientCertificatePath = routingAPIClientCertPath
 		rootConfig.RoutingAPI.ClientPrivateKeyPath = routingAPIClientPrivateKeyPath
 		rootConfig.RoutingAPI.ServerCACertificatePath = routingAPICAFileName
@@ -118,6 +117,12 @@ var _ = Describe("TCP Route Registration", func() {
 		}}
 		rootConfig.Routes = routes
 		natsCmd = startNats()
+	})
+
+	JustBeforeEach(func() {
+		oauthServer.AppendHandlers(oauthHandlers...)
+		oauthServer.Start()
+		rootConfig.RoutingAPI.OAuthURL = oauthServer.URL()
 	})
 
 	AfterEach(func() {
@@ -152,7 +157,56 @@ var _ = Describe("TCP Route Registration", func() {
 			Eventually(session.Out).Should(gbytes.Say("Running"))
 			Eventually(session.Out).Should(gbytes.Say("Mapped new router group"))
 			Eventually(session.Out).Should(gbytes.Say("Upserted route"))
-			// Upserted Route content verified with expected body in the ghttp server setup
+		})
+		Context("when UAA errors intermittently occur", func() {
+			BeforeEach(func() {
+				oauthHandlers = []http.HandlerFunc{
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/oauth/token"),
+						ghttp.RespondWith(500, `{}`, http.Header{"Content-Type": []string{"application/json"}}),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/oauth/token"),
+						ghttp.RespondWith(200, `{
+				"access_token": "some-access-token",
+				"token_type": "bearer",
+				"expires_in": 3600
+				}`,
+							http.Header{"Content-Type": []string{"application/json"}},
+						),
+					)}
+			})
+			It("Retries UAA token refreshes if problems were encountered", func() {
+				Eventually(session.Out).Should(gbytes.Say("error-fetching-token"))
+				Consistently(session.Out, 5*time.Second).ShouldNot(gbytes.Say("token-error"))
+			})
+		})
+
+		Context("when UAA errors consistently ooccur", func() {
+			BeforeEach(func() {
+				oauthHandlers = []http.HandlerFunc{
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/oauth/token"),
+						ghttp.RespondWith(500, `{}`, http.Header{"Content-Type": []string{"application/json"}}),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/oauth/token"),
+						ghttp.RespondWith(500, `{}`, http.Header{"Content-Type": []string{"application/json"}}),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/oauth/token"),
+						ghttp.RespondWith(500, `{}`, http.Header{"Content-Type": []string{"application/json"}}),
+					),
+					ghttp.CombineHandlers(
+						ghttp.VerifyRequest("POST", "/oauth/token"),
+						ghttp.RespondWith(500, `{}`, http.Header{"Content-Type": []string{"application/json"}}),
+					),
+				}
+			})
+			It("Gives up and returns a token error", func() {
+				Eventually(session.Out, 5*time.Second).Should(gbytes.Say("token-error"))
+				Eventually(session.Out, 5*time.Second).Should(gbytes.Say("error\":\"oauth2: cannot fetch token:"))
+			})
 		})
 	})
 
@@ -187,11 +241,13 @@ var _ = Describe("TCP Route Registration", func() {
 			})
 		})
 	})
+
 })
 
 func registerRoute() (*gexec.Session, error) {
 	command := exec.Command(
 		routeRegistrarBinPath,
+		fmt.Sprintf("-logLevel=debug"),
 		fmt.Sprintf("-pidfile=%s", pidFile),
 		fmt.Sprintf("-configPath=%s", configFile),
 	)

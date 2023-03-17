@@ -13,7 +13,9 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
+	"code.cloudfoundry.org/clock"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagerflags"
 	"code.cloudfoundry.org/route-registrar/config"
@@ -22,8 +24,8 @@ import (
 	"code.cloudfoundry.org/route-registrar/registrar"
 	"code.cloudfoundry.org/route-registrar/routingapi"
 	routing_api "code.cloudfoundry.org/routing-api"
+	"code.cloudfoundry.org/routing-api/uaaclient"
 	"code.cloudfoundry.org/tlsconfig"
-	uaaclient "github.com/cloudfoundry-community/go-uaa"
 
 	"github.com/tedsuo/ifrit"
 )
@@ -86,11 +88,26 @@ func main() {
 			return http.ErrUseLastResponse
 		}
 
-		uaaClient, err := uaaclient.New(c.RoutingAPI.OAuthURL,
-			uaaclient.WithClientCredentials(c.RoutingAPI.ClientID, c.RoutingAPI.ClientSecret, uaaclient.JSONWebToken),
-			uaaclient.WithClient(httpClient),
-			uaaclient.WithSkipSSLValidation(c.RoutingAPI.SkipSSLValidation),
-		)
+		oauthUrl, err := url.Parse(c.RoutingAPI.OAuthURL)
+		if err != nil {
+			log.Fatalf("Could not parse RoutingAPI OAuth URL: %s", err)
+		}
+		port, err := strconv.Atoi(oauthUrl.Port())
+		if err != nil {
+			log.Fatalf("RoutingAPI OAuth port (%s) not an integer: %s", oauthUrl.Port(), err)
+		}
+
+		uaaConfig := uaaclient.Config{
+			Port:              port,
+			Protocol:          oauthUrl.Scheme,
+			SkipSSLValidation: c.RoutingAPI.SkipSSLValidation,
+			ClientName:        c.RoutingAPI.ClientID,
+			ClientSecret:      c.RoutingAPI.ClientSecret,
+			CACerts:           c.RoutingAPI.CACerts,
+			TokenEndpoint:     oauthUrl.Hostname(),
+		}
+		clk := clock.NewClock()
+		uaaClient, err := uaaclient.NewTokenFetcher(false, uaaConfig, clk, 3, 500*time.Millisecond, 30, logger)
 		if err != nil {
 			log.Fatalln(err)
 		}
