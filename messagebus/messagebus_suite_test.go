@@ -3,8 +3,7 @@ package messagebus_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -19,5 +18,5 @@ func TestMessagebus(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	natsPort = 20000 + config.GinkgoConfig.ParallelNode
+	natsPort = 20000 + GinkgoParallelNode()
 })

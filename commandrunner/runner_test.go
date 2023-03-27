@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/route-registrar/commandrunner"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
@@ -53,7 +53,6 @@ var _ = Describe("CommandRunner", func() {
 
 		tmpGoPkgPath, err = ioutil.TempDir(filepath.Join(gopath, "src", "code.cloudfoundry.org"), "tmp-foo")
 		Expect(err).NotTo(HaveOccurred())
-
 
 		outbuf = bytes.Buffer{}
 		errbuf = bytes.Buffer{}

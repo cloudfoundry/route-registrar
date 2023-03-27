@@ -163,7 +163,7 @@ the repo and change directory to `src/code.cloudfoundry.org`
 
 1. Install the ginkgo binary with `go get`:
   ```bash
-  go get github.com/onsi/ginkgo/ginkgo
+  go get github.com/onsi/ginkgo/v2/ginkgo
   ```
 
 1. Run tests, by running the following command from root of this repository
