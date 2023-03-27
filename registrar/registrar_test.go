@@ -61,9 +61,9 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		opts.Servers = servers
 
 		messageBusServer := config.MessageBusServer{
-			fmt.Sprintf("%s:%d", natsHost, natsPort),
-			natsUsername,
-			natsPassword,
+			Host:     fmt.Sprintf("%s:%d", natsHost, natsPort),
+			User:     natsUsername,
+			Password: natsPassword,
 		}
 
 		rrConfig = config.Config{

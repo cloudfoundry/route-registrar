@@ -28,7 +28,7 @@ type RoutingAPISchema struct {
 	ClientCertificatePath   string `json:"client_cert_path"`
 	ClientPrivateKeyPath    string `json:"client_private_key_path"`
 	ServerCACertificatePath string `json:"server_ca_cert_path"`
-	MaxTTL                  string `json:"max_ttl",omitempty`
+	MaxTTL                  string `json:"max_ttl,omitempty"`
 }
 
 type HealthCheckSchema struct {
@@ -63,7 +63,7 @@ type RouteSchema struct {
 }
 
 type ClientTLSConfigSchema struct {
-	Enabled  bool   `json:"enabled`
+	Enabled  bool   `json:"enabled"`
 	CertPath string `json:"cert_path"`
 	KeyPath  string `json:"key_path"`
 	CAPath   string `json:"ca_path"`

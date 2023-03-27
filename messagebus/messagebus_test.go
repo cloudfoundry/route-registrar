@@ -70,9 +70,9 @@ var _ = Describe("Messagebus test Suite", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 
 		messageBusServer := config.MessageBusServer{
-			fmt.Sprintf("%s:%d", natsHost, natsPort),
-			natsUsername,
-			natsPassword,
+			Host:     fmt.Sprintf("%s:%d", natsHost, natsPort),
+			User:     natsUsername,
+			Password: natsPassword,
 		}
 
 		messageBusServers = []config.MessageBusServer{messageBusServer}
