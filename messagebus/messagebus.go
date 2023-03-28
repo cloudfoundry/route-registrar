@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/route-registrar/config"
 	"github.com/nats-io/nats.go"
 )

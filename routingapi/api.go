@@ -10,7 +10,7 @@ import (
 
 	"code.cloudfoundry.org/routing-api/models"
 
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	routing_api "code.cloudfoundry.org/routing-api"
 )
 
