@@ -8,13 +8,13 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/oauth2"
 
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/routingapi"
 	"code.cloudfoundry.org/routing-api/fake_routing_api"
 	"code.cloudfoundry.org/routing-api/models"
 
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/lager/v3/lagertest"
 	fakeuaa "code.cloudfoundry.org/route-registrar/routingapi/routingapifakes"
 )
 

@@ -9,8 +9,8 @@ import (
 
 	fakeuaa "code.cloudfoundry.org/route-registrar/routingapi/routingapifakes"
 
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/lager/v3"
+	"code.cloudfoundry.org/lager/v3/lagertest"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/routing-api/fake_routing_api"
 	"code.cloudfoundry.org/routing-api/models"

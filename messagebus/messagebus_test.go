@@ -14,8 +14,8 @@ import (
 	"github.com/onsi/gomega/gbytes"
 
 	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/lager/v3"
+	"code.cloudfoundry.org/lager/v3/lagertest"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/messagebus"
 	"code.cloudfoundry.org/tlsconfig"
