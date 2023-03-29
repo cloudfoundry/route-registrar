@@ -24,8 +24,8 @@ pushd "${PROJECT_DIR}" > /dev/null
     -r \
     -p \
     -race \
-    -failOnPending \
-    -randomizeAllSpecs \
-    -randomizeSuites \
+    -fail-on-pending \
+    -randomize-all \
+    -randomize-suites \
     "$@"
 popd > /dev/null
