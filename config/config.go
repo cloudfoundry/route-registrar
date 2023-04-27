@@ -49,6 +49,7 @@ type RouteSchema struct {
 	Type                 string             `json:"type"`
 	Name                 string             `json:"name"`
 	Port                 *int               `json:"port"`
+	Protocol             string             `json:"protocol"`
 	SniPort              *int               `json:"sni_port"`
 	TLSPort              *int               `json:"tls_port"`
 	Tags                 map[string]string  `json:"tags"`
@@ -115,6 +116,7 @@ type Route struct {
 	Type                 string
 	Name                 string
 	Port                 *int
+	Protocol             string
 	TLSPort              *int
 	Tags                 map[string]string
 	URIs                 []string
@@ -267,6 +269,10 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		}
 	}
 
+	if r.Protocol != "" && r.Protocol != "http1" && r.Protocol != "http2" {
+		errors.Add(fmt.Errorf("unknown protocol: %s", r.Protocol))
+	}
+
 	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval)
 	if err != nil {
 		errors.Add(err)
@@ -288,6 +294,7 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		Type:                 r.Type,
 		Name:                 r.Name,
 		Port:                 r.Port,
+		Protocol:             r.Protocol,
 		TLSPort:              r.TLSPort,
 		Tags:                 r.Tags,
 		URIs:                 r.URIs,

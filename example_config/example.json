@@ -12,6 +12,7 @@
     {
       "name": "route-1",
       "tls_port": 3001,
+      "protocol": "http1",
       "uris": [
         "my-other-app.my-domain.com"
       ],
@@ -22,6 +23,7 @@
       "name": "route-2",
       "port": 3000,
       "tls_port": 3001,
+      "protocol": "http2",
       "uris": [
         "my-other-app.my-domain.com"
       ],
