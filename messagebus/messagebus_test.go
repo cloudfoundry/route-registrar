@@ -65,7 +65,7 @@ var _ = Describe("Messagebus test Suite", func() {
 		Eventually(func() string {
 			connStatus := testSpyClient.Status()
 			return fmt.Sprintf("%v", connStatus)
-		}, 5*time.Second).Should(Equal("1"))
+		}, 5*time.Second).Should(Equal("CONNECTED"))
 
 		Expect(err).ShouldNot(HaveOccurred())
 
@@ -143,7 +143,7 @@ var _ = Describe("Messagebus test Suite", func() {
 				Eventually(func() string {
 					connStatus := tlsTestSpyClient.Status()
 					return fmt.Sprintf("%v", connStatus)
-				}, 5*time.Second).Should(Equal("1"))
+				}, 5*time.Second).Should(Equal("CONNECTED"))
 
 				Expect(err).ShouldNot(HaveOccurred())
 
