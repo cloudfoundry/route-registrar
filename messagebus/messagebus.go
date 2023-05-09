@@ -31,6 +31,7 @@ type msgBus struct {
 type Message struct {
 	URIs                []string          `json:"uris"`
 	Host                string            `json:"host"`
+	Protocol            string            `json:"protocol,omitempty"`
 	Port                *int              `json:"port,omitempty"`
 	TLSPort             *int              `json:"tls_port,omitempty"`
 	Tags                map[string]string `json:"tags"`
@@ -105,6 +106,7 @@ func (m msgBus) SendMessage(subject string, host string, route config.Route, pri
 		URIs:                route.URIs,
 		Host:                host,
 		Port:                route.Port,
+		Protocol:            route.Protocol,
 		TLSPort:             route.TLSPort,
 		Tags:                route.Tags,
 		RouteServiceUrl:     route.RouteServiceUrl,

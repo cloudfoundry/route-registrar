@@ -33,6 +33,9 @@ var _ = Describe("Config", func() {
 		backendPort     int
 		sniExternalPort int
 		sniPort         int
+
+		protocolH1 string
+		protocolH2 string
 	)
 
 	BeforeEach(func() {
@@ -52,6 +55,8 @@ var _ = Describe("Config", func() {
 		backendPort = 15000
 		sniExternalPort = 16000
 		sniPort = 17000
+		protocolH1 = "http1"
+		protocolH2 = "http2"
 
 		configSchema = config.ConfigSchema{
 			MessageBusServers: []config.MessageBusServerSchema{
@@ -83,6 +88,7 @@ var _ = Describe("Config", func() {
 				{
 					Name:                 routeName1,
 					TLSPort:              &port1,
+					Protocol:             protocolH1,
 					RegistrationInterval: registrationInterval1String,
 					URIs:                 []string{"my-other-app.my-domain.com"},
 					ServerCertDomainSAN:  "my.internal.cert",
@@ -91,6 +97,7 @@ var _ = Describe("Config", func() {
 					Name:                 routeName2,
 					Port:                 &port0,
 					TLSPort:              &port1,
+					Protocol:             protocolH2,
 					RegistrationInterval: registrationInterval1String,
 					URIs:                 []string{"my-other-app.my-domain.com"},
 					ServerCertDomainSAN:  "my.internal.cert",
@@ -200,6 +207,7 @@ var _ = Describe("Config", func() {
 					{
 						Name:                 routeName1,
 						TLSPort:              &port1,
+						Protocol:             protocolH1,
 						RegistrationInterval: registrationInterval1,
 						URIs:                 configSchema.Routes[1].URIs,
 						ServerCertDomainSAN:  "my.internal.cert",
@@ -208,6 +216,7 @@ var _ = Describe("Config", func() {
 						Name:                 routeName2,
 						Port:                 &port0,
 						TLSPort:              &port1,
+						Protocol:             protocolH2,
 						RegistrationInterval: registrationInterval1,
 						URIs:                 configSchema.Routes[1].URIs,
 						ServerCertDomainSAN:  "my.internal.cert",
@@ -541,6 +550,22 @@ var _ = Describe("Config", func() {
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
 					Expect(err.Error()).To(ContainSubstring("invalid port: -1"))
+				})
+			})
+		})
+
+		Describe("on route protocol", func() {
+			Context("when an unknown protocol is provided", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].Protocol = "abcd"
+				})
+
+				It("returns an error", func() {
+					c, err := configSchema.ToConfig()
+					Expect(c).To(BeNil())
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
+					Expect(err.Error()).To(ContainSubstring("unknown protocol"))
 				})
 			})
 		})
