@@ -117,34 +117,45 @@ func nilIfEmpty(str *string) *string {
 func (r *RoutingAPI) RegisterRoute(route config.Route) error {
 	err := r.refreshToken()
 	if err != nil {
+		r.logger.Error("Failed to refresh UAA token", err)
 		return err
 	}
 
 	routeMapping, err := r.makeTcpRouteMapping(route)
 	if err != nil {
+		r.logger.Error("Failed to make route mapping", err, lager.Data{"route": route})
 		return err
 	}
 
 	err = r.apiClient.UpsertTcpRouteMappings([]models.TcpRouteMapping{
 		routeMapping})
+	if err != nil {
+		r.logger.Error("Failed to upsert route mapping", err, lager.Data{"route-mapping": routeMapping})
+		return err
+	}
 
 	r.logger.Info("Upserted route", lager.Data{"route-mapping": routeMapping})
-
-	return err
+	return nil
 }
 
 func (r *RoutingAPI) UnregisterRoute(route config.Route) error {
 	err := r.refreshToken()
 	if err != nil {
+		r.logger.Error("Failed to refresh UAA token", err)
 		return err
 	}
 
 	routeMapping, err := r.makeTcpRouteMapping(route)
 	if err != nil {
+		r.logger.Error("Failed to make route mapping", err, lager.Data{"route": route})
 		return err
 	}
 
-	r.logger.Info("Deleting route", lager.Data{})
-
-	return r.apiClient.DeleteTcpRouteMappings([]models.TcpRouteMapping{routeMapping})
+	err = r.apiClient.DeleteTcpRouteMappings([]models.TcpRouteMapping{routeMapping})
+	if err != nil {
+		r.logger.Error("Failed to delete route mapping", err, lager.Data{"route-mapping": routeMapping})
+		return err
+	}
+	r.logger.Info("Deleted route", lager.Data{"route-mapping": routeMapping})
+	return nil
 }
