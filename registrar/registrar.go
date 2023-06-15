@@ -163,24 +163,30 @@ func (r registrar) periodicallyDetermineHealth(
 	ticker := time.NewTicker(route.RegistrationInterval)
 	defer ticker.Stop()
 
+	// fire ticker on process startup
+	r.determineHealth(route, nohealthcheckChan, errChan, healthyChan, unhealthyChan)
 	for {
 		select {
 		case <-ticker.C:
-			if route.HealthCheck == nil || route.HealthCheck.ScriptPath == "" {
-				nohealthcheckChan <- route
-			} else {
-				runner := commandrunner.NewRunner(route.HealthCheck.ScriptPath)
-				healthy, err := r.healthChecker.Check(runner, route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
-				if err != nil {
-					errChan <- route
-				} else if healthy {
-					healthyChan <- route
-				} else {
-					unhealthyChan <- route
-				}
-			}
+			r.determineHealth(route, nohealthcheckChan, errChan, healthyChan, unhealthyChan)
 		case <-closeChan:
 			return
+		}
+	}
+}
+
+func (r registrar) determineHealth(route config.Route, nohealthcheckChan chan<- config.Route, errChan chan<- config.Route, healthyChan chan<- config.Route, unhealthyChan chan<- config.Route) {
+	if route.HealthCheck == nil || route.HealthCheck.ScriptPath == "" {
+		nohealthcheckChan <- route
+	} else {
+		runner := commandrunner.NewRunner(route.HealthCheck.ScriptPath)
+		healthy, err := r.healthChecker.Check(runner, route.HealthCheck.ScriptPath, route.HealthCheck.Timeout)
+		if err != nil {
+			errChan <- route
+		} else if healthy {
+			healthyChan <- route
+		} else {
+			unhealthyChan <- route
 		}
 	}
 }

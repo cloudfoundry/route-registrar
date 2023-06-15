@@ -206,13 +206,15 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		}()
 		<-ready
 
+		// wait for the initial events to be sent upon calling Run(), before shutting it off
+		Eventually(fakeMessageBus.SendMessageCallCount, 100*time.Millisecond).Should(BeNumerically(">", 1))
 		close(signals)
 		err := <-runStatus
 		Expect(err).ShouldNot(HaveOccurred())
 
-		Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 1))
+		Eventually(fakeMessageBus.SendMessageCallCount, 3).Should(BeNumerically(">", 3))
 
-		subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
+		subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(2)
 		Expect(subject).To(Equal("router.unregister"))
 		Expect(host).To(Equal(rrConfig.Host))
 		Expect(route.Name).To(Equal(rrConfig.Routes[0].Name))
@@ -221,7 +223,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		Expect(route.Tags).To(Equal(rrConfig.Routes[0].Tags))
 		Expect(privateInstanceId).NotTo(Equal(""))
 
-		subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(1)
+		subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(3)
 		Expect(subject).To(Equal("router.unregister"))
 		Expect(host).To(Equal(rrConfig.Host))
 		Expect(route.Name).To(Equal(rrConfig.Routes[1].Name))
@@ -253,6 +255,50 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			returned := <-runStatus
 
 			Expect(returned).To(Equal(err))
+		})
+	})
+
+	Context("on startup", func() {
+		BeforeEach(func() {
+			port := 8080
+			rrConfig.Routes = []config.Route{
+				{
+					Name: "my route 1",
+					Port: &port,
+					URIs: []string{
+						"my uri 1.1",
+						"my uri 1.2",
+					},
+					Tags: map[string]string{
+						"tag1.1": "value1.1",
+						"tag1.2": "value1.2",
+					},
+					// RegistrationInterval is > the wait period in our Eventually() to ensure we've triggered on initial Run()
+					RegistrationInterval: 10 * time.Second,
+				},
+			}
+			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+		})
+		It("immediately registers all URIs", func() {
+			runStatus := make(chan error)
+			go func() {
+				runStatus <- r.Run(signals, ready)
+			}()
+			<-ready
+
+			Eventually(fakeMessageBus.SendMessageCallCount, 1).Should(Equal(1))
+
+			subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(0)
+			Expect(subject).To(Equal("router.register"))
+			Expect(host).To(Equal(rrConfig.Host))
+
+			Expect(len(rrConfig.Routes)).To(Equal(1))
+			firstRoute := rrConfig.Routes[0]
+
+			Expect(route.Name).To(Equal(firstRoute.Name))
+			Expect(route.URIs).To(Equal(firstRoute.URIs))
+			Expect(route.Port).To(Equal(firstRoute.Port))
+			Expect(privateInstanceId).NotTo(Equal(""))
 		})
 	})
 
