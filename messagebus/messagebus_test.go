@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"strconv"
 	"time"
@@ -380,8 +381,14 @@ var _ = Describe("Messagebus test Suite", func() {
 func startNats(host string, port int, username, password string) *exec.Cmd {
 	fmt.Fprintf(GinkgoWriter, "Starting nats-server on port %d\n", port)
 
+	natsServer, exists := os.LookupEnv("NATS_SERVER_BINARY")
+	if !exists {
+		fmt.Println("You need nats-server installed and set NATS_SERVER_BINARY env variable")
+		os.Exit(1)
+	}
+
 	cmd := exec.Command(
-		"nats-server",
+		natsServer,
 		"-p", strconv.Itoa(port),
 		"--user", username,
 		"--pass", password)
@@ -405,8 +412,13 @@ func startNats(host string, port int, username, password string) *exec.Cmd {
 func startNatsTls(host string, port int, caFile, certFile, keyFile, username, password string) *exec.Cmd {
 	fmt.Fprintf(GinkgoWriter, "Starting TLS nats-server on port %d\n", port)
 
+	natsServer, exists := os.LookupEnv("NATS_SERVER_BINARY")
+	if !exists {
+		fmt.Println("You need nats-server installed and set NATS_SERVER_BINARY env variable")
+		os.Exit(1)
+	}
 	cmd := exec.Command(
-		"nats-server",
+		natsServer,
 		"-p", strconv.Itoa(port),
 		"--tlsverify",
 		"--tlscacert", caFile,

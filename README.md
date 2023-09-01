@@ -153,20 +153,15 @@ jobs:
 
 ## Development
 
-### Dependencies
+### <a name="dependencies"></a>Dependencies
 
-Dependencies are saved using the
-[routing-release](https://github.com/cloudfoundry/routing-release). Just clone
-the repo and change directory to `src/code.cloudfoundry.org`
+This repository's dependencies are managed using
+[routing-release](https://github.com/cloudfoundry/routing-release). Please refer to documentation in that repository for setting up tests
 
-### Running tests
+### Executables
 
-1. Install the ginkgo binary with `go get`:
-  ```bash
-  go get github.com/onsi/ginkgo/v2/ginkgo
-  ```
+1. `bin/test.bash`: This file is used to run test in Docker & CI. Please refer to [Dependencies](#dependencies) for setting up tests.
 
-1. Run tests, by running the following command from root of this repository
-  ```bash
-  bin/test
-  ```
+### Reporting issues and requesting features
+
+Please report all issues and feature requests in [cloudfoundry/routing-release](https://github.com/cloudfoundry/routing-release).

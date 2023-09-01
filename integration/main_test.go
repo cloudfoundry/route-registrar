@@ -37,8 +37,14 @@ var _ = Describe("Main", func() {
 		rootConfig := initConfig()
 		writeConfig(rootConfig)
 
+		natsServer, exists := os.LookupEnv("NATS_SERVER_BINARY")
+		if !exists {
+			fmt.Println("You need nats-server installed and set NATS_SERVER_BINARY env variable")
+			os.Exit(1)
+		}
+
 		natsCmd = exec.Command(
-			"nats-server",
+			natsServer,
 			"-p", strconv.Itoa(natsPort),
 			"--user", natsUsername,
 			"--pass", natsPassword,
@@ -375,9 +381,14 @@ func writeConfig(config config.ConfigSchema) {
 
 func startNatsTLS(host string, port int, caFile, certFile, keyFile string) *exec.Cmd {
 	fmt.Fprintf(GinkgoWriter, "Starting nats-server on port %d\n", port)
+	natsServer, exists := os.LookupEnv("NATS_SERVER_BINARY")
+	if !exists {
+		fmt.Println("You need nats-server installed and set NATS_SERVER_BINARY env variable")
+		os.Exit(1)
+	}
 
 	cmd := exec.Command(
-		"nats-server",
+		natsServer,
 		"-p", strconv.Itoa(port),
 		"--tlsverify",
 		"--tlscacert", caFile,
