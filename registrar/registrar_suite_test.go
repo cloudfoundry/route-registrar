@@ -18,5 +18,5 @@ func TestRoute_register(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	natsPort = 40000 + GinkgoParallelNode()
+	natsPort = 40000 + GinkgoParallelProcess()
 })
