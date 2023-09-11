@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"strconv"
 	"time"
@@ -259,8 +260,13 @@ func startNats() *exec.Cmd {
 	natsUsername := "nats"
 	natsPassword := "nats"
 
+	natsServer, exists := os.LookupEnv("NATS_SERVER_BINARY")
+	if !exists {
+		fmt.Println("You need nats-server installed and set NATS_SERVER_BINARY env variable")
+		os.Exit(1)
+	}
 	natsCmd := exec.Command(
-		"nats-server",
+		natsServer,
 		"-p", strconv.Itoa(natsPort),
 		"--user", natsUsername,
 		"--pass", natsPassword,

@@ -2,14 +2,13 @@ package commandrunner_test
 
 import (
 	"bytes"
-	"strings"
+	"os/exec"
 
 	"code.cloudfoundry.org/route-registrar/commandrunner"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -37,21 +36,28 @@ var _ = Describe("CommandRunner", func() {
 
 	BeforeEach(func() {
 		var err error
-		tmpDir, err = ioutil.TempDir("", "healthchecker-test")
+		tmpDir, err = os.MkdirTemp("", "route-registrar-commandrunner-test")
 		Expect(err).NotTo(HaveOccurred())
-
-		gopathEnv := os.Getenv("RELEASE_DIR")
-		gopathArray := strings.SplitN(gopathEnv, ":", 1)
-		gopath := gopathArray[0]
-		Expect(gopath).NotTo(BeEmpty())
 
 		executable = filepath.Join(tmpDir, "healthchecker.sh")
 		scriptText := "echo 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
 
-		err = ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
+		err = os.WriteFile(executable, []byte(scriptText), os.ModePerm)
 		Expect(err).NotTo(HaveOccurred())
 
-		tmpGoPkgPath, err = ioutil.TempDir(filepath.Join(gopath, "src", "code.cloudfoundry.org"), "tmp-foo")
+		cwd, err := os.Getwd()
+		Expect(err).NotTo(HaveOccurred())
+
+		err = os.Chdir(tmpDir)
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = exec.Command("go", "mod", "init", "foo").CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
+
+		err = os.Chdir(cwd)
+		Expect(err).NotTo(HaveOccurred())
+
+		tmpGoPkgPath, err = os.MkdirTemp(tmpDir, "tmp-foo")
 		Expect(err).NotTo(HaveOccurred())
 
 		outbuf = bytes.Buffer{}
@@ -60,9 +66,6 @@ var _ = Describe("CommandRunner", func() {
 
 	AfterEach(func() {
 		err := os.RemoveAll(tmpDir)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = os.RemoveAll(tmpGoPkgPath)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -92,7 +95,7 @@ var _ = Describe("CommandRunner", func() {
 		Context("when the script exits with a non-zero code", func() {
 			BeforeEach(func() {
 				scriptText := "exit 1\n"
-				ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
+				os.WriteFile(executable, []byte(scriptText), os.ModePerm)
 			})
 
 			It("places the error on the error chan", func() {
@@ -107,10 +110,10 @@ var _ = Describe("CommandRunner", func() {
 		Describe("running a binary", func() {
 			BeforeEach(func() {
 				executableFilepath := filepath.Join(tmpGoPkgPath, "main.go")
-				err := ioutil.WriteFile(executableFilepath, []byte(golangExecutable), os.ModePerm)
+				err := os.WriteFile(executableFilepath, []byte(golangExecutable), os.ModePerm)
 				Expect(err).NotTo(HaveOccurred())
 
-				executable, err = gexec.Build(tmpGoPkgPath)
+				executable, err = gexec.Build(executableFilepath)
 				Expect(err).ShouldNot(HaveOccurred())
 			})
 
@@ -130,7 +133,7 @@ var _ = Describe("CommandRunner", func() {
 				executable = filepath.Join(tmpDir, "healthchecker.sh")
 				scriptText := "#!/bin/sh\necho 'my-stdout'; >&2 echo 'my-stderr'; exit 0\n"
 
-				err := ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
+				err := os.WriteFile(executable, []byte(scriptText), os.ModePerm)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -153,7 +156,7 @@ var _ = Describe("CommandRunner", func() {
 		Context("when the kill succeeds", func() {
 			BeforeEach(func() {
 				scriptText := "sleep 10; exit 0\n"
-				ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
+				os.WriteFile(executable, []byte(scriptText), os.ModePerm)
 
 				var outbuf, errbuf bytes.Buffer
 				r.Run(&outbuf, &errbuf)
@@ -168,7 +171,7 @@ var _ = Describe("CommandRunner", func() {
 		Context("when the kill does not succeed", func() {
 			BeforeEach(func() {
 				scriptText := "exit 0\n"
-				ioutil.WriteFile(executable, []byte(scriptText), os.ModePerm)
+				os.WriteFile(executable, []byte(scriptText), os.ModePerm)
 
 				var outbuf, errbuf bytes.Buffer
 				r.Run(&outbuf, &errbuf)
