@@ -18,5 +18,5 @@ func TestMessagebus(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	natsPort = 20000 + GinkgoParallelNode()
+	natsPort = 20000 + GinkgoParallelProcess()
 })
