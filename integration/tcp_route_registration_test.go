@@ -248,7 +248,7 @@ var _ = Describe("TCP Route Registration", func() {
 func registerRoute() (*gexec.Session, error) {
 	command := exec.Command(
 		routeRegistrarBinPath,
-		fmt.Sprintf("-logLevel=debug"),
+		"-logLevel=debug",
 		fmt.Sprintf("-pidfile=%s", pidFile),
 		fmt.Sprintf("-configPath=%s", configFile),
 	)
