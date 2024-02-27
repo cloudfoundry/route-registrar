@@ -205,7 +205,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			})
 			It("logs a message", func() {
 				Eventually(logger).Should(gbytes.Say(`nats-connection-successful`))
-				Eventually(logger).Should(gbytes.Say(fmt.Sprintf("%s", natsHost)))
+				Eventually(logger).Should(gbytes.Say(natsHost))
 			})
 		})
 
@@ -218,9 +218,9 @@ var _ = Describe("Messagebus test Suite", func() {
 
 			It("logs a message", func() {
 				Eventually(logger).Should(gbytes.Say(`nats-connection-disconnected`))
-				Eventually(logger).Should(gbytes.Say(fmt.Sprintf("%s", natsHost)))
+				Eventually(logger).Should(gbytes.Say(natsHost))
 				Eventually(logger).Should(gbytes.Say(`nats-connection-closed`))
-				Eventually(logger).Should(gbytes.Say(fmt.Sprintf("%s", natsHost)))
+				Eventually(logger).Should(gbytes.Say(natsHost))
 			})
 		})
 	})
