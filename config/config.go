@@ -379,11 +379,7 @@ func messageBusServersFromSchema(servers []MessageBusServerSchema) ([]MessageBus
 	for _, m := range servers {
 		messageBusServers = append(
 			messageBusServers,
-			MessageBusServer{
-				Host:     m.Host,
-				User:     m.User,
-				Password: m.Password,
-			},
+			MessageBusServer(m),
 		)
 	}
 
@@ -449,10 +445,5 @@ func routingAPIFromSchema(api RoutingAPISchema) (*RoutingAPI, error) {
 }
 
 func clientTLSConfigFromSchema(clientTLSConfigSchema ClientTLSConfigSchema) ClientTLSConfig {
-	return ClientTLSConfig{
-		Enabled:  clientTLSConfigSchema.Enabled,
-		CertPath: clientTLSConfigSchema.CertPath,
-		KeyPath:  clientTLSConfigSchema.KeyPath,
-		CAPath:   clientTLSConfigSchema.CAPath,
-	}
+	return ClientTLSConfig(clientTLSConfigSchema)
 }
