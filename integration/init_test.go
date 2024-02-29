@@ -1,10 +1,10 @@
 package integration
 
 import (
-	"code.cloudfoundry.org/routing-api/test_helpers"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"code.cloudfoundry.org/routing-api/test_helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -39,7 +39,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 }, func(data []byte) {
 	routeRegistrarBinPath = string(data)
 
-	tempDir, err := ioutil.TempDir(os.TempDir(), "route-registrar")
+	tempDir, err := os.MkdirTemp(os.TempDir(), "route-registrar")
 	Expect(err).ToNot(HaveOccurred())
 
 	pidFile = filepath.Join(tempDir, "route-registrar.pid")

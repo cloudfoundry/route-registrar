@@ -2,7 +2,6 @@ package config_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -153,7 +152,7 @@ var _ = Describe("Config", func() {
 
 			BeforeEach(func() {
 				var err error
-				configFile, err = ioutil.TempFile("", "route-registrar-config")
+				configFile, err = os.CreateTemp("", "route-registrar-config")
 				Expect(err).NotTo(HaveOccurred())
 
 				_, err = configFile.Write([]byte("invalid %^&#"))

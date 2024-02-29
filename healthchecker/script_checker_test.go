@@ -3,7 +3,6 @@ package healthchecker_test
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,7 +31,7 @@ var _ = Describe("ScriptHealthChecker", func() {
 
 	BeforeEach(func() {
 		var err error
-		tmpDir, err = ioutil.TempDir(os.TempDir(), "healthchecker-test")
+		tmpDir, err = os.MkdirTemp(os.TempDir(), "healthchecker-test")
 		Expect(err).ToNot(HaveOccurred())
 
 		scriptPath = filepath.Join(tmpDir, "healthchecker.sh")

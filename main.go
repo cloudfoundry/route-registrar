@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"flag"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -67,7 +66,7 @@ func main() {
 
 		tlsConfig := &tls.Config{InsecureSkipVerify: c.RoutingAPI.SkipSSLValidation}
 		if c.RoutingAPI.CACerts != "" {
-			certBytes, err := ioutil.ReadFile(c.RoutingAPI.CACerts)
+			certBytes, err := os.ReadFile(c.RoutingAPI.CACerts)
 			if err != nil {
 				log.Fatalf("Failed to read ca cert file: %s", err.Error())
 			}
@@ -125,7 +124,7 @@ func main() {
 
 	if *pidfile != "" {
 		pid := strconv.Itoa(os.Getpid())
-		err := ioutil.WriteFile(*pidfile, []byte(pid), 0644)
+		err := os.WriteFile(*pidfile, []byte(pid), 0644)
 		logger.Info("Writing pid", lager.Data{"pid": pid, "file": *pidfile})
 		if err != nil {
 			logger.Fatal(
