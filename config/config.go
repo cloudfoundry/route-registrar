@@ -3,8 +3,8 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
@@ -132,7 +132,7 @@ type Route struct {
 func NewConfigSchemaFromFile(configFile string) (ConfigSchema, error) {
 	var config ConfigSchema
 
-	c, err := ioutil.ReadFile(configFile)
+	c, err := os.ReadFile(configFile)
 	if err != nil {
 		return ConfigSchema{}, err
 	}

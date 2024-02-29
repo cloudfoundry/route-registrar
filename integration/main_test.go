@@ -3,7 +3,6 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -105,7 +104,7 @@ var _ = Describe("Main", func() {
 		session.Kill().Wait()
 		Eventually(session).Should(gexec.Exit())
 
-		pidFileContents, err := ioutil.ReadFile(pidFile)
+		pidFileContents, err := os.ReadFile(pidFile)
 		Expect(err).ShouldNot(HaveOccurred())
 
 		Expect(len(pidFileContents)).To(BeNumerically(">", 0))
