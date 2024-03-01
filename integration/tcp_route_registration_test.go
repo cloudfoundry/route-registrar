@@ -41,7 +41,6 @@ var _ = Describe("TCP Route Registration", func() {
 		routingAPIServer.HTTPTestServer.TLS.ClientCAs = tls_helpers.CertPool(routingAPICAFileName)
 		routingAPIServer.HTTPTestServer.TLS.ClientAuth = tls.RequireAndVerifyClientCert
 		routingAPIServer.HTTPTestServer.TLS.CipherSuites = []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256}
-		routingAPIServer.HTTPTestServer.TLS.PreferServerCipherSuites = true
 		routingAPIServer.HTTPTestServer.TLS.Certificates = []tls.Certificate{serverTLSConfig}
 
 		routingAPIResponses := []http.HandlerFunc{
