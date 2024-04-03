@@ -58,7 +58,7 @@ func main() {
 	hc := healthchecker.NewHealthChecker(logger)
 
 	logger.Info("creating nats connection")
-	messageBus := messagebus.NewMessageBus(logger)
+	messageBus := messagebus.NewMessageBus(logger, c.AvailabilityZone)
 
 	var routingAPI *routingapi.RoutingAPI
 	if c.RoutingAPI.APIURL != "" {
