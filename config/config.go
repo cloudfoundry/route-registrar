@@ -43,6 +43,7 @@ type ConfigSchema struct {
 	Routes            []RouteSchema            `json:"routes"`
 	NATSmTLSConfig    ClientTLSConfigSchema    `json:"nats_mtls_config"`
 	Host              string                   `json:"host"`
+	AvailabilityZone  string                   `json:"availability_zone"`
 }
 
 type RouteSchema struct {
@@ -103,6 +104,7 @@ type Config struct {
 	Routes            []Route
 	NATSmTLSConfig    ClientTLSConfig
 	Host              string
+	AvailabilityZone  string `json:"availability_zone"`
 }
 
 type ClientTLSConfig struct {
@@ -188,6 +190,7 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 
 	config := Config{
 		Host:              c.Host,
+		AvailabilityZone:  c.AvailabilityZone,
 		MessageBusServers: messageBusServers,
 		Routes:            routes,
 		NATSmTLSConfig:    natsTLSConfig,

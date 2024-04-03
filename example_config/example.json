@@ -71,5 +71,6 @@
     "cert_path": "cert-path",
     "key_path": "key-path",
     "ca_path": "ca-path"
-  }
+  },
+  "availability_zone": "some-zone"
 }

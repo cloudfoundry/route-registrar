@@ -123,7 +123,8 @@ var _ = Describe("Config", func() {
 				KeyPath:  "key-path",
 				CAPath:   "ca-path",
 			},
-			Host: "127.0.0.1",
+			Host:             "127.0.0.1",
+			AvailabilityZone: "some-zone",
 		}
 	})
 
@@ -244,6 +245,7 @@ var _ = Describe("Config", func() {
 					KeyPath:  "key-path",
 					CAPath:   "ca-path",
 				},
+				AvailabilityZone: "some-zone",
 			}
 
 			Expect(c).To(Equal(expectedC))

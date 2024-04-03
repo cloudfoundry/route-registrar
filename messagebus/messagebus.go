@@ -23,9 +23,10 @@ type MessageBus interface {
 }
 
 type msgBus struct {
-	natsHost *atomic.Value
-	natsConn *nats.Conn
-	logger   lager.Logger
+	natsHost         *atomic.Value
+	natsConn         *nats.Conn
+	availabilityZone string
+	logger           lager.Logger
 }
 
 type Message struct {
@@ -38,12 +39,14 @@ type Message struct {
 	RouteServiceUrl     string            `json:"route_service_url,omitempty"`
 	PrivateInstanceId   string            `json:"private_instance_id"`
 	ServerCertDomainSAN string            `json:"server_cert_domain_san,omitempty"`
+	AvailabilityZone    string            `json:"availability_zone,omitempty"`
 }
 
-func NewMessageBus(logger lager.Logger) MessageBus {
+func NewMessageBus(logger lager.Logger, availabilityZone string) MessageBus {
 	return &msgBus{
-		logger:   logger,
-		natsHost: &atomic.Value{},
+		logger:           logger,
+		natsHost:         &atomic.Value{},
+		availabilityZone: availabilityZone,
 	}
 }
 
@@ -112,6 +115,7 @@ func (m msgBus) SendMessage(subject string, host string, route config.Route, pri
 		RouteServiceUrl:     route.RouteServiceUrl,
 		ServerCertDomainSAN: route.ServerCertDomainSAN,
 		PrivateInstanceId:   privateInstanceId,
+		AvailabilityZone:    m.availabilityZone,
 	}
 
 	json, err := json.Marshal(msg)

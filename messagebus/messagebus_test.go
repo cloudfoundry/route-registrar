@@ -78,7 +78,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 		messageBusServers = []config.MessageBusServer{messageBusServer}
 
-		messageBus = messagebus.NewMessageBus(logger)
+		messageBus = messagebus.NewMessageBus(logger, "some-az")
 	})
 
 	AfterEach(func() {
@@ -279,6 +279,7 @@ var _ = Describe("Messagebus test Suite", func() {
 				RouteServiceUrl:     route.RouteServiceUrl,
 				Tags:                route.Tags,
 				ServerCertDomainSAN: "cf.cert.internal",
+				AvailabilityZone:    "some-az",
 			}
 
 			var registryMessage messagebus.Message
@@ -290,6 +291,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			Expect(registryMessage.Protocol).To(BeEmpty())
 			Expect(registryMessage.RouteServiceUrl).To(Equal(expectedRegistryMessage.RouteServiceUrl))
 			Expect(registryMessage.Tags).To(Equal(expectedRegistryMessage.Tags))
+			Expect(registryMessage.AvailabilityZone).To(Equal(expectedRegistryMessage.AvailabilityZone))
 		})
 
 		Context("when the connection is already closed", func() {
@@ -363,6 +365,7 @@ var _ = Describe("Messagebus test Suite", func() {
 				RouteServiceUrl:     route.RouteServiceUrl,
 				Tags:                route.Tags,
 				ServerCertDomainSAN: "cf.cert.internal",
+				AvailabilityZone:    "some-az",
 			}
 
 			var registryMessage messagebus.Message
