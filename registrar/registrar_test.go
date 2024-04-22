@@ -616,7 +616,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				time.Sleep(1500 * time.Millisecond)
 
 				close(signals)
-				Eventually(runStatus, 100*time.Millisecond).Should(Receive(nil))
+				Eventually(runStatus, 100*time.Millisecond).Should(Receive(BeNil()))
 			})
 		})
 	})
