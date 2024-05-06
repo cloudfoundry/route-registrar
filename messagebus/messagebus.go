@@ -40,7 +40,10 @@ type Message struct {
 	PrivateInstanceId   string            `json:"private_instance_id"`
 	ServerCertDomainSAN string            `json:"server_cert_domain_san,omitempty"`
 	AvailabilityZone    string            `json:"availability_zone,omitempty"`
+	Options             map[string]string `json:"options,omitempty"`
 }
+
+const LoadBalancingAlgorithm string = "lb_algo"
 
 func NewMessageBus(logger lager.Logger, availabilityZone string) MessageBus {
 	return &msgBus{
@@ -105,6 +108,8 @@ func (m *msgBus) Connect(servers []config.MessageBusServer, tlsConfig *tls.Confi
 func (m msgBus) SendMessage(subject string, host string, route config.Route, privateInstanceId string) error {
 	m.logger.Debug("creating-message", lager.Data{"subject": subject, "host": host, "route": route, "privateInstanceId": privateInstanceId})
 
+	routeOptions := m.mapRouteOptions(route)
+
 	msg := &Message{
 		URIs:                route.URIs,
 		Host:                host,
@@ -116,6 +121,7 @@ func (m msgBus) SendMessage(subject string, host string, route config.Route, pri
 		ServerCertDomainSAN: route.ServerCertDomainSAN,
 		PrivateInstanceId:   privateInstanceId,
 		AvailabilityZone:    m.availabilityZone,
+		Options:             routeOptions,
 	}
 
 	json, err := json.Marshal(msg)
@@ -127,6 +133,17 @@ func (m msgBus) SendMessage(subject string, host string, route config.Route, pri
 	m.logger.Debug("publishing-message", lager.Data{"msg": string(json)})
 
 	return m.natsConn.Publish(subject, json)
+}
+
+func (m msgBus) mapRouteOptions(route config.Route) map[string]string {
+	if route.Options != nil {
+		routeOptions := make(map[string]string)
+		if route.Options.LoadBalancingAlgorithm != "" {
+			routeOptions[LoadBalancingAlgorithm] = string(route.Options.LoadBalancingAlgorithm)
+		}
+		return routeOptions
+	}
+	return nil
 }
 
 func (m msgBus) Close() {

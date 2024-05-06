@@ -379,6 +379,85 @@ var _ = Describe("Messagebus test Suite", func() {
 			Expect(registryMessage.Tags).To(Equal(expectedRegistryMessage.Tags))
 		})
 	})
+	Describe("SendMessage with per-route options", func() {
+		const (
+			topic             = "router.registrar"
+			host              = "some_host"
+			privateInstanceId = "some_id"
+		)
+
+		var (
+			route config.Route
+		)
+
+		BeforeEach(func() {
+			err := messageBus.Connect(messageBusServers, nil)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			port := 12345
+
+			route = config.Route{
+				Name:                "some_name",
+				TLSPort:             &port,
+				URIs:                []string{"uri1", "uri2"},
+				ServerCertDomainSAN: "cf.cert.internal",
+				Options:             &config.Options{LoadBalancingAlgorithm: config.LeastConns},
+			}
+		})
+
+		It("send messages", func() {
+			registered := make(chan string)
+			testSpyClient.Subscribe(topic, func(msg *nats.Msg) {
+				registered <- string(msg.Data)
+			})
+
+			// Wait for the nats library to register our callback.
+			// We use a sleep because there's no way to know that the callback was
+			// registered successfully (e.g. they don't provide a channel)
+			time.Sleep(20 * time.Millisecond)
+
+			err := messageBus.SendMessage(topic, host, route, privateInstanceId)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			// Assert that we got the right message
+			var receivedMessage string
+			Eventually(registered, 2).Should(Receive(&receivedMessage))
+
+			expectedRegistryMessage := messagebus.Message{
+				URIs:                route.URIs,
+				Host:                host,
+				TLSPort:             route.TLSPort,
+				ServerCertDomainSAN: "cf.cert.internal",
+				AvailabilityZone:    "some-az",
+			}
+
+			var registryMessage messagebus.Message
+			err = json.Unmarshal([]byte(receivedMessage), &registryMessage)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
+			Expect(registryMessage.Protocol).To(BeEmpty())
+			Expect(registryMessage.AvailabilityZone).To(Equal(expectedRegistryMessage.AvailabilityZone))
+
+			v, ok := registryMessage.Options[messagebus.LoadBalancingAlgorithm]
+			Expect(ok).To(BeTrue())
+			Expect(v).To(Equal(string(route.Options.LoadBalancingAlgorithm)))
+		})
+
+		Context("when the connection is already closed", func() {
+			BeforeEach(func() {
+				err := messageBus.Connect(messageBusServers, nil)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				messageBus.Close()
+			})
+
+			It("returns error", func() {
+				err := messageBus.SendMessage(topic, host, route, privateInstanceId)
+				Expect(err).Should(HaveOccurred())
+			})
+		})
+	})
 })
 
 func startNats(host string, port int, username, password string) *exec.Cmd {

@@ -91,6 +91,9 @@ var _ = Describe("Config", func() {
 					RegistrationInterval: registrationInterval1String,
 					URIs:                 []string{"my-other-app.my-domain.com"},
 					ServerCertDomainSAN:  "my.internal.cert",
+					Options: &config.Options{
+						LoadBalancingAlgorithm: config.LeastConns,
+					},
 				},
 				{
 					Name:                 routeName2,
@@ -132,7 +135,6 @@ var _ = Describe("Config", func() {
 		It("returns a valid config", func() {
 			cfg_file := "../example_config/example.json"
 			cfg, err := config.NewConfigSchemaFromFile(cfg_file)
-
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg).To(Equal(configSchema))
 		})
@@ -211,6 +213,7 @@ var _ = Describe("Config", func() {
 						RegistrationInterval: registrationInterval1,
 						URIs:                 configSchema.Routes[1].URIs,
 						ServerCertDomainSAN:  "my.internal.cert",
+						Options:              &config.Options{LoadBalancingAlgorithm: config.LeastConns},
 					},
 					{
 						Name:                 routeName2,
@@ -269,6 +272,43 @@ var _ = Describe("Config", func() {
 				Context("and the route_service_url is not a valid URI", func() {
 					BeforeEach(func() {
 						configSchema.Routes[0].RouteServiceUrl = "ht%tp://rs.example.com"
+					})
+
+					It("returns an error", func() {
+						_, err := configSchema.ToConfig()
+						Expect(err).To(HaveOccurred())
+					})
+				})
+			})
+
+			Context("when config input includes per route options", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].Options = &config.Options{}
+				})
+				Context("and has load balancing algorithm", func() {
+					BeforeEach(func() {
+						configSchema.Routes[0].Options.LoadBalancingAlgorithm = config.RoundRobin
+					})
+					It("includes load balancing algorithm in the config", func() {
+						c, err := configSchema.ToConfig()
+						Expect(err).ToNot(HaveOccurred())
+
+						Expect(c.Routes[0].Options.LoadBalancingAlgorithm).Should(Equal(configSchema.Routes[0].Options.LoadBalancingAlgorithm))
+					})
+				})
+
+				Context("and has no specific load balancing algorithm", func() {
+					It("does not include load balancing algorithm in the config", func() {
+						c, err := configSchema.ToConfig()
+						Expect(err).ToNot(HaveOccurred())
+
+						Expect(c.Routes[0].Options.LoadBalancingAlgorithm).Should(BeEmpty())
+					})
+				})
+
+				Context("and the loadbalancing algorithm is not valid", func() {
+					BeforeEach(func() {
+						configSchema.Routes[0].Options.LoadBalancingAlgorithm = "unknown-algorithm"
 					})
 
 					It("returns an error", func() {

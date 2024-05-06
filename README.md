@@ -60,6 +60,9 @@ Please report all issues and feature requests in [cloudfoundry/routing-release](
         "name": "HEALTH_CHECK_NAME",
         "script_path": "/path/to/check/executable",
         "timeout": "HEALTH_CHECK_TIMEOUT"
+      },
+      "options": {
+        "lb_algorithm": "least-connections"
       }
     }
   ]
@@ -86,6 +89,7 @@ Please report all issues and feature requests in [cloudfoundry/routing-release](
     - `route_service_url` is optional. When provided, Gorouter will proxy
       requests received for the `uris` above to this address.
     - `health_check` is optional and explained in more detail below.
+    - `options` is optional and explained in more detail below.
 
 1. Run route-registrar binaries using the following command
   ```bash
@@ -123,6 +127,10 @@ The following applies:
   half the `registration_interval`. If the executable does not terminate within
   the timeout, it is forcibly terminated (with `SIGKILL`) and the routes are
   deregistered.
+
+### Options
+Custom per-route options can be defined and applied to specific routes exclusively.
+- `lb_algorithm` enables the selection of a load balancing algorithm for routing incoming requests to backend. It possible to choose between `round-robin` and `least-connections`. In cases where this option is not specified, the default algorithm `round-robin` is applied.
 
 ## BOSH release
 

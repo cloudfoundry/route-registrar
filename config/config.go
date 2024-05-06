@@ -62,7 +62,19 @@ type RouteSchema struct {
 	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty"`
 	ServerCertDomainSAN  string             `json:"server_cert_domain_san,omitempty"`
 	SniRoutableSan       string             `json:"sni_routable_san,omitempty"`
+	Options              *Options           `json:"options,omitempty"`
 }
+
+type Options struct {
+	LoadBalancingAlgorithm LoadBalancingAlgorithm `json:"lb_algorithm,omitempty"`
+}
+
+type LoadBalancingAlgorithm string
+
+const (
+	RoundRobin LoadBalancingAlgorithm = "round-robin"
+	LeastConns LoadBalancingAlgorithm = "least-connections"
+)
 
 type ClientTLSConfigSchema struct {
 	Enabled  bool   `json:"enabled"`
@@ -129,6 +141,7 @@ type Route struct {
 	RegistrationInterval time.Duration
 	HealthCheck          *HealthCheck
 	ServerCertDomainSAN  string
+	Options              *Options
 }
 
 func NewConfigSchemaFromFile(configFile string) (ConfigSchema, error) {
@@ -276,6 +289,14 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		errors.Add(fmt.Errorf("unknown protocol: %s", r.Protocol))
 	}
 
+	if r.Options != nil {
+		options := r.Options
+		if options.LoadBalancingAlgorithm != "" &&
+			options.LoadBalancingAlgorithm != LeastConns && options.LoadBalancingAlgorithm != RoundRobin {
+			errors.Add(fmt.Errorf("unknown load balancing algorithm in route options: %s", options.LoadBalancingAlgorithm))
+		}
+	}
+
 	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval)
 	if err != nil {
 		errors.Add(err)
@@ -307,6 +328,7 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		ServerCertDomainSAN:  r.ServerCertDomainSAN,
 		RegistrationInterval: registrationInterval,
 		HealthCheck:          healthCheck,
+		Options:              r.Options,
 	}
 
 	if r.Type == "sni" {
