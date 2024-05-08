@@ -10,17 +10,13 @@ import (
 	"strconv"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
 	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
-	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/lager/v3/lagertest"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/messagebus"
 	"code.cloudfoundry.org/tlsconfig"
-	"github.com/nats-io/nats.go"
 )
 
 var _ = Describe("Messagebus test Suite", func() {
@@ -405,7 +401,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			}
 		})
 
-		It("send messages", func() {
+		It("sends messages", func() {
 			registered := make(chan string)
 			testSpyClient.Subscribe(topic, func(msg *nats.Msg) {
 				registered <- string(msg.Data)
@@ -429,6 +425,7 @@ var _ = Describe("Messagebus test Suite", func() {
 				TLSPort:             route.TLSPort,
 				ServerCertDomainSAN: "cf.cert.internal",
 				AvailabilityZone:    "some-az",
+				Options:             map[string]string{"lb_algo": string(route.Options.LoadBalancingAlgorithm)},
 			}
 
 			var registryMessage messagebus.Message
@@ -439,9 +436,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			Expect(registryMessage.Protocol).To(BeEmpty())
 			Expect(registryMessage.AvailabilityZone).To(Equal(expectedRegistryMessage.AvailabilityZone))
 
-			v, ok := registryMessage.Options[messagebus.LoadBalancingAlgorithm]
-			Expect(ok).To(BeTrue())
-			Expect(v).To(Equal(string(route.Options.LoadBalancingAlgorithm)))
+			Expect(registryMessage.Options).To(Equal(expectedRegistryMessage.Options))
 		})
 
 		Context("when the connection is already closed", func() {

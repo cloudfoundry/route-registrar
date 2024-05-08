@@ -62,7 +62,7 @@ Please report all issues and feature requests in [cloudfoundry/routing-release](
         "timeout": "HEALTH_CHECK_TIMEOUT"
       },
       "options": {
-        "lb_algorithm": "least-connections"
+        "lb_algo": "least-connection"
       }
     }
   ]
@@ -130,7 +130,7 @@ The following applies:
 
 ### Options
 Custom per-route options can be defined and applied to specific routes exclusively.
-- `lb_algorithm` enables the selection of a load balancing algorithm for routing incoming requests to backend. It possible to choose between `round-robin` and `least-connections`. In cases where this option is not specified, the default algorithm `round-robin` is applied.
+- `lb_algo` enables the selection of a load balancing algorithm for routing incoming requests to the backend. It is possible to choose between `round-robin` and `least-connection`. In cases where this option is not specified, the algorithm [defined by the platform operator](https://github.com/cloudfoundry/routing-release/blob/develop/jobs/gorouter/spec#L101) is applied.
 
 ## BOSH release
 

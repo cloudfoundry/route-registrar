@@ -66,14 +66,16 @@ type RouteSchema struct {
 }
 
 type Options struct {
-	LoadBalancingAlgorithm LoadBalancingAlgorithm `json:"lb_algorithm,omitempty"`
+	LoadBalancingAlgorithm LoadBalancingAlgorithm `json:"lb_algo,omitempty"`
 }
 
 type LoadBalancingAlgorithm string
 
+var supportedLoadBalancingAlgorithms = []LoadBalancingAlgorithm{RoundRobin, LeastConns}
+
 const (
 	RoundRobin LoadBalancingAlgorithm = "round-robin"
-	LeastConns LoadBalancingAlgorithm = "least-connections"
+	LeastConns LoadBalancingAlgorithm = "least-connection"
 )
 
 type ClientTLSConfigSchema struct {
@@ -290,10 +292,11 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 	}
 
 	if r.Options != nil {
-		options := r.Options
-		if options.LoadBalancingAlgorithm != "" &&
-			options.LoadBalancingAlgorithm != LeastConns && options.LoadBalancingAlgorithm != RoundRobin {
-			errors.Add(fmt.Errorf("unknown load balancing algorithm in route options: %s", options.LoadBalancingAlgorithm))
+		if r.Options.LoadBalancingAlgorithm != "" {
+			err := validatePerRouteLoadBalancingAlgorithm(r.Options.LoadBalancingAlgorithm)
+			if err != nil {
+				errors.Add(err)
+			}
 		}
 	}
 
@@ -337,6 +340,15 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		route.Type = "tcp"
 	}
 	return &route, nil
+}
+
+func validatePerRouteLoadBalancingAlgorithm(loadBalancingAlgo LoadBalancingAlgorithm) error {
+	for _, lbAlgo := range supportedLoadBalancingAlgorithms {
+		if loadBalancingAlgo == lbAlgo {
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown load balancing algorithm: %s. Allowed values: %s", loadBalancingAlgo, supportedLoadBalancingAlgorithms)
 }
 
 func healthCheckFromSchema(
