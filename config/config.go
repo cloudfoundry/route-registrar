@@ -62,7 +62,21 @@ type RouteSchema struct {
 	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty"`
 	ServerCertDomainSAN  string             `json:"server_cert_domain_san,omitempty"`
 	SniRoutableSan       string             `json:"sni_routable_san,omitempty"`
+	Options              *Options           `json:"options,omitempty"`
 }
+
+type Options struct {
+	LoadBalancingAlgorithm LoadBalancingAlgorithm `json:"lb_algo,omitempty"`
+}
+
+type LoadBalancingAlgorithm string
+
+var supportedLoadBalancingAlgorithms = []LoadBalancingAlgorithm{RoundRobin, LeastConns}
+
+const (
+	RoundRobin LoadBalancingAlgorithm = "round-robin"
+	LeastConns LoadBalancingAlgorithm = "least-connection"
+)
 
 type ClientTLSConfigSchema struct {
 	Enabled  bool   `json:"enabled"`
@@ -129,6 +143,7 @@ type Route struct {
 	RegistrationInterval time.Duration
 	HealthCheck          *HealthCheck
 	ServerCertDomainSAN  string
+	Options              *Options
 }
 
 func NewConfigSchemaFromFile(configFile string) (ConfigSchema, error) {
@@ -276,6 +291,15 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		errors.Add(fmt.Errorf("unknown protocol: %s", r.Protocol))
 	}
 
+	if r.Options != nil {
+		if r.Options.LoadBalancingAlgorithm != "" {
+			err := validatePerRouteLoadBalancingAlgorithm(r.Options.LoadBalancingAlgorithm)
+			if err != nil {
+				errors.Add(err)
+			}
+		}
+	}
+
 	registrationInterval, err := parseRegistrationInterval(r.RegistrationInterval)
 	if err != nil {
 		errors.Add(err)
@@ -307,6 +331,7 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		ServerCertDomainSAN:  r.ServerCertDomainSAN,
 		RegistrationInterval: registrationInterval,
 		HealthCheck:          healthCheck,
+		Options:              r.Options,
 	}
 
 	if r.Type == "sni" {
@@ -315,6 +340,15 @@ func routeFromSchema(r RouteSchema, index int) (*Route, error) {
 		route.Type = "tcp"
 	}
 	return &route, nil
+}
+
+func validatePerRouteLoadBalancingAlgorithm(loadBalancingAlgo LoadBalancingAlgorithm) error {
+	for _, lbAlgo := range supportedLoadBalancingAlgorithms {
+		if loadBalancingAlgo == lbAlgo {
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown load balancing algorithm: %s. Allowed values: %s", loadBalancingAlgo, supportedLoadBalancingAlgorithms)
 }
 
 func healthCheckFromSchema(

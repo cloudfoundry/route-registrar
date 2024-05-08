@@ -10,17 +10,13 @@ import (
 	"strconv"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
 	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
-	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/lager/v3/lagertest"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/messagebus"
 	"code.cloudfoundry.org/tlsconfig"
-	"github.com/nats-io/nats.go"
 )
 
 var _ = Describe("Messagebus test Suite", func() {
@@ -377,6 +373,84 @@ var _ = Describe("Messagebus test Suite", func() {
 			Expect(registryMessage.Protocol).To(Equal(expectedRegistryMessage.Protocol))
 			Expect(registryMessage.RouteServiceUrl).To(Equal(expectedRegistryMessage.RouteServiceUrl))
 			Expect(registryMessage.Tags).To(Equal(expectedRegistryMessage.Tags))
+		})
+	})
+	Describe("SendMessage with per-route options", func() {
+		const (
+			topic             = "router.registrar"
+			host              = "some_host"
+			privateInstanceId = "some_id"
+		)
+
+		var (
+			route config.Route
+		)
+
+		BeforeEach(func() {
+			err := messageBus.Connect(messageBusServers, nil)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			port := 12345
+
+			route = config.Route{
+				Name:                "some_name",
+				TLSPort:             &port,
+				URIs:                []string{"uri1", "uri2"},
+				ServerCertDomainSAN: "cf.cert.internal",
+				Options:             &config.Options{LoadBalancingAlgorithm: config.LeastConns},
+			}
+		})
+
+		It("sends messages", func() {
+			registered := make(chan string)
+			testSpyClient.Subscribe(topic, func(msg *nats.Msg) {
+				registered <- string(msg.Data)
+			})
+
+			// Wait for the nats library to register our callback.
+			// We use a sleep because there's no way to know that the callback was
+			// registered successfully (e.g. they don't provide a channel)
+			time.Sleep(20 * time.Millisecond)
+
+			err := messageBus.SendMessage(topic, host, route, privateInstanceId)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			// Assert that we got the right message
+			var receivedMessage string
+			Eventually(registered, 2).Should(Receive(&receivedMessage))
+
+			expectedRegistryMessage := messagebus.Message{
+				URIs:                route.URIs,
+				Host:                host,
+				TLSPort:             route.TLSPort,
+				ServerCertDomainSAN: "cf.cert.internal",
+				AvailabilityZone:    "some-az",
+				Options:             map[string]string{"lb_algo": string(route.Options.LoadBalancingAlgorithm)},
+			}
+
+			var registryMessage messagebus.Message
+			err = json.Unmarshal([]byte(receivedMessage), &registryMessage)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
+			Expect(registryMessage.Protocol).To(BeEmpty())
+			Expect(registryMessage.AvailabilityZone).To(Equal(expectedRegistryMessage.AvailabilityZone))
+
+			Expect(registryMessage.Options).To(Equal(expectedRegistryMessage.Options))
+		})
+
+		Context("when the connection is already closed", func() {
+			BeforeEach(func() {
+				err := messageBus.Connect(messageBusServers, nil)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				messageBus.Close()
+			})
+
+			It("returns error", func() {
+				err := messageBus.SendMessage(topic, host, route, privateInstanceId)
+				Expect(err).Should(HaveOccurred())
+			})
 		})
 	})
 })
