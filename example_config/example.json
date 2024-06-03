@@ -75,5 +75,6 @@
     "key_path": "key-path",
     "ca_path": "ca-path"
   },
-  "availability_zone": "some-zone"
+  "availability_zone": "some-zone",
+  "unregistration_message_limit": 5
 }
