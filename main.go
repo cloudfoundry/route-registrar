@@ -50,7 +50,7 @@ func main() {
 		logger.Fatal("error parsing file: %s\n", err)
 	}
 
-	c, err := configSchema.ToConfig()
+	c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -57,6 +57,8 @@ var _ = Describe("Config", func() {
 		protocolH1 = "http1"
 		protocolH2 = "http2"
 
+		defaultUnregistrationLimit := 5
+
 		configSchema = config.ConfigSchema{
 			MessageBusServers: []config.MessageBusServerSchema{
 				{
@@ -126,8 +128,9 @@ var _ = Describe("Config", func() {
 				KeyPath:  "key-path",
 				CAPath:   "ca-path",
 			},
-			Host:             "127.0.0.1",
-			AvailabilityZone: "some-zone",
+			Host:                       "127.0.0.1",
+			AvailabilityZone:           "some-zone",
+			UnregistrationMessageLimit: &defaultUnregistrationLimit,
 		}
 	})
 
@@ -173,9 +176,83 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Describe("ToConfig", func() {
+	Describe("ParseSchemaAndSetDefaultsToConfig", func() {
 		It("returns a Config object and no error", func() {
-			c, err := configSchema.ToConfig()
+			// schema with UnregistrationMessageLimit not set
+			configSchema = config.ConfigSchema{
+				MessageBusServers: []config.MessageBusServerSchema{
+					{
+						Host:     "some-host",
+						User:     "some-user",
+						Password: "some-password",
+					},
+					{
+						Host:     "another-host",
+						User:     "another-user",
+						Password: "another-password",
+					},
+				},
+				RoutingAPI: config.RoutingAPISchema{
+					APIURL:       "http://api.example.com",
+					OAuthURL:     "https://uaa.somewhere",
+					ClientID:     "clientid",
+					ClientSecret: "secret",
+					MaxTTL:       "30s",
+				},
+				Routes: []config.RouteSchema{
+					{
+						Name:                 routeName0,
+						Port:                 &port0,
+						RegistrationInterval: registrationInterval0String,
+						URIs:                 []string{"my-app.my-domain.com"},
+					},
+					{
+						Name:                 routeName1,
+						TLSPort:              &port1,
+						Protocol:             protocolH1,
+						RegistrationInterval: registrationInterval1String,
+						URIs:                 []string{"my-other-app.my-domain.com"},
+						ServerCertDomainSAN:  "my.internal.cert",
+						Options: &config.Options{
+							LoadBalancingAlgorithm: config.LeastConns,
+						},
+					},
+					{
+						Name:                 routeName2,
+						Port:                 &port0,
+						TLSPort:              &port1,
+						Protocol:             protocolH2,
+						RegistrationInterval: registrationInterval1String,
+						URIs:                 []string{"my-other-app.my-domain.com"},
+						ServerCertDomainSAN:  "my.internal.cert",
+					},
+					{
+						Type:                 "tcp",
+						ExternalPort:         &tcpPort0,
+						Port:                 &backendPort,
+						RouterGroup:          "some-router-group",
+						RegistrationInterval: registrationInterval1String,
+					},
+					{
+						Type:                 "sni",
+						ExternalPort:         &sniExternalPort,
+						SniPort:              &sniPort,
+						SniRoutableSan:       "sni.internal",
+						RouterGroup:          "some-router-group",
+						RegistrationInterval: registrationInterval1String,
+					},
+				},
+				NATSmTLSConfig: config.ClientTLSConfigSchema{
+					Enabled:  true,
+					CertPath: "cert-path",
+					KeyPath:  "key-path",
+					CAPath:   "ca-path",
+				},
+				Host:             "127.0.0.1",
+				AvailabilityZone: "some-zone",
+			}
+
+			c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 			Expect(err).ToNot(HaveOccurred())
 
 			expectedC := &config.Config{
@@ -248,10 +325,43 @@ var _ = Describe("Config", func() {
 					KeyPath:  "key-path",
 					CAPath:   "ca-path",
 				},
-				AvailabilityZone: "some-zone",
+				AvailabilityZone:           "some-zone",
+				UnregistrationMessageLimit: 5,
 			}
 
 			Expect(c).To(Equal(expectedC))
+		})
+
+		Describe("UnregistrationMessageLimit", func() {
+			Context("when UnregistrationMessageLimit is not set", func() {
+				It("sets UnregistrationMessageLimit to 5", func() {
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(c.UnregistrationMessageLimit).To(Equal(5))
+				})
+			})
+
+			Context("when UnregistrationMessageLimit is less than or equal to zero", func() {
+				Context("when UnregistrationMessageLimit is less than zero", func() {
+					It("returns an error", func() {
+						negativeUnregistrationLimit := -5
+						configSchema.UnregistrationMessageLimit = &negativeUnregistrationLimit
+						_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
+						Expect(err).To(HaveOccurred())
+						Expect(err).To(MatchError(ContainSubstring("unregistration_message_limit must be a positive integer")))
+					})
+				})
+
+				Context("when UnregistrationMessageLimit is zero", func() {
+					It("returns an error", func() {
+						zeroUnregistrationLimit := 0
+						configSchema.UnregistrationMessageLimit = &zeroUnregistrationLimit
+						_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
+						Expect(err).To(HaveOccurred())
+						Expect(err).To(MatchError(ContainSubstring("unregistration_message_limit must be a positive integer")))
+					})
+				})
+			})
 		})
 
 		Describe("Routes", func() {
@@ -262,7 +372,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("includes them in the config", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(c.Routes[0].RouteServiceUrl).Should(Equal(configSchema.Routes[0].RouteServiceUrl))
@@ -275,7 +385,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("returns an error", func() {
-						_, err := configSchema.ToConfig()
+						_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(err).To(HaveOccurred())
 					})
 				})
@@ -290,7 +400,7 @@ var _ = Describe("Config", func() {
 						configSchema.Routes[0].Options.LoadBalancingAlgorithm = config.RoundRobin
 					})
 					It("includes load balancing algorithm in the config", func() {
-						c, err := configSchema.ToConfig()
+						c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(err).ToNot(HaveOccurred())
 
 						Expect(c.Routes[0].Options.LoadBalancingAlgorithm).Should(Equal(configSchema.Routes[0].Options.LoadBalancingAlgorithm))
@@ -299,7 +409,7 @@ var _ = Describe("Config", func() {
 
 				Context("and has no specific load balancing algorithm", func() {
 					It("does not include load balancing algorithm in the config", func() {
-						c, err := configSchema.ToConfig()
+						c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(err).ToNot(HaveOccurred())
 
 						Expect(c.Routes[0].Options.LoadBalancingAlgorithm).Should(BeEmpty())
@@ -312,7 +422,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("returns an error", func() {
-						_, err := configSchema.ToConfig()
+						_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(err).To(HaveOccurred())
 					})
 				})
@@ -325,7 +435,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("includes them in the config", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(c.Routes[0].Tags).Should(Equal(configSchema.Routes[0].Tags))
@@ -342,7 +452,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("sets the healthcheck for the route", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(c.Routes[0].HealthCheck.Name).To(Equal("my healthcheck"))
 					Expect(c.Routes[0].HealthCheck.ScriptPath).To(Equal("/some/script/path"))
@@ -354,7 +464,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("defaults the healthcheck timeout to half the registration interval", func() {
-						c, err := configSchema.ToConfig()
+						c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(err).NotTo(HaveOccurred())
 
 						Expect(c.Routes[0].HealthCheck.Timeout).To(Equal(registrationInterval0 / 2))
@@ -367,7 +477,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("sets the healthcheck timeout on the config", func() {
-						c, err := configSchema.ToConfig()
+						c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(err).NotTo(HaveOccurred())
 
 						Expect(err).NotTo(HaveOccurred())
@@ -386,7 +496,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns the same default as Routing API -- 2 minutes", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(c.RoutingAPI.MaxTTL).To(Equal(2 * time.Minute))
@@ -399,7 +509,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns the same default as Routing API -- 2 minutes", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(c.RoutingAPI.MaxTTL).To(Equal(2 * time.Minute))
@@ -412,7 +522,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns the same default as Routing API -- 2 minutes", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(c.RoutingAPI.MaxTTL).To(Equal(2 * time.Minute))
@@ -425,7 +535,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns the same default as Routing API -- 2 minutes", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(c.RoutingAPI.MaxTTL).To(Equal(2 * time.Minute))
@@ -438,7 +548,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns the same default as Routing API -- 2 minutes", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(c.RoutingAPI.MaxTTL).To(Equal(2 * time.Minute))
@@ -453,7 +563,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					buf := gbytes.BufferWithBytes([]byte(err.Error()))
@@ -468,7 +578,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					buf := gbytes.BufferWithBytes([]byte(err.Error()))
@@ -483,7 +593,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					_, err := configSchema.ToConfig()
+					_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).To(HaveOccurred())
 					buf := gbytes.BufferWithBytes([]byte(err.Error()))
 					Expect(buf).To(gbytes.Say(`error with 'route "route-0"'`))
@@ -497,7 +607,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
@@ -511,7 +621,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
@@ -527,7 +637,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("route 0"))
@@ -543,7 +653,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
@@ -556,7 +666,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-1"`))
@@ -571,7 +681,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
@@ -586,7 +696,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
@@ -602,7 +712,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
@@ -618,7 +728,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -632,7 +742,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -646,7 +756,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -670,7 +780,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("still returns the error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -685,7 +795,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -700,7 +810,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -716,7 +826,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`2 errors with 'route "route-0"'`))
@@ -732,7 +842,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -747,7 +857,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					_, err := configSchema.ToConfig()
+					_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
 					Expect(err.Error()).To(ContainSubstring("error with 'healthcheck'"))
@@ -761,7 +871,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -776,7 +886,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).To(HaveOccurred())
 					Expect(c).To(BeNil())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -797,7 +907,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).To(HaveOccurred())
 					Expect(c).To(BeNil())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -818,7 +928,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`error with 'route "route-0"'`))
@@ -835,7 +945,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("host required"))
@@ -850,7 +960,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("message_bus_servers must have at least one entry"))
@@ -863,7 +973,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns no error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(c).NotTo(BeNil())
 				})
@@ -877,7 +987,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("routing_api must have an api_url"))
@@ -891,7 +1001,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns no error", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).NotTo(BeNil())
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -903,7 +1013,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("returns an error", func() {
-					_, err := configSchema.ToConfig()
+					_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -918,7 +1028,7 @@ var _ = Describe("Config", func() {
 						configSchema.RoutingAPI.ClientCertificatePath = ""
 					})
 					It("returns an error", func() {
-						_, err := configSchema.ToConfig()
+						_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(err).To(HaveOccurred())
 					})
 				})
@@ -928,7 +1038,7 @@ var _ = Describe("Config", func() {
 						configSchema.RoutingAPI.ClientPrivateKeyPath = ""
 					})
 					It("returns an error", func() {
-						_, err := configSchema.ToConfig()
+						_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(err).To(HaveOccurred())
 					})
 				})
@@ -938,7 +1048,7 @@ var _ = Describe("Config", func() {
 						configSchema.RoutingAPI.ServerCACertificatePath = ""
 					})
 					It("returns an error", func() {
-						_, err := configSchema.ToConfig()
+						_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(err).To(HaveOccurred())
 					})
 				})
@@ -956,14 +1066,14 @@ var _ = Describe("Config", func() {
 			})
 
 			It("displays a count of the errors", func() {
-				c, err := configSchema.ToConfig()
+				c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(HavePrefix("there were 6 errors with 'config'"))
 			})
 
 			It("aggregates the errors", func() {
-				c, err := configSchema.ToConfig()
+				c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				buf := gbytes.BufferWithBytes([]byte(err.Error()))
@@ -983,7 +1093,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("only returns one error for a given registration_interval", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					buf := gbytes.BufferWithBytes([]byte(err.Error()))
@@ -999,7 +1109,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("only returns one error for a given registration_interval", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					buf := gbytes.BufferWithBytes([]byte(err.Error()))
@@ -1015,7 +1125,7 @@ var _ = Describe("Config", func() {
 				})
 
 				It("only returns one error for a given registration_interval", func() {
-					c, err := configSchema.ToConfig()
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					buf := gbytes.BufferWithBytes([]byte(err.Error()))
@@ -1045,7 +1155,7 @@ var _ = Describe("Config", func() {
 						})
 
 						It("returns an error for the timeout", func() {
-							c, err := configSchema.ToConfig()
+							c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 							Expect(c).To(BeNil())
 							Expect(err).To(HaveOccurred())
 							buf := gbytes.BufferWithBytes([]byte(err.Error()))
@@ -1064,7 +1174,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("returns an error for the timeout", func() {
-						c, err := configSchema.ToConfig()
+						c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
 						buf := gbytes.BufferWithBytes([]byte(err.Error()))
@@ -1081,7 +1191,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("returns an error for the timeout", func() {
-						c, err := configSchema.ToConfig()
+						c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
 						buf := gbytes.BufferWithBytes([]byte(err.Error()))
@@ -1101,7 +1211,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("does not return an error for the timeout", func() {
-						c, err := configSchema.ToConfig()
+						c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
 						Expect(err.Error()).ToNot(ContainSubstring(
@@ -1118,7 +1228,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("returns an error for the timeout", func() {
-						c, err := configSchema.ToConfig()
+						c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
 						buf := gbytes.BufferWithBytes([]byte(err.Error()))
@@ -1135,7 +1245,7 @@ var _ = Describe("Config", func() {
 					})
 
 					It("returns an error for the timeout", func() {
-						c, err := configSchema.ToConfig()
+						c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
 						buf := gbytes.BufferWithBytes([]byte(err.Error()))

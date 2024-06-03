@@ -104,6 +104,8 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		)
 	}
 
+	unregistrationCount := map[string]int{}
+
 	for {
 		select {
 		case route := <-nohealthcheckChan:
@@ -116,23 +118,37 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		case route := <-errChan:
 			r.logger.Info("healthchecker errored for route", lager.Data{"route": route})
 
-			err := r.unregisterRoutes(route)
-			if err != nil {
-				return err
+			routeKey := generateRouteKey(route)
+			if unregistrationCount[routeKey] < r.config.UnregistrationMessageLimit {
+				err := r.unregisterRoutes(route)
+				if err != nil {
+					return err
+				}
+
+				unregistrationCount[routeKey]++
 			}
 		case route := <-healthyChan:
 			r.logger.Info("healthchecker returned healthy for route", lager.Data{"route": route})
+
+			routeKey := generateRouteKey(route)
 
 			err := r.registerRoutes(route)
 			if err != nil {
 				return err
 			}
+
+			unregistrationCount[routeKey] = 0
 		case route := <-unhealthyChan:
 			r.logger.Info("healthchecker returned unhealthy for route", lager.Data{"route": route})
 
-			err := r.unregisterRoutes(route)
-			if err != nil {
-				return err
+			routeKey := generateRouteKey(route)
+			if unregistrationCount[routeKey] < r.config.UnregistrationMessageLimit {
+				err := r.unregisterRoutes(route)
+				if err != nil {
+					return err
+				}
+
+				unregistrationCount[routeKey]++
 			}
 		case <-signals:
 			r.logger.Info("Received signal; shutting down")
@@ -225,4 +241,9 @@ func (r registrar) unregisterRoutes(route config.Route) error {
 	r.logger.Info("Unregistered routes successfully")
 
 	return nil
+}
+
+func generateRouteKey(route config.Route) string {
+	routeKey := fmt.Sprintf("%v", route)
+	return routeKey
 }

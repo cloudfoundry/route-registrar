@@ -38,12 +38,13 @@ type HealthCheckSchema struct {
 }
 
 type ConfigSchema struct {
-	MessageBusServers []MessageBusServerSchema `json:"message_bus_servers"`
-	RoutingAPI        RoutingAPISchema         `json:"routing_api"`
-	Routes            []RouteSchema            `json:"routes"`
-	NATSmTLSConfig    ClientTLSConfigSchema    `json:"nats_mtls_config"`
-	Host              string                   `json:"host"`
-	AvailabilityZone  string                   `json:"availability_zone"`
+	MessageBusServers          []MessageBusServerSchema `json:"message_bus_servers"`
+	RoutingAPI                 RoutingAPISchema         `json:"routing_api"`
+	Routes                     []RouteSchema            `json:"routes"`
+	NATSmTLSConfig             ClientTLSConfigSchema    `json:"nats_mtls_config"`
+	Host                       string                   `json:"host"`
+	AvailabilityZone           string                   `json:"availability_zone"`
+	UnregistrationMessageLimit *int                     `json:"unregistration_message_limit,omitempty"`
 }
 
 type RouteSchema struct {
@@ -113,12 +114,13 @@ type HealthCheck struct {
 }
 
 type Config struct {
-	MessageBusServers []MessageBusServer
-	RoutingAPI        RoutingAPI
-	Routes            []Route
-	NATSmTLSConfig    ClientTLSConfig
-	Host              string
-	AvailabilityZone  string `json:"availability_zone"`
+	MessageBusServers          []MessageBusServer
+	RoutingAPI                 RoutingAPI
+	Routes                     []Route
+	NATSmTLSConfig             ClientTLSConfig
+	Host                       string
+	AvailabilityZone           string `json:"availability_zone"`
+	UnregistrationMessageLimit int
 }
 
 type ClientTLSConfig struct {
@@ -162,8 +164,17 @@ func NewConfigSchemaFromFile(configFile string) (ConfigSchema, error) {
 	return config, nil
 }
 
-func (c ConfigSchema) ToConfig() (*Config, error) {
+func (c ConfigSchema) ParseSchemaAndSetDefaultsToConfig() (*Config, error) {
 	errors := multierror.NewMultiError("config")
+
+	if c.UnregistrationMessageLimit == nil {
+		defaultUnregistrationLimit := 5
+		c.UnregistrationMessageLimit = &defaultUnregistrationLimit
+	}
+
+	if *c.UnregistrationMessageLimit <= 0 {
+		errors.Add(fmt.Errorf("unregistration_message_limit must be a positive integer"))
+	}
 
 	if c.Host == "" {
 		errors.Add(fmt.Errorf("host required"))
@@ -204,11 +215,12 @@ func (c ConfigSchema) ToConfig() (*Config, error) {
 	natsTLSConfig := clientTLSConfigFromSchema(c.NATSmTLSConfig)
 
 	config := Config{
-		Host:              c.Host,
-		AvailabilityZone:  c.AvailabilityZone,
-		MessageBusServers: messageBusServers,
-		Routes:            routes,
-		NATSmTLSConfig:    natsTLSConfig,
+		Host:                       c.Host,
+		AvailabilityZone:           c.AvailabilityZone,
+		UnregistrationMessageLimit: *c.UnregistrationMessageLimit,
+		MessageBusServers:          messageBusServers,
+		Routes:                     routes,
+		NATSmTLSConfig:             natsTLSConfig,
 	}
 	if routingAPI != nil {
 		config.RoutingAPI = *routingAPI
