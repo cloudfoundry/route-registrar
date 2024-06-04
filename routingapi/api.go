@@ -82,13 +82,17 @@ func (r *RoutingAPI) makeTcpRouteMapping(route config.Route) (models.TcpRouteMap
 
 	r.logger.Info("Creating mapping", lager.Data{})
 
-	return models.NewSniTcpRouteMapping(
+	return models.NewTcpRouteMapping(
 		routerGroupGUID,
 		uint16(*route.ExternalPort),
-		nilIfEmpty(&route.ServerCertDomainSAN),
 		route.Host,
 		uint16(*route.Port),
-		calculateTTL(route.RegistrationInterval, r.routingAPIMaxTTL)), nil
+		0,
+		"",
+		nilIfEmpty(&route.ServerCertDomainSAN),
+		calculateTTL(route.RegistrationInterval, r.routingAPIMaxTTL),
+		models.ModificationTag{},
+	), nil
 }
 
 const TTL_BUFFER float64 = 2.1
