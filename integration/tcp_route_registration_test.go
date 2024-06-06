@@ -58,6 +58,8 @@ var _ = Describe("TCP Route Registration", func() {
 				ghttp.VerifyJSON(`[{
 					"router_group_guid":"router-group-guid",
 					"backend_port":1234,
+					"backend_tls_port":0,
+					"instance_id": "",
 					"backend_ip":"127.0.0.1",
 					"port":5678,
 					"modification_tag":{
