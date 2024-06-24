@@ -33,7 +33,6 @@ type registrar struct {
 	messageBus        messagebus.MessageBus
 	routingAPI        api
 	privateInstanceId string
-	configChangedChan chan string
 }
 
 func NewRegistrar(
@@ -42,7 +41,6 @@ func NewRegistrar(
 	logger lager.Logger,
 	messageBus messagebus.MessageBus,
 	routingAPI api,
-	configChangedChan chan string,
 ) Registrar {
 	aUUID, err := uuid.NewV4()
 	if err != nil {
@@ -55,7 +53,6 @@ func NewRegistrar(
 		healthChecker:     healthChecker,
 		messageBus:        messageBus,
 		routingAPI:        routingAPI,
-		configChangedChan: configChangedChan,
 	}
 }
 
@@ -111,9 +108,6 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 	for {
 		select {
-		case <-r.configChangedChan:
-			r.logger.Info("config changed! exiting")
-			return nil
 		case route := <-nohealthcheckChan:
 			r.logger.Info("no healthchecker found for route", lager.Data{"route": route})
 
