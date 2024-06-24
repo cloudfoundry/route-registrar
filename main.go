@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"code.cloudfoundry.org/lager/v3"
 	"code.cloudfoundry.org/lager/v3/lagerflags"
 	"code.cloudfoundry.org/route-registrar/config"
+	"code.cloudfoundry.org/route-registrar/filewatcher"
 	"code.cloudfoundry.org/route-registrar/healthchecker"
 	"code.cloudfoundry.org/route-registrar/messagebus"
 	"code.cloudfoundry.org/route-registrar/registrar"
@@ -27,6 +29,9 @@ import (
 	"code.cloudfoundry.org/tlsconfig"
 
 	"github.com/tedsuo/ifrit"
+	"github.com/tedsuo/ifrit/grouper"
+	"github.com/tedsuo/ifrit/restart"
+	"github.com/tedsuo/ifrit/sigmon"
 )
 
 func main() {
@@ -120,7 +125,8 @@ func main() {
 		routingAPI = routingapi.NewRoutingAPI(logger, uaaClient, apiClient, c.RoutingAPI.MaxTTL)
 	}
 
-	r := registrar.NewRegistrar(*c, hc, logger, messageBus, routingAPI)
+	eventChan := make(chan string)
+	r := registrar.NewRegistrar(*c, hc, logger, messageBus, routingAPI, eventChan)
 
 	if *pidfile != "" {
 		pid := strconv.Itoa(os.Getpid())
@@ -142,21 +148,80 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	logger.Info("Running")
+	f := filewatcher.NewFileWatcher(filepath.Dir(configPath), eventChan, logger.Session("filewatcher"))
+	members := grouper.Members{}
 
-	process := ifrit.Invoke(r)
-	for {
-		select {
-		case s := <-sigChan:
-			logger.Info("Caught signal", lager.Data{"signal": s})
-			process.Signal(s)
-		case err := <-process.Wait():
-			if err != nil {
-				logger.Fatal("Exiting with error", err)
-			}
-			logger.Info("Exiting without error")
-			os.Exit(0)
-		}
+	reloader := newLoader(logger.Session("loader"), configPath, hc, messageBus, routingAPI, eventChan)
+	routeRegistrarRestarter := restart.Restarter{Runner: r, Load: reloader.Load}
+	members = append(members, grouper.Member{Name: "RouteRegistrar", Runner: routeRegistrarRestarter})
+	// members = append(members, grouper.Member{Name: "RouteRegistrar", Runner: r})
+
+	members = append(members, grouper.Member{Name: "FileWatcher", Runner: f})
+	group := grouper.NewOrdered(os.Interrupt, members)
+	monitor := ifrit.Invoke(sigmon.New(group, syscall.SIGTERM, syscall.SIGINT, syscall.SIGUSR1))
+
+	<-monitor.Ready()
+	err = <-monitor.Wait()
+	if err != nil {
+		logger.Error("MEOW - this exited", err)
+		os.Exit(1)
 	}
+	os.Exit(0)
+
+	// process := ifrit.Invoke(r)
+	// for {
+	// 	select {
+	// 	case s := <-sigChan:
+	// 		logger.Info("Caught signal", lager.Data{"signal": s})
+	// 		process.Signal(s)
+	// 	case err := <-process.Wait():
+	// 		if err != nil {
+	// 			logger.Fatal("Exiting with error", err)
+	// 		}
+	// 		logger.Info("Exiting without error")
+	// 		os.Exit(0)
+	// 	}
+	// }
+}
+
+type Loader interface {
+	Load(ifrit.Runner, error) ifrit.Runner
+}
+
+type loader struct {
+	logger     lager.Logger
+	configPath string
+	hc         healthchecker.HealthChecker
+	messageBus messagebus.MessageBus
+	routingAPI *routingapi.RoutingAPI
+	eventChan  chan string
+}
+
+func newLoader(logger lager.Logger, configPath string, hc healthchecker.HealthChecker,
+	messageBus messagebus.MessageBus, routingAPI *routingapi.RoutingAPI, eventChan chan string) loader {
+	return loader{
+		logger:     logger,
+		configPath: configPath,
+		hc:         hc,
+		messageBus: messageBus,
+		routingAPI: routingAPI,
+		eventChan:  eventChan,
+	}
+}
+
+func (l *loader) Load(runner ifrit.Runner, err error) ifrit.Runner {
+	configSchema, err := config.NewConfigSchemaFromFile(l.configPath)
+	if err != nil {
+		l.logger.Fatal("error parsing file: %s\n", err)
+	}
+
+	c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	r := registrar.NewRegistrar(*c, l.hc, l.logger, l.messageBus, l.routingAPI, l.eventChan)
+	return r
 }
 
 func newAPIClient(c *config.Config) (routing_api.Client, error) {
