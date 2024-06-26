@@ -18,10 +18,6 @@ import (
 	fakeuaa "code.cloudfoundry.org/route-registrar/routingapi/routingapifakes"
 )
 
-func pointerToInt(i uint16) *uint16 {
-	return &i
-}
-
 var _ = Describe("Routing API", func() {
 	var (
 		client    *fake_routing_api.FakeClient
@@ -81,7 +77,7 @@ var _ = Describe("Routing API", func() {
 					HostPort:        1234,
 					ExternalPort:    5678,
 					HostIP:          "myhost",
-					HostTLSPort:     pointerToInt(0),
+					HostTLSPort:     -1,
 					SniHostname:     nil,
 					InstanceId:      "",
 					TTL:             &expectedTTL,
@@ -108,7 +104,7 @@ var _ = Describe("Routing API", func() {
 						HostPort:        1234,
 						ExternalPort:    5678,
 						HostIP:          "myhost",
-						HostTLSPort:     pointerToInt(0),
+						HostTLSPort:     -1,
 						SniHostname:     nil,
 						InstanceId:      "",
 						TTL:             &expectedTTL,
@@ -217,7 +213,7 @@ var _ = Describe("Routing API", func() {
 					ExternalPort:    5678,
 					HostIP:          "myhost",
 					TTL:             &expectedTTL,
-					HostTLSPort:     pointerToInt(0),
+					HostTLSPort:     -1,
 					SniHostname:     nil,
 					InstanceId:      "",
 				}}
