@@ -58,7 +58,7 @@ var _ = Describe("TCP Route Registration", func() {
 				ghttp.VerifyJSON(`[{
 					"router_group_guid":"router-group-guid",
 					"backend_port":1234,
-					"backend_tls_port":0,
+					"backend_tls_port":-1,
 					"instance_id": "",
 					"backend_ip":"127.0.0.1",
 					"port":5678,
@@ -73,7 +73,7 @@ var _ = Describe("TCP Route Registration", func() {
 			),
 		}
 		routingAPIServer.AppendHandlers(routingAPIResponses...)
-		routingAPIServer.SetAllowUnhandledRequests(true) //sometimes multiple creates happen
+		routingAPIServer.SetAllowUnhandledRequests(true) // sometimes multiple creates happen
 
 		oauthServer = ghttp.NewUnstartedServer()
 		oauthHandlers = []http.HandlerFunc{
@@ -106,8 +106,8 @@ var _ = Describe("TCP Route Registration", func() {
 		rootConfig.RoutingAPI.ClientPrivateKeyPath = routingAPIClientPrivateKeyPath
 		rootConfig.RoutingAPI.ServerCACertificatePath = routingAPICAFileName
 
-		var port = 1234
-		var externalPort = 5678
+		port := 1234
+		externalPort := 5678
 		routes := []config.RouteSchema{{
 			Name:                 "my-route",
 			Type:                 "tcp",
@@ -176,7 +176,8 @@ var _ = Describe("TCP Route Registration", func() {
 				}`,
 							http.Header{"Content-Type": []string{"application/json"}},
 						),
-					)}
+					),
+				}
 			})
 			It("Retries UAA token refreshes if problems were encountered", func() {
 				Eventually(session.Out).Should(gbytes.Say("error-fetching-token"))
@@ -243,7 +244,6 @@ var _ = Describe("TCP Route Registration", func() {
 			})
 		})
 	})
-
 })
 
 func registerRoute() (*gexec.Session, error) {
