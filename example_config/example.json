@@ -75,6 +75,7 @@
     "key_path": "key-path",
     "ca_path": "ca-path"
   },
+  "dynamic_config_globs": ["/some/config/*/path1", "/some/config/*/path2"],
   "availability_zone": "some-zone",
   "unregistration_message_limit": 5
 }

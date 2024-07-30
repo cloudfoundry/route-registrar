@@ -41,6 +41,7 @@ type ConfigSchema struct {
 	MessageBusServers          []MessageBusServerSchema `json:"message_bus_servers"`
 	RoutingAPI                 RoutingAPISchema         `json:"routing_api"`
 	Routes                     []RouteSchema            `json:"routes"`
+	DynamicConfigGlobs         []string                 `json:"dynamic_config_globs"`
 	NATSmTLSConfig             ClientTLSConfigSchema    `json:"nats_mtls_config"`
 	Host                       string                   `json:"host"`
 	AvailabilityZone           string                   `json:"availability_zone"`
@@ -117,6 +118,7 @@ type Config struct {
 	MessageBusServers          []MessageBusServer
 	RoutingAPI                 RoutingAPI
 	Routes                     []Route
+	DynamicConfigGlobs         []string
 	NATSmTLSConfig             ClientTLSConfig
 	Host                       string
 	AvailabilityZone           string `json:"availability_zone"`
@@ -184,7 +186,7 @@ func (c ConfigSchema) ParseSchemaAndSetDefaultsToConfig() (*Config, error) {
 
 	routes := []Route{}
 	for index, r := range c.Routes {
-		route, err := routeFromSchema(r, index)
+		route, err := RouteFromSchema(r, index)
 		if err != nil {
 			errors.Add(err)
 			continue
@@ -220,6 +222,7 @@ func (c ConfigSchema) ParseSchemaAndSetDefaultsToConfig() (*Config, error) {
 		UnregistrationMessageLimit: *c.UnregistrationMessageLimit,
 		MessageBusServers:          messageBusServers,
 		Routes:                     routes,
+		DynamicConfigGlobs:         c.DynamicConfigGlobs,
 		NATSmTLSConfig:             natsTLSConfig,
 	}
 	if routingAPI != nil {
@@ -257,7 +260,7 @@ func parseRegistrationInterval(registrationInterval string) (time.Duration, erro
 	return duration, nil
 }
 
-func routeFromSchema(r RouteSchema, index int) (*Route, error) {
+func RouteFromSchema(r RouteSchema, index int) (*Route, error) {
 	errors := multierror.NewMultiError(fmt.Sprintf("route %s", nameOrIndex(r, index)))
 
 	if r.Type != "tcp" && r.Type != "sni" && r.Name == "" {

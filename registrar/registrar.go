@@ -104,6 +104,18 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 		)
 	}
 
+	// routesConfigWatcher := NewRoutesConfigWatcher(r.config.DynamicConfigGlobs, func(route config.Route) {
+	// 	go r.periodicallyDetermineHealth(
+	// 		route,
+	// 		nohealthcheckChan,
+	// 		errChan,
+	// 		healthyChan,
+	// 		unhealthyChan,
+	// 		periodicHealthcheckCloseChans[i],
+	// 	)
+	// },
+	// )
+
 	unregistrationCount := map[string]int{}
 
 	for {
