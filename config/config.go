@@ -41,6 +41,7 @@ type ConfigSchema struct {
 	MessageBusServers          []MessageBusServerSchema `json:"message_bus_servers"`
 	RoutingAPI                 RoutingAPISchema         `json:"routing_api"`
 	Routes                     []RouteSchema            `json:"routes"`
+	DynamicConfigGlobs         []string                 `json:"dynamic_config_globs"`
 	NATSmTLSConfig             ClientTLSConfigSchema    `json:"nats_mtls_config"`
 	Host                       string                   `json:"host"`
 	AvailabilityZone           string                   `json:"availability_zone"`
@@ -48,22 +49,22 @@ type ConfigSchema struct {
 }
 
 type RouteSchema struct {
-	Type                 string             `json:"type"`
-	Name                 string             `json:"name"`
-	Port                 *int               `json:"port"`
-	Protocol             string             `json:"protocol"`
-	SniPort              *int               `json:"sni_port"`
-	TLSPort              *int               `json:"tls_port"`
-	Tags                 map[string]string  `json:"tags"`
-	URIs                 []string           `json:"uris"`
-	RouterGroup          string             `json:"router_group"`
-	ExternalPort         *int               `json:"external_port,omitempty"`
-	RouteServiceUrl      string             `json:"route_service_url"`
-	RegistrationInterval string             `json:"registration_interval,omitempty"`
-	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty"`
-	ServerCertDomainSAN  string             `json:"server_cert_domain_san,omitempty"`
-	SniRoutableSan       string             `json:"sni_routable_san,omitempty"`
-	Options              *Options           `json:"options,omitempty"`
+	Type                 string             `json:"type" yaml:"type"`
+	Name                 string             `json:"name" yaml:"name"`
+	Port                 *int               `json:"port" yaml:"port"`
+	Protocol             string             `json:"protocol" yaml:"protocol"`
+	SniPort              *int               `json:"sni_port" yaml:"sni_port"`
+	TLSPort              *int               `json:"tls_port" yaml:"tls_port"`
+	Tags                 map[string]string  `json:"tags" yaml:"tags"`
+	URIs                 []string           `json:"uris" yaml:"uris"`
+	RouterGroup          string             `json:"router_group" yaml:"router_group"`
+	ExternalPort         *int               `json:"external_port,omitempty" yaml:"external_port,omitempty"`
+	RouteServiceUrl      string             `json:"route_service_url" yaml:"route_service_url"`
+	RegistrationInterval string             `json:"registration_interval,omitempty" yaml:"registration_interval,omitempty"`
+	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty" yaml:"health_check,omitempty"`
+	ServerCertDomainSAN  string             `json:"server_cert_domain_san,omitempty" yaml:"server_cert_domain,omitempty"`
+	SniRoutableSan       string             `json:"sni_routable_san,omitempty" yaml:"sni_routable_san,omitempty"`
+	Options              *Options           `json:"options,omitempty" yaml:"options,omitempty"`
 }
 
 type Options struct {
@@ -117,6 +118,7 @@ type Config struct {
 	MessageBusServers          []MessageBusServer
 	RoutingAPI                 RoutingAPI
 	Routes                     []Route
+	DynamicConfigGlobs         []string
 	NATSmTLSConfig             ClientTLSConfig
 	Host                       string
 	AvailabilityZone           string `json:"availability_zone"`
@@ -184,7 +186,7 @@ func (c ConfigSchema) ParseSchemaAndSetDefaultsToConfig() (*Config, error) {
 
 	routes := []Route{}
 	for index, r := range c.Routes {
-		route, err := routeFromSchema(r, index)
+		route, err := RouteFromSchema(r, index)
 		if err != nil {
 			errors.Add(err)
 			continue
@@ -220,6 +222,7 @@ func (c ConfigSchema) ParseSchemaAndSetDefaultsToConfig() (*Config, error) {
 		UnregistrationMessageLimit: *c.UnregistrationMessageLimit,
 		MessageBusServers:          messageBusServers,
 		Routes:                     routes,
+		DynamicConfigGlobs:         c.DynamicConfigGlobs,
 		NATSmTLSConfig:             natsTLSConfig,
 	}
 	if routingAPI != nil {
@@ -257,7 +260,7 @@ func parseRegistrationInterval(registrationInterval string) (time.Duration, erro
 	return duration, nil
 }
 
-func routeFromSchema(r RouteSchema, index int) (*Route, error) {
+func RouteFromSchema(r RouteSchema, index int) (*Route, error) {
 	errors := multierror.NewMultiError(fmt.Sprintf("route %s", nameOrIndex(r, index)))
 
 	if r.Type != "tcp" && r.Type != "sni" && r.Name == "" {

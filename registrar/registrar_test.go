@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/nats-io/nats.go"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	yaml "gopkg.in/yaml.v2"
 
 	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	"code.cloudfoundry.org/lager/v3"
@@ -118,7 +120,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		fakeHealthChecker = new(healthchecker_fakes.FakeHealthChecker)
 		fakeMessageBus = new(messagebus_fakes.FakeMessageBus)
 
-		r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+		r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 	})
 
 	It("connects to messagebus", func() {
@@ -143,7 +145,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 		})
 
 		JustBeforeEach(func() {
-			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 		})
 
 		It("connects to the message bus with a TLS config", func() {
@@ -278,7 +280,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					RegistrationInterval: 10 * time.Second,
 				},
 			}
-			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 		})
 		It("immediately registers all URIs", func() {
 			runStatus := make(chan error)
@@ -299,6 +301,96 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			Expect(route.Name).To(Equal(firstRoute.Name))
 			Expect(route.URIs).To(Equal(firstRoute.URIs))
 			Expect(route.Port).To(Equal(firstRoute.Port))
+			Expect(privateInstanceId).NotTo(Equal(""))
+		})
+	})
+
+	Context("when configured with dynamic config blobs", func() {
+		var (
+			dynamicConfigDir string
+			port             int
+		)
+
+		BeforeEach(func() {
+			port = 8080
+			rrConfig.Routes = []config.Route{
+				{
+					Name: "my route 1",
+					Port: &port,
+					URIs: []string{
+						"my uri 1.1",
+						"my uri 1.2",
+					},
+					Tags: map[string]string{
+						"tag1.1": "value1.1",
+						"tag1.2": "value1.2",
+					},
+					// RegistrationInterval is > the wait period in our Eventually() to ensure we've triggered on initial Run()
+					RegistrationInterval: 1 * time.Minute,
+				},
+			}
+
+			var err error
+			dynamicConfigDir, err = os.MkdirTemp(os.TempDir(), "config-")
+			Expect(err).NotTo(HaveOccurred())
+
+			rrConfig.DynamicConfigGlobs = []string{fmt.Sprintf("%s/config.yml", dynamicConfigDir)}
+
+			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, 100*time.Millisecond)
+		})
+
+		AfterEach(func() {
+			Expect(os.RemoveAll(dynamicConfigDir)).To(Succeed())
+		})
+
+		It("starts health checking discovered routes", func() {
+			runStatus := make(chan error)
+			go func() {
+				runStatus <- r.Run(signals, ready)
+			}()
+			<-ready
+			Eventually(fakeMessageBus.SendMessageCallCount, 1).Should(Equal(1))
+
+			routesBytes, err := yaml.Marshal(registrar.RoutesConfigSchema{Routes: []config.RouteSchema{
+				{
+					Name:                 "some-dynamic-route",
+					Port:                 &port,
+					RegistrationInterval: "1s",
+					URIs:                 []string{"some-dynamic-route.apps.com"},
+				},
+			}})
+			Expect(err).NotTo(HaveOccurred())
+			err = os.WriteFile(filepath.Join(dynamicConfigDir, "config.yml"), routesBytes, 0644)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(fakeMessageBus.SendMessageCallCount, 2).Should(Equal(2))
+
+			subject, host, route, privateInstanceId := fakeMessageBus.SendMessageArgsForCall(1)
+			Expect(subject).To(Equal("router.register"))
+			Expect(host).To(Equal(rrConfig.Host))
+
+			Expect(len(rrConfig.Routes)).To(Equal(1))
+
+			Expect(route.Name).To(Equal("some-dynamic-route"))
+			Expect(route.URIs).To(Equal([]string{"some-dynamic-route.apps.com"}))
+			Expect(route.Port).To(Equal(&port))
+			Expect(privateInstanceId).NotTo(Equal(""))
+
+			routesBytes, err = yaml.Marshal(registrar.RoutesConfigSchema{Routes: []config.RouteSchema{}})
+			Expect(err).NotTo(HaveOccurred())
+			err = os.WriteFile(filepath.Join(dynamicConfigDir, "config.yml"), routesBytes, 0644)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(fakeMessageBus.SendMessageCallCount, 2).Should(Equal(3))
+			subject, host, route, privateInstanceId = fakeMessageBus.SendMessageArgsForCall(2)
+			Expect(subject).To(Equal("router.unregister"))
+			Expect(host).To(Equal(rrConfig.Host))
+
+			Expect(len(rrConfig.Routes)).To(Equal(1))
+
+			Expect(route.Name).To(Equal("some-dynamic-route"))
+			Expect(route.URIs).To(Equal([]string{"some-dynamic-route.apps.com"}))
+			Expect(route.Port).To(Equal(&port))
 			Expect(privateInstanceId).NotTo(Equal(""))
 		})
 	})
@@ -382,14 +474,14 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				Timeout:    timeout,
 			}
 
-			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+			r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 		})
 
 		Context("and the healthcheck succeeds", func() {
 			BeforeEach(func() {
 				fakeHealthChecker.CheckReturns(true, nil)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 			})
 
 			It("registers routes", func() {
@@ -458,7 +550,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			BeforeEach(func() {
 				fakeHealthChecker.CheckReturns(false, nil)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 			})
 
 			It("unregisters routes", func() {
@@ -550,7 +642,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					}
 
 					fakeHealthChecker.CheckReturns(false, nil)
-					r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+					r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 				})
 
 				It("only sends five unregistration messages per route", func() {
@@ -626,7 +718,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					}
 
 					fakeHealthChecker.CheckReturns(false, nil)
-					r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+					r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 				})
 
 				It("sends five registration messages for each route", func() {
@@ -715,7 +807,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 						return false, errors.New("oh no I failed")
 					}
 
-					r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+					r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 				})
 
 				It("only sends five unregistration messages for the failing app", func() {
@@ -801,7 +893,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					return false, errors.New("some failure")
 				}
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 			})
 
 			It("registers and unregisters properly as the route's health changes", func() {
@@ -842,7 +934,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				healthcheckErr = fmt.Errorf("boom")
 				fakeHealthChecker.CheckReturns(true, healthcheckErr)
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 			})
 
 			It("unregisters routes", func() {
@@ -914,7 +1006,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 					return true, nil
 				}
 
-				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil)
+				r = registrar.NewRegistrar(rrConfig, fakeHealthChecker, logger, fakeMessageBus, nil, time.Minute)
 			})
 
 			It("returns instantly upon interrupt", func() {
