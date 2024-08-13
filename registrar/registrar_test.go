@@ -57,7 +57,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			),
 		}
 
-		opts := nats.DefaultOptions
+		opts := nats.GetDefaultOptions()
 		opts.Servers = servers
 
 		messageBusServer := config.MessageBusServer{
