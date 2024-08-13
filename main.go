@@ -120,7 +120,7 @@ func main() {
 		routingAPI = routingapi.NewRoutingAPI(logger, uaaClient, apiClient, c.RoutingAPI.MaxTTL)
 	}
 
-	r := registrar.NewRegistrar(*c, hc, logger, messageBus, routingAPI)
+	r := registrar.NewRegistrar(*c, hc, logger, messageBus, routingAPI, 10*time.Second)
 
 	if *pidfile != "" {
 		pid := strconv.Itoa(os.Getpid())

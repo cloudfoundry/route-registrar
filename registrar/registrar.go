@@ -10,6 +10,7 @@ import (
 	"code.cloudfoundry.org/route-registrar/messagebus"
 	"code.cloudfoundry.org/tlsconfig"
 	uuid "github.com/nu7hatch/gouuid"
+	"github.com/tedsuo/ifrit"
 
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/healthchecker"
@@ -27,12 +28,13 @@ type api interface {
 }
 
 type registrar struct {
-	logger            lager.Logger
-	config            config.Config
-	healthChecker     healthchecker.HealthChecker
-	messageBus        messagebus.MessageBus
-	routingAPI        api
-	privateInstanceId string
+	logger                         lager.Logger
+	config                         config.Config
+	healthChecker                  healthchecker.HealthChecker
+	messageBus                     messagebus.MessageBus
+	routingAPI                     api
+	privateInstanceId              string
+	dynamicConfigDiscoveryInterval time.Duration
 }
 
 func NewRegistrar(
@@ -41,18 +43,20 @@ func NewRegistrar(
 	logger lager.Logger,
 	messageBus messagebus.MessageBus,
 	routingAPI api,
+	dynamicConfigDiscoveryInterval time.Duration,
 ) Registrar {
 	aUUID, err := uuid.NewV4()
 	if err != nil {
 		panic(err)
 	}
 	return &registrar{
-		config:            clientConfig,
-		logger:            logger,
-		privateInstanceId: aUUID.String(),
-		healthChecker:     healthChecker,
-		messageBus:        messageBus,
-		routingAPI:        routingAPI,
+		config:                         clientConfig,
+		logger:                         logger,
+		privateInstanceId:              aUUID.String(),
+		healthChecker:                  healthChecker,
+		messageBus:                     messageBus,
+		routingAPI:                     routingAPI,
+		dynamicConfigDiscoveryInterval: dynamicConfigDiscoveryInterval,
 	}
 }
 
@@ -87,22 +91,32 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 	healthyChan := make(chan config.Route, len(r.config.Routes))
 	unhealthyChan := make(chan config.Route, len(r.config.Routes))
 
-	periodicHealthcheckCloseChans := make([]chan struct{}, len(r.config.Routes))
+	periodicHealthcheckCloseChans := &PeriodicHealthcheckCloseChans{}
 
-	for i := range periodicHealthcheckCloseChans {
-		periodicHealthcheckCloseChans[i] = make(chan struct{}, len(r.config.Routes))
-	}
+	for _, route := range r.config.Routes {
+		closeChan := periodicHealthcheckCloseChans.Add(route)
 
-	for i, route := range r.config.Routes {
 		go r.periodicallyDetermineHealth(
 			route,
 			nohealthcheckChan,
 			errChan,
 			healthyChan,
 			unhealthyChan,
-			periodicHealthcheckCloseChans[i],
+			closeChan,
 		)
 	}
+
+	routeDiscovered := make(chan config.Route)
+	routeRemoved := make(chan config.Route)
+
+	var routesConfigWatcher ifrit.Runner
+	if len(r.config.DynamicConfigGlobs) > 0 {
+		routesConfigWatcher = NewRoutesConfigWatcher(r.logger, r.dynamicConfigDiscoveryInterval, r.config.DynamicConfigGlobs, routeDiscovered, routeRemoved)
+	} else {
+		routesConfigWatcher = NewNoopRoutesConfigWatcher()
+	}
+
+	routesConfigWatcherProcess := ifrit.Background(routesConfigWatcher)
 
 	unregistrationCount := map[string]int{}
 
@@ -150,12 +164,46 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 				unregistrationCount[routeKey]++
 			}
-		case <-signals:
+		case route := <-routeDiscovered:
+			r.logger.Info("discovered route", lager.Data{"route": route})
+
+			closeChan := periodicHealthcheckCloseChans.Add(route)
+
+			go r.periodicallyDetermineHealth(
+				route,
+				nohealthcheckChan,
+				errChan,
+				healthyChan,
+				unhealthyChan,
+				closeChan,
+			)
+
+		case route := <-routeRemoved:
+			r.logger.Info("route removed", lager.Data{"route": route})
+			periodicHealthcheckCloseChans.CloseForRoute(route)
+
+			routeKey := generateRouteKey(route)
+			if unregistrationCount[routeKey] < r.config.UnregistrationMessageLimit {
+				err := r.unregisterRoutes(route)
+				if err != nil {
+					return err
+				}
+
+				unregistrationCount[routeKey]++
+			}
+
+		case err := <-routesConfigWatcherProcess.Wait():
+			if err != nil {
+				r.logger.Error("config watcher failed", err)
+				return err
+			}
+
+		case s := <-signals:
 			r.logger.Info("Received signal; shutting down")
 
-			for _, c := range periodicHealthcheckCloseChans {
-				close(c)
-			}
+			routesConfigWatcherProcess.Signal(s)
+
+			periodicHealthcheckCloseChans.CloseAll()
 
 			for _, route := range r.config.Routes {
 				err := r.unregisterRoutes(route)
