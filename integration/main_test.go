@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"code.cloudfoundry.org/routing-api/test_helpers"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -9,10 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
+	tlsHelpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/messagebus"
-	"code.cloudfoundry.org/routing-api/test_helpers"
 	"code.cloudfoundry.org/tlsconfig"
 	"github.com/nats-io/nats.go"
 	"github.com/onsi/gomega/gbytes"
@@ -230,7 +230,7 @@ var _ = Describe("Main", func() {
 			natsTLSPort := test_helpers.NextAvailPort()
 
 			// The server cert and client cert are the same
-			natsCAPath, mtlsNATSCertPath, mtlsNATSKeyPath, _ = tls_helpers.GenerateCaAndMutualTlsCerts()
+			natsCAPath, mtlsNATSCertPath, mtlsNATSKeyPath, _ = tlsHelpers.GenerateCaAndMutualTlsCerts()
 
 			tlsNATSCmd = startNatsTLS(natsHost, natsTLSPort, natsCAPath, mtlsNATSCertPath, mtlsNATSKeyPath)
 
