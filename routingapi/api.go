@@ -82,12 +82,17 @@ func (r *RoutingAPI) makeTcpRouteMapping(route config.Route) (models.TcpRouteMap
 
 	r.logger.Info("Creating mapping", lager.Data{})
 
+	hostTLSPort := -1
+	if route.TLSPort != nil {
+		hostTLSPort = *route.TLSPort
+	}
+
 	return models.NewTcpRouteMapping(
 		routerGroupGUID,
 		uint16(*route.ExternalPort),
 		route.Host,
 		uint16(*route.Port),
-		0,
+		hostTLSPort,
 		"",
 		nilIfEmpty(&route.ServerCertDomainSAN),
 		calculateTTL(route.RegistrationInterval, r.routingAPIMaxTTL),

@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-const RouteRegistrarPackage = "code.cloudfoundry.org/route-registrar/"
+const routeRegistrarPackage = "code.cloudfoundry.org/route-registrar/"
 
 var (
 	routeRegistrarBinPath string
@@ -29,7 +29,7 @@ func TestIntegration(test *testing.T) {
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	path, err := gexec.Build(RouteRegistrarPackage, "-race")
+	path, err := gexec.Build(routeRegistrarPackage, "-race")
 	Expect(err).ShouldNot(HaveOccurred())
 
 	return []byte(path)
