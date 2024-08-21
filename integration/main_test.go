@@ -69,7 +69,7 @@ var _ = Describe("Main", func() {
 			),
 		}
 
-		opts := nats.DefaultOptions
+		opts := nats.GetDefaultOptions()
 		opts.Servers = servers
 
 		Eventually(func() error {
@@ -242,7 +242,7 @@ var _ = Describe("Main", func() {
 				),
 			}
 
-			tlsOpts := nats.DefaultOptions
+			tlsOpts := nats.GetDefaultOptions()
 			tlsOpts.Servers = tlsServers
 
 			spyClientTLSConfig, err := tlsconfig.Build(

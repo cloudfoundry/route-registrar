@@ -73,7 +73,7 @@ var _ = Describe("TCP Route Registration", func() {
 			),
 		}
 		routingAPIServer.AppendHandlers(routingAPIResponses...)
-		routingAPIServer.SetAllowUnhandledRequests(true) //sometimes multiple creates happen
+		routingAPIServer.SetAllowUnhandledRequests(true) // sometimes multiple creates happen
 
 		oauthServer = ghttp.NewUnstartedServer()
 		oauthHandlers = []http.HandlerFunc{
@@ -106,8 +106,8 @@ var _ = Describe("TCP Route Registration", func() {
 		rootConfig.RoutingAPI.ClientPrivateKeyPath = routingAPIClientPrivateKeyPath
 		rootConfig.RoutingAPI.ServerCACertificatePath = routingAPICAFileName
 
-		var port = 1234
-		var externalPort = 5678
+		port := 1234
+		externalPort := 5678
 		routes := []config.RouteSchema{{
 			Name:                 "my-route",
 			Type:                 "tcp",
@@ -176,7 +176,8 @@ var _ = Describe("TCP Route Registration", func() {
 				}`,
 							http.Header{"Content-Type": []string{"application/json"}},
 						),
-					)}
+					),
+				}
 			})
 			It("Retries UAA token refreshes if problems were encountered", func() {
 				Eventually(session.Out).Should(gbytes.Say("error-fetching-token"))
@@ -243,7 +244,6 @@ var _ = Describe("TCP Route Registration", func() {
 			})
 		})
 	})
-
 })
 
 func registerRoute() (*gexec.Session, error) {

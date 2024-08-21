@@ -65,7 +65,7 @@ func (m *msgBus) Connect(servers []config.MessageBusServer, tlsConfig *tls.Confi
 		natsHosts = append(natsHosts, server.Host)
 	}
 
-	opts := nats.DefaultOptions
+	opts := nats.GetDefaultOptions()
 	opts.Servers = natsServers
 	opts.TLSConfig = tlsConfig
 	opts.PingInterval = 20 * time.Second

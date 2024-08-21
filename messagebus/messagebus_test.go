@@ -56,7 +56,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			),
 		}
 
-		opts := nats.DefaultOptions
+		opts := nats.GetDefaultOptions()
 		opts.Servers = servers
 
 		testSpyClient, err = opts.Connect()
@@ -122,7 +122,7 @@ var _ = Describe("Messagebus test Suite", func() {
 					),
 				}
 
-				tlsOpts := nats.DefaultOptions
+				tlsOpts := nats.GetDefaultOptions()
 				tlsOpts.Servers = tlsServers
 				tlsOpts.User = "testuser"
 				tlsOpts.Password = "testpw"
