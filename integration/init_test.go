@@ -1,10 +1,9 @@
 package integration
 
 import (
+	"code.cloudfoundry.org/routing-api/test_helpers"
 	"os"
 	"path/filepath"
-
-	"code.cloudfoundry.org/routing-api/test_helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,9 +12,7 @@ import (
 	"testing"
 )
 
-const (
-	routeRegistrarPackage = "code.cloudfoundry.org/route-registrar/"
-)
+const RouteRegistrarPackage = "code.cloudfoundry.org/route-registrar/"
 
 var (
 	routeRegistrarBinPath string
@@ -26,13 +23,13 @@ var (
 	tempDir string
 )
 
-func TestIntegration(t *testing.T) {
+func TestIntegration(test *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Integration Suite")
+	RunSpecs(test, "Integration Suite")
 }
 
 var _ = SynchronizedBeforeSuite(func() []byte {
-	path, err := gexec.Build(routeRegistrarPackage, "-race")
+	path, err := gexec.Build(RouteRegistrarPackage, "-race")
 	Expect(err).ShouldNot(HaveOccurred())
 
 	return []byte(path)

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
+	tlsHelpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
 	"code.cloudfoundry.org/route-registrar/config"
 
 	"github.com/onsi/gomega/gbytes"
@@ -31,14 +31,14 @@ var _ = Describe("TCP Route Registration", func() {
 	)
 
 	BeforeEach(func() {
-		routingAPICAFileName, routingAPICAPrivateKey := tls_helpers.GenerateCa()
-		_, _, serverTLSConfig := tls_helpers.GenerateCertAndKey(routingAPICAFileName, routingAPICAPrivateKey)
-		routingAPIClientCertPath, routingAPIClientPrivateKeyPath, _ := tls_helpers.GenerateCertAndKey(routingAPICAFileName, routingAPICAPrivateKey)
+		routingAPICAFileName, routingAPICAPrivateKey := tlsHelpers.GenerateCa()
+		_, _, serverTLSConfig := tlsHelpers.GenerateCertAndKey(routingAPICAFileName, routingAPICAPrivateKey)
+		routingAPIClientCertPath, routingAPIClientPrivateKeyPath, _ := tlsHelpers.GenerateCertAndKey(routingAPICAFileName, routingAPICAPrivateKey)
 
 		routingAPIServer = ghttp.NewUnstartedServer()
 		routingAPIServer.HTTPTestServer.TLS = &tls.Config{}
-		routingAPIServer.HTTPTestServer.TLS.RootCAs = tls_helpers.CertPool(routingAPICAFileName)
-		routingAPIServer.HTTPTestServer.TLS.ClientCAs = tls_helpers.CertPool(routingAPICAFileName)
+		routingAPIServer.HTTPTestServer.TLS.RootCAs = tlsHelpers.CertPool(routingAPICAFileName)
+		routingAPIServer.HTTPTestServer.TLS.ClientCAs = tlsHelpers.CertPool(routingAPICAFileName)
 		routingAPIServer.HTTPTestServer.TLS.ClientAuth = tls.RequireAndVerifyClientCert
 		routingAPIServer.HTTPTestServer.TLS.CipherSuites = []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256}
 		routingAPIServer.HTTPTestServer.TLS.Certificates = []tls.Certificate{serverTLSConfig}
@@ -58,9 +58,9 @@ var _ = Describe("TCP Route Registration", func() {
 				ghttp.VerifyJSON(`[{
 					"router_group_guid":"router-group-guid",
 					"backend_port":1234,
-					"backend_tls_port":-1,
-					"instance_id": "",
+					"backend_tls_port": -1,
 					"backend_ip":"127.0.0.1",
+					"instance_id": "",
 					"port":5678,
 					"modification_tag":{
 						"guid":"",

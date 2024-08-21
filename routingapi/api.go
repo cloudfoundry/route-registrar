@@ -11,13 +11,13 @@ import (
 	"code.cloudfoundry.org/routing-api/models"
 
 	"code.cloudfoundry.org/lager/v3"
-	routing_api "code.cloudfoundry.org/routing-api"
+	routingAPI "code.cloudfoundry.org/routing-api"
 )
 
 type RoutingAPI struct {
 	logger          lager.Logger
 	uaaClient       uaaClient
-	apiClient       routing_api.Client
+	apiClient       routingAPI.Client
 	routerGroupGUID map[string]string
 
 	routingAPIMaxTTL time.Duration
@@ -28,7 +28,7 @@ type uaaClient interface {
 	FetchToken(context.Context, bool) (*oauth2.Token, error)
 }
 
-func NewRoutingAPI(logger lager.Logger, uaaClient uaaClient, apiClient routing_api.Client, routingAPIMaxTTL time.Duration) *RoutingAPI {
+func NewRoutingAPI(logger lager.Logger, uaaClient uaaClient, apiClient routingAPI.Client, routingAPIMaxTTL time.Duration) *RoutingAPI {
 	return &RoutingAPI{
 		uaaClient:       uaaClient,
 		apiClient:       apiClient,
@@ -82,12 +82,17 @@ func (r *RoutingAPI) makeTcpRouteMapping(route config.Route) (models.TcpRouteMap
 
 	r.logger.Info("Creating mapping", lager.Data{})
 
+	hostTLSPort := -1
+	if route.TLSPort != nil {
+		hostTLSPort = *route.TLSPort
+	}
+
 	return models.NewTcpRouteMapping(
 		routerGroupGUID,
 		uint16(*route.ExternalPort),
 		route.Host,
 		uint16(*route.Port),
-		-1,
+		hostTLSPort,
 		"",
 		nilIfEmpty(&route.ServerCertDomainSAN),
 		calculateTTL(route.RegistrationInterval, r.routingAPIMaxTTL),
@@ -95,12 +100,12 @@ func (r *RoutingAPI) makeTcpRouteMapping(route config.Route) (models.TcpRouteMap
 	), nil
 }
 
-const TTL_BUFFER float64 = 2.1
+const TTLBuffer float64 = 2.1
 
 // add a buffer to the registration interval so that it is not the same as the
 // TTL
 func calculateTTL(requestedTTL, maxTTL time.Duration) int {
-	ttl := time.Duration(float64(requestedTTL) * TTL_BUFFER)
+	ttl := time.Duration(float64(requestedTTL) * TTLBuffer)
 	if ttl > maxTTL {
 		return int(maxTTL.Seconds())
 	}
