@@ -29,6 +29,7 @@ var _ = Describe("RoutesConfigWatcher", func() {
 
 		routesDiscovered, routesRemoved chan config.Route
 		cfgDir                          string
+		glob, host                      string
 	)
 
 	BeforeEach(func() {
@@ -37,43 +38,56 @@ var _ = Describe("RoutesConfigWatcher", func() {
 		cfgDir, err = os.MkdirTemp(os.TempDir(), "config-")
 		Expect(err).NotTo(HaveOccurred())
 
-		glob := fmt.Sprintf("%s/config-*.yml*", cfgDir)
+		glob = fmt.Sprintf("%s/config-*.yml*", cfgDir)
+		host = "127.0.0.1"
 		routesDiscovered = make(chan config.Route)
 		routesRemoved = make(chan config.Route)
 
-		routesConfigWatcher = registrar.NewRoutesConfigWatcher(logger, time.Second, []string{glob}, routesDiscovered, routesRemoved)
+		routesConfigWatcher = registrar.NewRoutesConfigWatcher(logger, time.Second, []string{glob}, host, routesDiscovered, routesRemoved)
 
 		port := 8080
 		route1 = config.Route{
-			Name:                 "some-route-1",
+			Name:                 "tcp-without-host",
+			Type:                 "tcp",
+			Host:                 "127.0.0.1",
 			Port:                 &port,
+			RouterGroup:          "some-router-group",
 			RegistrationInterval: time.Second,
 			URIs:                 []string{"some-route-1.apps.com"},
 			Tags:                 map[string]string{},
 		}
 		route1Schema = config.RouteSchema{
-			Name:                 "some-route-1",
+			Name:                 "tcp-without-host",
+			Type:                 "tcp",
 			Port:                 &port,
+			RouterGroup:          "some-router-group",
 			RegistrationInterval: "1s",
 			URIs:                 []string{"some-route-1.apps.com"},
 		}
 
 		route2 = config.Route{
-			Name:                 "some-route-2",
+			Name:                 "tcp-with-host",
+			Type:                 "tcp",
+			Host:                 "168.0.0.1",
 			Port:                 &port,
+			RouterGroup:          "some-router-group",
 			RegistrationInterval: 2 * time.Second,
 			URIs:                 []string{"some-route-2.apps.com"},
 			Tags:                 map[string]string{},
 		}
 		route2Schema = config.RouteSchema{
-			Name:                 "some-route-2",
+			Name:                 "tcp-with-host",
+			Type:                 "tcp",
+			Host:                 "168.0.0.1",
 			Port:                 &port,
+			RouterGroup:          "some-router-group",
 			RegistrationInterval: "2s",
 			URIs:                 []string{"some-route-2.apps.com"},
 		}
 
 		route3 = config.Route{
 			Name:                 "some-route-3",
+			Host:                 "127.0.0.1",
 			Port:                 &port,
 			RegistrationInterval: 3 * time.Second,
 			URIs:                 []string{"some-route-3.apps.com"},
@@ -88,6 +102,7 @@ var _ = Describe("RoutesConfigWatcher", func() {
 
 		route4 = config.Route{
 			Name:                 "some-route-4",
+			Host:                 "127.0.0.1",
 			Port:                 &port,
 			RegistrationInterval: 3 * time.Second,
 			URIs:                 []string{"some-route-4.apps.com"},
@@ -268,6 +283,31 @@ var _ = Describe("RoutesConfigWatcher", func() {
 
 			It("logs an error and continues scaning", func() {
 				Eventually(logger, 2).Should(gbytes.Say("failed-to-parse-file"))
+			})
+		})
+
+		Context("when host is not set globally and in config file", func() {
+			BeforeEach(func() {
+				routesConfigWatcher = registrar.NewRoutesConfigWatcher(logger, time.Second, []string{glob}, "", routesDiscovered, routesRemoved)
+				port := 8080
+				routesBytes1, err := yaml.Marshal(registrar.RoutesConfigSchema{Routes: []config.RouteSchema{
+					{
+						Name:                 "tcp-without-host",
+						Type:                 "tcp",
+						Port:                 &port,
+						RouterGroup:          "some-router-group",
+						RegistrationInterval: "1s",
+						URIs:                 []string{"some-route-1.apps.com"},
+					},
+				}})
+				Expect(err).NotTo(HaveOccurred())
+				_, err = cfgFile1.Write(routesBytes1)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("logs an error and continues scaning", func() {
+				Eventually(logger, 2).Should(gbytes.Say("failed-to-parse-route"))
+				Eventually(logger).Should(gbytes.Say("no host"))
 			})
 		})
 	})

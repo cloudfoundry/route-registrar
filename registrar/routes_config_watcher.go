@@ -17,6 +17,7 @@ type RoutesConfigSchema struct {
 
 type routesConfigWatcher struct {
 	globs               []string
+	host                string
 	logger              lager.Logger
 	watchInterval       time.Duration
 	discoveredRoutes    map[string][]config.Route
@@ -24,9 +25,10 @@ type routesConfigWatcher struct {
 	routeRemovedChan    chan config.Route
 }
 
-func NewRoutesConfigWatcher(logger lager.Logger, watchInterval time.Duration, globs []string, routeDiscoveredChan chan config.Route, routeRemovedChan chan config.Route) *routesConfigWatcher {
+func NewRoutesConfigWatcher(logger lager.Logger, watchInterval time.Duration, globs []string, host string, routeDiscoveredChan chan config.Route, routeRemovedChan chan config.Route) *routesConfigWatcher {
 	return &routesConfigWatcher{
 		globs:               globs,
+		host:                host,
 		logger:              logger.Session("routes-config-watcher"),
 		watchInterval:       watchInterval,
 		routeDiscoveredChan: routeDiscoveredChan,
@@ -105,7 +107,7 @@ func (r *routesConfigWatcher) registerNewRoutesFromConfigFile(configFile string)
 	configRoutes := []config.Route{}
 
 	for i, routeSchema := range routesConfig.Routes {
-		route, err := config.RouteFromSchema(routeSchema, i)
+		route, err := config.RouteFromSchema(routeSchema, i, r.host)
 		if err != nil {
 			r.logger.Error("failed-to-parse-route", err)
 			continue

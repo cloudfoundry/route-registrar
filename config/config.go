@@ -51,6 +51,7 @@ type ConfigSchema struct {
 type RouteSchema struct {
 	Type                 string             `json:"type" yaml:"type"`
 	Name                 string             `json:"name" yaml:"name"`
+	Host                 string             `json:"host"`
 	Port                 *int               `json:"port" yaml:"port"`
 	Protocol             string             `json:"protocol" yaml:"protocol"`
 	SniPort              *int               `json:"sni_port" yaml:"sni_port"`
@@ -178,15 +179,11 @@ func (c ConfigSchema) ParseSchemaAndSetDefaultsToConfig() (*Config, error) {
 		errors.Add(fmt.Errorf("unregistration_message_limit must be a positive integer"))
 	}
 
-	if c.Host == "" {
-		errors.Add(fmt.Errorf("host required"))
-	}
-
 	tcp_routes := 0
 
 	routes := []Route{}
 	for index, r := range c.Routes {
-		route, err := RouteFromSchema(r, index)
+		route, err := RouteFromSchema(r, index, c.Host)
 		if err != nil {
 			errors.Add(err)
 			continue
@@ -194,7 +191,6 @@ func (c ConfigSchema) ParseSchemaAndSetDefaultsToConfig() (*Config, error) {
 
 		if route.Type == "tcp" {
 			tcp_routes++
-			route.Host = c.Host
 		}
 
 		routes = append(routes, *route)
@@ -260,11 +256,19 @@ func parseRegistrationInterval(registrationInterval string) (time.Duration, erro
 	return duration, nil
 }
 
-func RouteFromSchema(r RouteSchema, index int) (*Route, error) {
+func RouteFromSchema(r RouteSchema, index int, host string) (*Route, error) {
 	errors := multierror.NewMultiError(fmt.Sprintf("route %s", nameOrIndex(r, index)))
 
 	if r.Type != "tcp" && r.Type != "sni" && r.Name == "" {
 		errors.Add(fmt.Errorf("no name"))
+	}
+
+	if r.Host == "" {
+		if host == "" {
+			errors.Add(fmt.Errorf("no host"))
+		} else {
+			r.Host = host
+		}
 	}
 
 	if r.Port == nil && r.TLSPort == nil && r.SniPort == nil {
@@ -335,6 +339,7 @@ func RouteFromSchema(r RouteSchema, index int) (*Route, error) {
 	route := Route{
 		Type:                 r.Type,
 		Name:                 r.Name,
+		Host:                 r.Host,
 		Port:                 r.Port,
 		Protocol:             r.Protocol,
 		TLSPort:              r.TLSPort,

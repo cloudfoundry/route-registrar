@@ -99,6 +99,7 @@ var _ = Describe("Config", func() {
 				},
 				{
 					Name:                 routeName2,
+					Host:                 "128.0.0.1",
 					Port:                 &port0,
 					TLSPort:              &port1,
 					Protocol:             protocolH2,
@@ -109,6 +110,7 @@ var _ = Describe("Config", func() {
 				{
 					Type:                 "tcp",
 					ExternalPort:         &tcpPort0,
+					Host:                 "127.0.1.1",
 					Port:                 &backendPort,
 					RouterGroup:          "some-router-group",
 					RegistrationInterval: registrationInterval1String,
@@ -220,6 +222,7 @@ var _ = Describe("Config", func() {
 					},
 					{
 						Name:                 routeName2,
+						Host:                 "128.0.0.1",
 						Port:                 &port0,
 						TLSPort:              &port1,
 						Protocol:             protocolH2,
@@ -230,6 +233,7 @@ var _ = Describe("Config", func() {
 					{
 						Type:                 "tcp",
 						ExternalPort:         &tcpPort0,
+						Host:                 "168.0.0.1",
 						Port:                 &backendPort,
 						RouterGroup:          "some-router-group",
 						RegistrationInterval: registrationInterval1String,
@@ -281,12 +285,14 @@ var _ = Describe("Config", func() {
 				Routes: []config.Route{
 					{
 						Name:                 routeName0,
+						Host:                 "127.0.0.1",
 						Port:                 &port0,
 						RegistrationInterval: registrationInterval0,
 						URIs:                 configSchema.Routes[0].URIs,
 					},
 					{
 						Name:                 routeName1,
+						Host:                 "127.0.0.1",
 						TLSPort:              &port1,
 						Protocol:             protocolH1,
 						RegistrationInterval: registrationInterval1,
@@ -296,6 +302,7 @@ var _ = Describe("Config", func() {
 					},
 					{
 						Name:                 routeName2,
+						Host:                 "128.0.0.1",
 						Port:                 &port0,
 						TLSPort:              &port1,
 						Protocol:             protocolH2,
@@ -306,7 +313,7 @@ var _ = Describe("Config", func() {
 					{
 						Type:                 "tcp",
 						ExternalPort:         &tcpPort0,
-						Host:                 "127.0.0.1",
+						Host:                 "168.0.0.1",
 						Port:                 &backendPort,
 						RouterGroup:          "some-router-group",
 						RegistrationInterval: registrationInterval1,
@@ -368,6 +375,57 @@ var _ = Describe("Config", func() {
 		})
 
 		Describe("Routes", func() {
+			Context("when route has host", func() {
+				BeforeEach(func() {
+					configSchema.Routes[0].Host = "some-route-host"
+				})
+
+				It("sets route host as specified on route", func() {
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(c.Routes[0].Host).Should(Equal("some-route-host"))
+				})
+			})
+
+			Context("when tcp route does not have host", func() {
+				BeforeEach(func() {
+					configSchema.Routes[3].Host = ""
+				})
+
+				It("sets route host as specified globally in config", func() {
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(c.Routes[3].Host).Should(Equal("127.0.0.1"))
+				})
+			})
+
+			Context("when sni route does not have host", func() {
+				BeforeEach(func() {
+					configSchema.Routes[3].Host = ""
+				})
+
+				It("sets route host as specified globally in config", func() {
+					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(c.Routes[3].Host).Should(Equal("127.0.0.1"))
+				})
+			})
+
+			Context("when route does not have host and global config does not have host", func() {
+				BeforeEach(func() {
+					configSchema.Host = ""
+				})
+
+				It("returns an error", func() {
+					_, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring("no host"))
+				})
+			})
+
 			Context("when config input includes route_service_url", func() {
 				BeforeEach(func() {
 					configSchema.Routes[0].RouteServiceUrl = "https://rs.example.com"
@@ -941,21 +999,6 @@ var _ = Describe("Config", func() {
 			})
 		})
 
-		Describe("on the host", func() {
-			Context("when the host is empty", func() {
-				BeforeEach(func() {
-					configSchema.Host = ""
-				})
-
-				It("returns an error", func() {
-					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
-					Expect(c).To(BeNil())
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("host required"))
-				})
-			})
-		})
-
 		Describe("on the message bus servers", func() {
 			Context("when message bus servers are empty and http routes are used", func() {
 				BeforeEach(func() {
@@ -1072,7 +1115,7 @@ var _ = Describe("Config", func() {
 				c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
 				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(HavePrefix("there were 6 errors with 'config'"))
+				Expect(err.Error()).To(HavePrefix("there were 8 errors with 'config'"))
 			})
 
 			It("aggregates the errors", func() {
@@ -1080,13 +1123,16 @@ var _ = Describe("Config", func() {
 				Expect(c).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				buf := gbytes.BufferWithBytes([]byte(err.Error()))
-				Expect(buf).To(gbytes.Say("host required"))
-				Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 0'`))
+				Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 0'`))
 				Expect(buf).To(gbytes.Say("no name"))
+				Expect(buf).To(gbytes.Say("no host"))
 				Expect(buf).To(gbytes.Say("no registration_interval"))
-				Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
+				Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
 				Expect(buf).To(gbytes.Say("no name"))
+				Expect(buf).To(gbytes.Say("no host"))
 				Expect(buf).To(gbytes.Say("no registration_interval"))
+				Expect(buf).To(gbytes.Say(`there was 1 error with 'route 4'`))
+				Expect(buf).To(gbytes.Say("no host"))
 				Expect(buf).To(gbytes.Say("message_bus_servers must have at least one entry"))
 			})
 
@@ -1100,8 +1146,8 @@ var _ = Describe("Config", func() {
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					buf := gbytes.BufferWithBytes([]byte(err.Error()))
-					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 0'`))
-					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
+					Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 0'`))
+					Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
 					Expect(buf).To(gbytes.Say("invalid registration_interval: time: invalid duration"))
 				})
 			})
@@ -1116,8 +1162,8 @@ var _ = Describe("Config", func() {
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					buf := gbytes.BufferWithBytes([]byte(err.Error()))
-					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 0'`))
-					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
+					Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 0'`))
+					Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
 					Expect(buf).To(gbytes.Say("invalid registration_interval: time: missing unit in duration \"10\""))
 				})
 			})
@@ -1132,7 +1178,7 @@ var _ = Describe("Config", func() {
 					Expect(c).To(BeNil())
 					Expect(err).To(HaveOccurred())
 					buf := gbytes.BufferWithBytes([]byte(err.Error()))
-					Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
+					Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
 					Expect(buf).To(gbytes.Say("invalid registration_interval: interval must be greater than 0"))
 				})
 			})
@@ -1162,7 +1208,7 @@ var _ = Describe("Config", func() {
 							Expect(c).To(BeNil())
 							Expect(err).To(HaveOccurred())
 							buf := gbytes.BufferWithBytes([]byte(err.Error()))
-							Expect(buf).To(gbytes.Say(`there were 2 errors with 'route 1'`))
+							Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
 							Expect(buf).To(gbytes.Say(fmt.Sprintf(
 								"invalid healthcheck timeout: %s must be less than the registration interval",
 								timeoutString,
@@ -1181,7 +1227,7 @@ var _ = Describe("Config", func() {
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
 						buf := gbytes.BufferWithBytes([]byte(err.Error()))
-						Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
+						Expect(buf).To(gbytes.Say(`there were 4 errors with 'route 1'`))
 						Expect(buf).To(gbytes.Say("invalid healthcheck timeout: 0"))
 					})
 				})
@@ -1198,7 +1244,7 @@ var _ = Describe("Config", func() {
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
 						buf := gbytes.BufferWithBytes([]byte(err.Error()))
-						Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
+						Expect(buf).To(gbytes.Say(`there were 4 errors with 'route 1'`))
 						Expect(buf).To(gbytes.Say(fmt.Sprintf(
 							"invalid healthcheck timeout: %s",
 							timeoutString,
@@ -1235,7 +1281,7 @@ var _ = Describe("Config", func() {
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
 						buf := gbytes.BufferWithBytes([]byte(err.Error()))
-						Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
+						Expect(buf).To(gbytes.Say(`there were 4 errors with 'route 1'`))
 						Expect(buf).To(gbytes.Say("invalid healthcheck timeout: time: invalid duration"))
 					})
 				})
@@ -1252,7 +1298,7 @@ var _ = Describe("Config", func() {
 						Expect(c).To(BeNil())
 						Expect(err).To(HaveOccurred())
 						buf := gbytes.BufferWithBytes([]byte(err.Error()))
-						Expect(buf).To(gbytes.Say(`there were 3 errors with 'route 1'`))
+						Expect(buf).To(gbytes.Say(`there were 4 errors with 'route 1'`))
 						Expect(buf).To(gbytes.Say(fmt.Sprintf(
 							"invalid healthcheck timeout: time: invalid duration \"%s\"",
 							timeoutString,
