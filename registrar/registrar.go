@@ -111,7 +111,7 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 	var routesConfigWatcher ifrit.Runner
 	if len(r.config.DynamicConfigGlobs) > 0 {
-		routesConfigWatcher = NewRoutesConfigWatcher(r.logger, r.dynamicConfigDiscoveryInterval, r.config.DynamicConfigGlobs, routeDiscovered, routeRemoved)
+		routesConfigWatcher = NewRoutesConfigWatcher(r.logger, r.dynamicConfigDiscoveryInterval, r.config.DynamicConfigGlobs, r.config.Host, routeDiscovered, routeRemoved)
 	} else {
 		routesConfigWatcher = NewNoopRoutesConfigWatcher()
 	}
@@ -262,7 +262,7 @@ func (r registrar) registerRoutes(route config.Route) error {
 	if route.Type == "tcp" {
 		err = r.routingAPI.RegisterRoute(route)
 	} else {
-		err = r.messageBus.SendMessage("router.register", r.config.Host, route, r.privateInstanceId)
+		err = r.messageBus.SendMessage("router.register", route, r.privateInstanceId)
 	}
 	if err != nil {
 		return err
@@ -280,7 +280,7 @@ func (r registrar) unregisterRoutes(route config.Route) error {
 	if route.Type == "tcp" {
 		err = r.routingAPI.UnregisterRoute(route)
 	} else {
-		err = r.messageBus.SendMessage("router.unregister", r.config.Host, route, r.privateInstanceId)
+		err = r.messageBus.SendMessage("router.unregister", route, r.privateInstanceId)
 	}
 	if err != nil {
 		return err

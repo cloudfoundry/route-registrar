@@ -18,7 +18,7 @@ import (
 
 type MessageBus interface {
 	Connect(servers []config.MessageBusServer, tlsConfig *tls.Config) error
-	SendMessage(subject string, host string, route config.Route, privateInstanceId string) error
+	SendMessage(subject string, route config.Route, privateInstanceId string) error
 	Close()
 }
 
@@ -105,14 +105,14 @@ func (m *msgBus) Connect(servers []config.MessageBusServer, tlsConfig *tls.Confi
 	return nil
 }
 
-func (m msgBus) SendMessage(subject string, host string, route config.Route, privateInstanceId string) error {
-	m.logger.Debug("creating-message", lager.Data{"subject": subject, "host": host, "route": route, "privateInstanceId": privateInstanceId})
+func (m msgBus) SendMessage(subject string, route config.Route, privateInstanceId string) error {
+	m.logger.Debug("creating-message", lager.Data{"subject": subject, "route": route, "privateInstanceId": privateInstanceId})
 
 	routeOptions := m.mapRouteOptions(route)
 
 	msg := &Message{
 		URIs:                route.URIs,
-		Host:                host,
+		Host:                route.Host,
 		Port:                route.Port,
 		Protocol:            route.Protocol,
 		TLSPort:             route.TLSPort,

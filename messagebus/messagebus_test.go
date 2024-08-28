@@ -228,7 +228,6 @@ var _ = Describe("Messagebus test Suite", func() {
 	Describe("SendMessage", func() {
 		const (
 			topic             = "router.registrar"
-			host              = "some_host"
 			privateInstanceId = "some_id"
 		)
 
@@ -244,6 +243,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 			route = config.Route{
 				Name:                "some_name",
+				Host:                "some_host",
 				Port:                &port,
 				TLSPort:             &port,
 				URIs:                []string{"uri1", "uri2"},
@@ -264,7 +264,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			// registered successfully (e.g. they don't provide a channel)
 			time.Sleep(20 * time.Millisecond)
 
-			err := messageBus.SendMessage(topic, host, route, privateInstanceId)
+			err := messageBus.SendMessage(topic, route, privateInstanceId)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Assert that we got the right message
@@ -273,7 +273,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 			expectedRegistryMessage := messagebus.Message{
 				URIs:                route.URIs,
-				Host:                host,
+				Host:                route.Host,
 				Port:                route.Port,
 				TLSPort:             route.TLSPort,
 				RouteServiceUrl:     route.RouteServiceUrl,
@@ -288,6 +288,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 			Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
 			Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
+			Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
 			Expect(registryMessage.Protocol).To(BeEmpty())
 			Expect(registryMessage.RouteServiceUrl).To(Equal(expectedRegistryMessage.RouteServiceUrl))
 			Expect(registryMessage.Tags).To(Equal(expectedRegistryMessage.Tags))
@@ -303,7 +304,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			})
 
 			It("returns error", func() {
-				err := messageBus.SendMessage(topic, host, route, privateInstanceId)
+				err := messageBus.SendMessage(topic, route, privateInstanceId)
 				Expect(err).Should(HaveOccurred())
 			})
 		})
@@ -312,7 +313,6 @@ var _ = Describe("Messagebus test Suite", func() {
 	Describe("SendMessage for h2 route", func() {
 		const (
 			topic             = "router.registrar"
-			host              = "some_host"
 			privateInstanceId = "some_id"
 		)
 
@@ -329,6 +329,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			route = config.Route{
 				Name:                "some_name",
 				Port:                &port,
+				Host:                "some_host",
 				TLSPort:             &port,
 				Protocol:            "http2",
 				URIs:                []string{"uri1", "uri2"},
@@ -349,7 +350,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			// registered successfully (e.g. they don't provide a channel)
 			time.Sleep(20 * time.Millisecond)
 
-			err := messageBus.SendMessage(topic, host, route, privateInstanceId)
+			err := messageBus.SendMessage(topic, route, privateInstanceId)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Assert that we got the right message
@@ -358,7 +359,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 			expectedRegistryMessage := messagebus.Message{
 				URIs:                route.URIs,
-				Host:                host,
+				Host:                route.Host,
 				Port:                route.Port,
 				Protocol:            route.Protocol,
 				TLSPort:             route.TLSPort,
@@ -374,6 +375,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 			Expect(registryMessage.URIs).To(Equal(expectedRegistryMessage.URIs))
 			Expect(registryMessage.Port).To(Equal(expectedRegistryMessage.Port))
+			Expect(registryMessage.Host).To(Equal(expectedRegistryMessage.Host))
 			Expect(registryMessage.Protocol).To(Equal(expectedRegistryMessage.Protocol))
 			Expect(registryMessage.RouteServiceUrl).To(Equal(expectedRegistryMessage.RouteServiceUrl))
 			Expect(registryMessage.Tags).To(Equal(expectedRegistryMessage.Tags))
@@ -382,7 +384,6 @@ var _ = Describe("Messagebus test Suite", func() {
 	Describe("SendMessage with per-route options", func() {
 		const (
 			topic             = "router.registrar"
-			host              = "some_host"
 			privateInstanceId = "some_id"
 		)
 
@@ -399,6 +400,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			route = config.Route{
 				Name:                "some_name",
 				TLSPort:             &port,
+				Host:                "some_host",
 				URIs:                []string{"uri1", "uri2"},
 				ServerCertDomainSAN: "cf.cert.internal",
 				Options:             &config.Options{LoadBalancingAlgorithm: config.LeastConns},
@@ -416,7 +418,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			// registered successfully (e.g. they don't provide a channel)
 			time.Sleep(20 * time.Millisecond)
 
-			err := messageBus.SendMessage(topic, host, route, privateInstanceId)
+			err := messageBus.SendMessage(topic, route, privateInstanceId)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			// Assert that we got the right message
@@ -425,7 +427,7 @@ var _ = Describe("Messagebus test Suite", func() {
 
 			expectedRegistryMessage := messagebus.Message{
 				URIs:                route.URIs,
-				Host:                host,
+				Host:                route.Host,
 				TLSPort:             route.TLSPort,
 				ServerCertDomainSAN: "cf.cert.internal",
 				AvailabilityZone:    "some-az",
@@ -452,7 +454,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			})
 
 			It("returns error", func() {
-				err := messageBus.SendMessage(topic, host, route, privateInstanceId)
+				err := messageBus.SendMessage(topic, route, privateInstanceId)
 				Expect(err).Should(HaveOccurred())
 			})
 		})
