@@ -32,9 +32,9 @@ type RoutingAPISchema struct {
 }
 
 type HealthCheckSchema struct {
-	Name       string `json:"name"`
-	ScriptPath string `json:"script_path"`
-	Timeout    string `json:"timeout"`
+	Name       string `json:"name" yaml:"name"`
+	ScriptPath string `json:"script_path" yaml:"script_path"`
+	Timeout    string `json:"timeout" yaml:"timeout"`
 }
 
 type ConfigSchema struct {
@@ -51,7 +51,7 @@ type ConfigSchema struct {
 type RouteSchema struct {
 	Type                 string             `json:"type" yaml:"type"`
 	Name                 string             `json:"name" yaml:"name"`
-	Host                 string             `json:"host"`
+	Host                 string             `json:"host" yaml:"host"`
 	Port                 *int               `json:"port" yaml:"port"`
 	Protocol             string             `json:"protocol" yaml:"protocol"`
 	SniPort              *int               `json:"sni_port" yaml:"sni_port"`
@@ -63,13 +63,13 @@ type RouteSchema struct {
 	RouteServiceUrl      string             `json:"route_service_url" yaml:"route_service_url"`
 	RegistrationInterval string             `json:"registration_interval,omitempty" yaml:"registration_interval,omitempty"`
 	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty" yaml:"health_check,omitempty"`
-	ServerCertDomainSAN  string             `json:"server_cert_domain_san,omitempty" yaml:"server_cert_domain,omitempty"`
+	ServerCertDomainSAN  string             `json:"server_cert_domain_san,omitempty" yaml:"server_cert_domain_san,omitempty"`
 	SniRoutableSan       string             `json:"sni_routable_san,omitempty" yaml:"sni_routable_san,omitempty"`
 	Options              *Options           `json:"options,omitempty" yaml:"options,omitempty"`
 }
 
 type Options struct {
-	LoadBalancingAlgorithm LoadBalancingAlgorithm `json:"lb_algo,omitempty"`
+	LoadBalancingAlgorithm LoadBalancingAlgorithm `json:"lb_algo,omitempty" yaml:"lb_algo,omitempty"`
 }
 
 type LoadBalancingAlgorithm string

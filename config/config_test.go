@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/route-registrar/config"
+	"gopkg.in/yaml.v3"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -1306,6 +1307,45 @@ var _ = Describe("Config", func() {
 					})
 				})
 			})
+		})
+	})
+
+	Describe("RouteFromSchema", func() {
+		It("loads route from YAML config file", func() {
+			configFile := "../example_config/route.yml"
+			b, err := os.ReadFile(configFile)
+			Expect(err).NotTo(HaveOccurred())
+			var routeConfig config.RouteSchema
+			err = yaml.Unmarshal(b, &routeConfig)
+			Expect(err).NotTo(HaveOccurred())
+			route, err := config.RouteFromSchema(routeConfig, 0, "")
+			Expect(err).NotTo(HaveOccurred())
+			port := 8080
+			tlsPort := 8443
+			externalPort := 61445
+			Expect(*route).To(Equal(config.Route{
+				Name:                 "some-route-name",
+				Type:                 "tcp",
+				Port:                 &port,
+				Protocol:             "http1",
+				TLSPort:              &tlsPort,
+				Tags:                 map[string]string{"optional_tag_field": "some_tag_value", "another_tag_field": "some_other_value"},
+				URIs:                 []string{"some_uri1", "some_uri2"},
+				RouterGroup:          "some-router-group",
+				Host:                 "some-host",
+				ExternalPort:         &externalPort,
+				RouteServiceUrl:      "https://route-service.example.com",
+				RegistrationInterval: 10 * time.Second,
+				HealthCheck: &config.HealthCheck{
+					Name:       "health-check-name",
+					ScriptPath: "/path/to/check/executable",
+					Timeout:    5 * time.Second,
+				},
+				ServerCertDomainSAN: "some.service.internal",
+				Options: &config.Options{
+					LoadBalancingAlgorithm: config.LeastConns,
+				},
+			}))
 		})
 	})
 })
