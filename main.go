@@ -37,8 +37,11 @@ func main() {
 	lagerflags.AddFlags(flags)
 
 	flags.StringVar(&configPath, "configPath", "", "path to configuration file with json encoded content")
-	flags.Set("configPath", "registrar_settings.yml")
-
+	err := flags.Set("configPath", "registrar_settings.yml")
+	if err != nil {
+		log.Fatalf("Failed to set up configPath flag")
+	}
+	// #nosec G104 - setting flags.ExitOnError means this function will never return an error
 	flags.Parse(os.Args[1:])
 
 	logger, _ := lagerflags.New("Route Registrar")
