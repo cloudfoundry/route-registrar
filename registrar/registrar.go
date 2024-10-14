@@ -6,14 +6,14 @@ import (
 	"os"
 	"time"
 
-	"code.cloudfoundry.org/route-registrar/commandrunner"
-	"code.cloudfoundry.org/route-registrar/messagebus"
 	"code.cloudfoundry.org/tlsconfig"
 	uuid "github.com/nu7hatch/gouuid"
 	"github.com/tedsuo/ifrit"
 
+	"code.cloudfoundry.org/route-registrar/commandrunner"
 	"code.cloudfoundry.org/route-registrar/config"
 	"code.cloudfoundry.org/route-registrar/healthchecker"
+	"code.cloudfoundry.org/route-registrar/messagebus"
 
 	"code.cloudfoundry.org/lager/v3"
 )
@@ -120,6 +120,8 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 
 	unregistrationCount := map[string]int{}
 
+	routesConfigWatcherChannel := routesConfigWatcherProcess.Wait()
+
 	for {
 		select {
 		case route := <-nohealthcheckChan:
@@ -192,7 +194,7 @@ func (r *registrar) Run(signals <-chan os.Signal, ready chan<- struct{}) error {
 				unregistrationCount[routeKey]++
 			}
 
-		case err := <-routesConfigWatcherProcess.Wait():
+		case err := <-routesConfigWatcherChannel:
 			if err != nil {
 				r.logger.Error("config watcher failed", err)
 				return err
