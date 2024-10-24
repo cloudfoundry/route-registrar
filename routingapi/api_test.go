@@ -24,8 +24,8 @@ var _ = Describe("Routing API", func() {
 		api    *RoutingAPI
 		logger lager.Logger
 
-		port         int
-		externalPort int
+		port         uint16
+		externalPort uint16
 	)
 
 	BeforeEach(func() {

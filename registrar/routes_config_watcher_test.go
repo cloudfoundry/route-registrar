@@ -45,7 +45,7 @@ var _ = Describe("RoutesConfigWatcher", func() {
 
 		routesConfigWatcher = registrar.NewRoutesConfigWatcher(logger, time.Second, []string{glob}, host, routesDiscovered, routesRemoved)
 
-		port := 8080
+		port := uint16(8080)
 		route1 = config.Route{
 			Name:                 "tcp-without-host",
 			Type:                 "tcp",
@@ -289,7 +289,7 @@ var _ = Describe("RoutesConfigWatcher", func() {
 		Context("when host is not set globally and in config file", func() {
 			BeforeEach(func() {
 				routesConfigWatcher = registrar.NewRoutesConfigWatcher(logger, time.Second, []string{glob}, "", routesDiscovered, routesRemoved)
-				port := 8080
+				port := uint16(8080)
 				routesBytes1, err := yaml.Marshal(registrar.RoutesConfigSchema{Routes: []config.RouteSchema{
 					{
 						Name:                 "tcp-without-host",
