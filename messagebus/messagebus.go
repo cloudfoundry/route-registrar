@@ -33,8 +33,8 @@ type Message struct {
 	URIs                []string          `json:"uris"`
 	Host                string            `json:"host"`
 	Protocol            string            `json:"protocol,omitempty"`
-	Port                *int              `json:"port,omitempty"`
-	TLSPort             *int              `json:"tls_port,omitempty"`
+	Port                *uint16           `json:"port,omitempty"`
+	TLSPort             *uint16           `json:"tls_port,omitempty"`
 	Tags                map[string]string `json:"tags"`
 	RouteServiceUrl     string            `json:"route_service_url,omitempty"`
 	PrivateInstanceId   string            `json:"private_instance_id"`

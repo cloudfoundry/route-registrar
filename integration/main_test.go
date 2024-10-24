@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"strconv"
 	"time"
 
 	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
@@ -44,7 +43,7 @@ var _ = Describe("Main", func() {
 
 		natsCmd = exec.Command(
 			natsServer,
-			"-p", strconv.Itoa(natsPort),
+			"-p", fmt.Sprintf("%d", natsPort),
 			"--user", natsUsername,
 			"--pass", natsPassword,
 		)
@@ -134,7 +133,7 @@ var _ = Describe("Main", func() {
 		var receivedMessage string
 		Eventually(registered, 10*time.Second).Should(Receive(&receivedMessage))
 
-		i12345 := 12345
+		i12345 := uint16(12345)
 		expectedRegistryMessage := messagebus.Message{
 			URIs: []string{"uri-1", "uri-2"},
 			Host: "127.0.0.1",
@@ -315,7 +314,7 @@ var _ = Describe("Main", func() {
 			var receivedMessage string
 			Eventually(registered, 10*time.Second).Should(Receive(&receivedMessage))
 
-			i12345 := 12345
+			i12345 := uint16(12345)
 			expectedRegistryMessage := messagebus.Message{
 				URIs: []string{"uri-1", "uri-2"},
 				Host: "127.0.0.1",
@@ -338,7 +337,7 @@ var _ = Describe("Main", func() {
 })
 
 func initConfig() config.ConfigSchema {
-	aPort := 12345
+	aPort := uint16(12345)
 
 	registrationInterval := "1s"
 
@@ -378,7 +377,7 @@ func writeConfig(config config.ConfigSchema) {
 	Expect(err).ShouldNot(HaveOccurred())
 }
 
-func startNatsTLS(host string, port int, caFile, certFile, keyFile string) *exec.Cmd {
+func startNatsTLS(host string, port uint16, caFile, certFile, keyFile string) *exec.Cmd {
 	fmt.Fprintf(GinkgoWriter, "Starting nats-server on port %d\n", port)
 	natsServer, exists := os.LookupEnv("NATS_SERVER_BINARY")
 	if !exists {
@@ -388,7 +387,7 @@ func startNatsTLS(host string, port int, caFile, certFile, keyFile string) *exec
 
 	cmd := exec.Command(
 		natsServer,
-		"-p", strconv.Itoa(port),
+		"-p", fmt.Sprintf("%d", port),
 		"--tlsverify",
 		"--tlscacert", caFile,
 		"--tlscert", certFile,

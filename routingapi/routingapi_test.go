@@ -26,8 +26,8 @@ var _ = Describe("Routing API", func() {
 		api    *routingapi.RoutingAPI
 		logger lager.Logger
 
-		port                 int
-		externalPort         int
+		port                 uint16
+		externalPort         uint16
 		registrationInterval time.Duration
 
 		maxTTL time.Duration

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strconv"
 	"time"
 
 	tls_helpers "code.cloudfoundry.org/cf-routing-test-helpers/tls"
@@ -106,8 +105,8 @@ var _ = Describe("TCP Route Registration", func() {
 		rootConfig.RoutingAPI.ClientPrivateKeyPath = routingAPIClientPrivateKeyPath
 		rootConfig.RoutingAPI.ServerCACertificatePath = routingAPICAFileName
 
-		port := 1234
-		externalPort := 5678
+		port := uint16(1234)
+		externalPort := uint16(5678)
 		routes := []config.RouteSchema{{
 			Name:                 "my-route",
 			Type:                 "tcp",
@@ -268,7 +267,7 @@ func startNats() *exec.Cmd {
 	}
 	natsCmd := exec.Command(
 		natsServer,
-		"-p", strconv.Itoa(natsPort),
+		"-p", fmt.Sprintf("%d", natsPort),
 		"--user", natsUsername,
 		"--pass", natsPassword,
 	)

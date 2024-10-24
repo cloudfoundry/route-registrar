@@ -84,9 +84,9 @@ func (r *RoutingAPI) makeTcpRouteMapping(route config.Route) (models.TcpRouteMap
 
 	return models.NewTcpRouteMapping(
 		routerGroupGUID,
-		uint16(*route.ExternalPort),
+		*route.ExternalPort,
 		route.Host,
-		uint16(*route.Port),
+		*route.Port,
 		-1,
 		"",
 		nilIfEmpty(&route.ServerCertDomainSAN),

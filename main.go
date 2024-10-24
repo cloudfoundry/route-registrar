@@ -94,13 +94,13 @@ func main() {
 		if err != nil {
 			log.Fatalf("Could not parse RoutingAPI OAuth URL: %s", err)
 		}
-		port, err := strconv.Atoi(oauthUrl.Port())
+		port, err := strconv.ParseUint(oauthUrl.Port(), 10, 16)
 		if err != nil {
 			log.Fatalf("RoutingAPI OAuth port (%s) not an integer: %s", oauthUrl.Port(), err)
 		}
 
 		uaaConfig := uaaclient.Config{
-			Port:              port,
+			Port:              uint16(port),
 			Protocol:          oauthUrl.Scheme,
 			SkipSSLValidation: c.RoutingAPI.SkipSSLValidation,
 			ClientName:        c.RoutingAPI.ClientID,

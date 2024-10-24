@@ -239,7 +239,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			err := messageBus.Connect(messageBusServers, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 
-			port := 12345
+			port := uint16(12345)
 
 			route = config.Route{
 				Name:                "some_name",
@@ -324,7 +324,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			err := messageBus.Connect(messageBusServers, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 
-			port := 12345
+			port := uint16(12345)
 
 			route = config.Route{
 				Name:                "some_name",
@@ -395,7 +395,7 @@ var _ = Describe("Messagebus test Suite", func() {
 			err := messageBus.Connect(messageBusServers, nil)
 			Expect(err).ShouldNot(HaveOccurred())
 
-			port := 12345
+			port := uint16(12345)
 
 			route = config.Route{
 				Name:                "some_name",

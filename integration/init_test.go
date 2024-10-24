@@ -21,7 +21,7 @@ var (
 	routeRegistrarBinPath string
 	pidFile               string
 	configFile            string
-	natsPort              int
+	natsPort              uint16
 
 	tempDir string
 )

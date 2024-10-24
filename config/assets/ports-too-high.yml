@@ -1,0 +1,25 @@
+---
+name: some-route-name
+host: some-host
+type: tcp
+port: 65536
+tls_port: 8443
+external_port: 61445
+tags:
+  optional_tag_field: some_tag_value
+  another_tag_field: some_other_value
+uris:
+- some_uri1
+- some_uri2
+server_cert_domain_san: some.service.internal
+route_service_url: https://route-service.example.com
+router_group: some-router-group
+protocol: http1
+registration_interval: 10s
+health_check: 
+  name: health-check-name
+  script_path: /path/to/check/executable
+  timeout: 5s
+options: 
+  lb_algo: least-connection
+

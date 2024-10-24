@@ -27,12 +27,12 @@ var _ = Describe("Config", func() {
 		routeName1 string
 		routeName2 string
 
-		port0           int
-		port1           int
-		tcpPort0        int
-		backendPort     int
-		sniExternalPort int
-		sniPort         int
+		port0           uint16
+		port1           uint16
+		tcpPort0        uint16
+		backendPort     uint16
+		sniExternalPort uint16
+		sniPort         uint16
 
 		protocolH1 string
 		protocolH2 string
@@ -738,7 +738,7 @@ var _ = Describe("Config", func() {
 
 			Context("when the port value is 0", func() {
 				BeforeEach(func() {
-					zero := 0
+					zero := uint16(0)
 					configSchema.Routes[0].Port = &zero
 				})
 
@@ -748,21 +748,6 @@ var _ = Describe("Config", func() {
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
 					Expect(err.Error()).To(ContainSubstring("invalid port: 0"))
-				})
-			})
-
-			Context("when the port value is negative", func() {
-				BeforeEach(func() {
-					negativeValue := -1
-					configSchema.Routes[0].Port = &negativeValue
-				})
-
-				It("returns an error", func() {
-					c, err := configSchema.ParseSchemaAndSetDefaultsToConfig()
-					Expect(c).To(BeNil())
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(`route "route-0"`))
-					Expect(err.Error()).To(ContainSubstring("invalid port: -1"))
 				})
 			})
 		})
@@ -1320,9 +1305,9 @@ var _ = Describe("Config", func() {
 			Expect(err).NotTo(HaveOccurred())
 			route, err := config.RouteFromSchema(routeConfig, 0, "")
 			Expect(err).NotTo(HaveOccurred())
-			port := 8080
-			tlsPort := 8443
-			externalPort := 61445
+			port := uint16(8080)
+			tlsPort := uint16(8443)
+			externalPort := uint16(61445)
 			Expect(*route).To(Equal(config.Route{
 				Name:                 "some-route-name",
 				Type:                 "tcp",
@@ -1346,6 +1331,27 @@ var _ = Describe("Config", func() {
 					LoadBalancingAlgorithm: config.LeastConns,
 				},
 			}))
+		})
+		Context("when a negative port is given", func() {
+			It("errors", func() {
+				configFile := "assets/ports-negative.yml"
+				b, err := os.ReadFile(configFile)
+				Expect(err).NotTo(HaveOccurred())
+				var routeConfig config.RouteSchema
+				err = yaml.Unmarshal(b, &routeConfig)
+				Expect(err).To(MatchError(ContainSubstring("cannot unmarshal !!int `-1` into uint16")))
+			})
+		})
+		Context("when a >65535 port is given", func() {
+			It("errors", func() {
+				configFile := "assets/ports-too-high.yml"
+				b, err := os.ReadFile(configFile)
+				Expect(err).NotTo(HaveOccurred())
+				var routeConfig config.RouteSchema
+				err = yaml.Unmarshal(b, &routeConfig)
+				Expect(err).To(MatchError(ContainSubstring("cannot unmarshal !!int `65536` into uint16")))
+
+			})
 		})
 	})
 })

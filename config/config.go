@@ -52,14 +52,14 @@ type RouteSchema struct {
 	Type                 string             `json:"type" yaml:"type"`
 	Name                 string             `json:"name" yaml:"name"`
 	Host                 string             `json:"host" yaml:"host"`
-	Port                 *int               `json:"port" yaml:"port"`
+	Port                 *uint16            `json:"port" yaml:"port"`
 	Protocol             string             `json:"protocol" yaml:"protocol"`
-	SniPort              *int               `json:"sni_port" yaml:"sni_port"`
-	TLSPort              *int               `json:"tls_port" yaml:"tls_port"`
+	SniPort              *uint16            `json:"sni_port" yaml:"sni_port"`
+	TLSPort              *uint16            `json:"tls_port" yaml:"tls_port"`
 	Tags                 map[string]string  `json:"tags" yaml:"tags"`
 	URIs                 []string           `json:"uris" yaml:"uris"`
 	RouterGroup          string             `json:"router_group" yaml:"router_group"`
-	ExternalPort         *int               `json:"external_port,omitempty" yaml:"external_port,omitempty"`
+	ExternalPort         *uint16            `json:"external_port,omitempty" yaml:"external_port,omitempty"`
 	RouteServiceUrl      string             `json:"route_service_url" yaml:"route_service_url"`
 	RegistrationInterval string             `json:"registration_interval,omitempty" yaml:"registration_interval,omitempty"`
 	HealthCheck          *HealthCheckSchema `json:"health_check,omitempty" yaml:"health_check,omitempty"`
@@ -136,14 +136,14 @@ type ClientTLSConfig struct {
 type Route struct {
 	Type                 string
 	Name                 string
-	Port                 *int
+	Port                 *uint16
 	Protocol             string
-	TLSPort              *int
+	TLSPort              *uint16
 	Tags                 map[string]string
 	URIs                 []string
 	RouterGroup          string
 	Host                 string
-	ExternalPort         *int
+	ExternalPort         *uint16
 	RouteServiceUrl      string
 	RegistrationInterval time.Duration
 	HealthCheck          *HealthCheck

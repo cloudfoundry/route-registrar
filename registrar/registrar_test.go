@@ -83,8 +83,8 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 		signals = make(chan os.Signal, 1)
 		ready = make(chan struct{}, 1)
-		port := 8080
-		port2 := 8081
+		port := uint16(8080)
+		port2 := uint16(8081)
 
 		registrationInterval := 100 * time.Millisecond
 		rrConfig.Routes = []config.Route{
@@ -265,7 +265,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 
 	Context("on startup", func() {
 		BeforeEach(func() {
-			port := 8080
+			port := uint16(8080)
 			rrConfig.Routes = []config.Route{
 				{
 					Name: "my route 1",
@@ -310,7 +310,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 	Context("when configured with dynamic config blobs", func() {
 		var (
 			dynamicConfigDir string
-			port             int
+			port             uint16
 		)
 
 		BeforeEach(func() {
@@ -622,7 +622,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				BeforeEach(func() {
 					timeout := 100 * time.Millisecond
 					registrationInterval := 100 * time.Millisecond
-					port := 8080
+					port := uint16(8080)
 					rrConfig.Routes = []config.Route{
 						{
 							Name: "my route 1",
@@ -679,7 +679,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				BeforeEach(func() {
 					timeout := 100 * time.Millisecond
 					registrationInterval := 100 * time.Millisecond
-					port := 8080
+					port := uint16(8080)
 					route1Name = "my route 1"
 					route2Name = "my route 2"
 					rrConfig.Routes = []config.Route{
@@ -762,7 +762,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 				BeforeEach(func() {
 					timeout := 100 * time.Millisecond
 					registrationInterval := 100 * time.Millisecond
-					port := 8080
+					port := uint16(8080)
 					route1Name = "my route 1"
 					route2Name = "my route 2"
 					rrConfig.Routes = []config.Route{
@@ -852,7 +852,7 @@ var _ = Describe("Registrar.RegisterRoutes", func() {
 			BeforeEach(func() {
 				timeout := 100 * time.Millisecond
 				registrationInterval := 100 * time.Millisecond
-				port := 8080
+				port := uint16(8080)
 				routeName = "my route 1"
 				rrConfig.Routes = []config.Route{
 					{
