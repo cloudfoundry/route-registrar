@@ -50,7 +50,7 @@ The route-registrar expects a configuration json file like the one below:
         "timeout": "HEALTH_CHECK_TIMEOUT"
       },
       "options": {
-        "lb_algo": "least-connection"
+        "loadbalancing": "least-connection"
       }
     }
   ]
@@ -121,5 +121,5 @@ The following applies:
 
 ## Options
 Custom per-route options can be defined and applied to specific routes exclusively.
-- `lb_algo` enables the selection of a load balancing algorithm for routing incoming requests to the backend. It is possible to choose between `round-robin` and `least-connection`. In cases where this option is not specified, the algorithm [defined by the platform operator](https://github.com/cloudfoundry/routing-release/blob/develop/jobs/gorouter/spec#L101) is applied.
+- `loadbalancing` enables the selection of a load balancing algorithm for routing incoming requests to the backend. It is possible to choose between `round-robin` and `least-connection`. In cases where this option is not specified, the algorithm [defined by the platform operator](https://github.com/cloudfoundry/routing-release/blob/develop/jobs/gorouter/spec#L101) is applied.
 
