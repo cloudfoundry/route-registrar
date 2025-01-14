@@ -431,7 +431,7 @@ var _ = Describe("Messagebus test Suite", func() {
 				TLSPort:             route.TLSPort,
 				ServerCertDomainSAN: "cf.cert.internal",
 				AvailabilityZone:    "some-az",
-				Options:             map[string]string{"loadbalancing": string(route.Options.LoadBalancingAlgorithm)},
+				Options:             map[string]string{"lb_algo": string(route.Options.LoadBalancingAlgorithm)},
 			}
 
 			var registryMessage messagebus.Message
