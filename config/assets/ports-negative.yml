@@ -21,5 +21,5 @@ health_check:
   script_path: /path/to/check/executable
   timeout: 5s
 options: 
-  lb_algo: least-connection
+  loadbalancing: least-connection
 

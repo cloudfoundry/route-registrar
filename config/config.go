@@ -69,7 +69,7 @@ type RouteSchema struct {
 }
 
 type Options struct {
-	LoadBalancingAlgorithm LoadBalancingAlgorithm `json:"lb_algo,omitempty" yaml:"lb_algo,omitempty"`
+	LoadBalancingAlgorithm LoadBalancingAlgorithm `json:"loadbalancing,omitempty" yaml:"loadbalancing,omitempty"`
 }
 
 type LoadBalancingAlgorithm string

@@ -43,7 +43,7 @@ type Message struct {
 	Options             map[string]string `json:"options,omitempty"`
 }
 
-const LoadBalancingAlgorithm string = "lb_algo"
+const LoadBalancingAlgorithm string = "loadbalancing"
 
 func NewMessageBus(logger lager.Logger, availabilityZone string) MessageBus {
 	return &msgBus{

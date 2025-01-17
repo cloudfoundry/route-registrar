@@ -17,7 +17,7 @@
         "my-other-app.my-domain.com"
       ],
       "options": {
-        "lb_algo": "least-connection"
+        "loadbalancing": "least-connection"
       },
       "registration_interval": "10s",
       "server_cert_domain_san": "my.internal.cert"
