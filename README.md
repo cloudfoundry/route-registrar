@@ -1,5 +1,9 @@
 # route-registrar
 
+> [!CAUTION]
+> This repository has been in-lined (using git-subtree) into routing-release. Please make any
+> future contributions directly to routing-release.
+
 [![Go Report
 Card](https://goreportcard.com/badge/code.cloudfoundry.org/route-registrar)](https://goreportcard.com/report/code.cloudfoundry.org/route-registrar)
 [![Go
